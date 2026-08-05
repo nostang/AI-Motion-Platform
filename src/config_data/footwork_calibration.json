@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "config_version": "footwork-calibration-v1",
+  "description": "Footwork Event、方向分類與專家審查片段的可校正參數。",
+  "center": {
+    "calibration_seconds": 1.0,
+    "region_radius": 0.06
+  },
+  "event": {
+    "move_offset_threshold": 0.08,
+    "return_offset_threshold": 0.05,
+    "smoothing_window": 5,
+    "reversal_confirm_frames": 3,
+    "reversal_min_drop": 0.012,
+    "ready_confirm_frames": 5,
+    "expected_event_count": 8
+  },
+  "direction": {
+    "mirror_x": true,
+    "x_scale": 1.0,
+    "y_scale": 1.8,
+    "min_vector_length": 0.035,
+    "min_confidence": 0.3
+  },
+  "review": {
+    "clip_pre_roll_ms": 350,
+    "clip_post_roll_ms": 350,
+    "minimum_reviewers_for_consensus": 3,
+    "consensus_votes_required": 2
+  }
+}
