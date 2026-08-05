@@ -9,6 +9,7 @@ import cv2
 from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.repository import AssessmentRepository
 from src.api.service import MotionAssessmentService
@@ -24,6 +25,16 @@ repository = AssessmentRepository(PROJECT_ROOT / "api_data" / "motion_assessment
 service = MotionAssessmentService(repository)
 app = FastAPI(title="AI Motion API", version="0.9.0")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:8080",
+        "http://localhost:8080",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.exception_handler(RequestValidationError)
 async def request_validation_error_handler(

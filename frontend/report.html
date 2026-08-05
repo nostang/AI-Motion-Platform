@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>AI Motion Report</title>
+
+    <link rel="stylesheet"
+          href="css/style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <header class="hero">
+
+        <h1>Motion Report</h1>
+
+        <p class="subtitle">
+
+            AI Motion Coach Evaluation
+
+        </p>
+
+    </header>
+
+    <main class="card">
+
+        <section>
+
+            <h2>Overall</h2>
+
+            <div id="overallScore">
+
+                --
+
+            </div>
+
+        </section>
+
+        <section>
+
+            <h2>Coach Status</h2>
+
+            <div id="coachStatus">
+
+                Loading...
+
+            </div>
+
+        </section>
+
+        <section>
+
+            <h2>Coach Feedback</h2>
+
+            <ul id="feedbackList">
+
+            </ul>
+
+        </section>
+
+        <section>
+
+            <h2>Radar Chart</h2>
+
+            <canvas id="radarChart">
+
+            </canvas>
+
+        </section>
+
+        <section>
+
+            <button
+                id="backButton">
+
+                Back
+
+            </button>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="js/config.js"></script>
+
+<script src="js/api.js"></script>
+
+<script src="js/report.js"></script>
+
+</body>
+
+</html>
