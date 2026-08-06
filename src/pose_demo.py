@@ -71,6 +71,7 @@ from src.drawing import (
     get_hip_center_pixel,
 )
 from src.event.footwork_event import FootworkEvent
+from src.features.motion_features import MotionFeatureTracker
 from src.measurement import (
     calculate_displacement,
     calculate_hip_center,
@@ -174,6 +175,8 @@ def run_pose_demo(
         reversal_min_drop=FOOTWORK_REVERSAL_MIN_DROP,
         ready_confirm_frames=FOOTWORK_READY_CONFIRM_FRAMES,
     )
+
+    motion_feature_tracker = MotionFeatureTracker()
 
     motion_classifier = MotionClassifier(
         mirror_x=DIRECTION_MIRROR_X,
@@ -326,6 +329,14 @@ def run_pose_demo(
                             frame_index=frame_index,
                         )
 
+                        motion_feature_tracker.observe(
+                            event_id=footwork_event.event_id,
+                            previous_state=footwork_event.previous_state.value,
+                            current_state=footwork_event.state.value,
+                            landmarks=landmarks,
+                            timestamp_ms=timestamp_ms,
+                        )
+
                         draw_footwork_state(
                             frame,
                             state_text=current_state.value,
@@ -405,7 +416,15 @@ def run_pose_demo(
                             )
 
                         if footwork_event.completed_this_frame:
-                            assessment_builder.add_completed_event(footwork_event)
+                            motion_features = (
+                                motion_feature_tracker.finalize_event(
+                                    footwork_event.event_id
+                                )
+                            )
+                            assessment_builder.add_completed_event(
+                                footwork_event,
+                                motion_features=motion_features,
+                            )
 
                             print(
                                 "[Footwork Complete] "

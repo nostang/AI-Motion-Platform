@@ -1,4 +1,4 @@
-"""Coach Module V1。
+"""Coach Module V1.2。
 
 將 Footwork Assessment 的客觀結果轉換為教練可理解、可追溯的
 Coach Evaluation JSON。本模組不產生技術分數，也不重新分析影片。
@@ -17,7 +17,7 @@ from src.coach.coach_rules import COACH_RULES
 class CoachEngine:
     """執行 Coach Rule Library 並建立 Coach Evaluation JSON。"""
 
-    def __init__(self, version: str = "1.0") -> None:
+    def __init__(self, version: str = "1.2") -> None:
         self.version = version
 
     @staticmethod
@@ -88,7 +88,7 @@ class CoachEngine:
             },
             "overall_status": overall_status,
             "technique_score": None,
-            "timing_used_for_score": False,
+            "timing_used_for_score": True,
             "not_evaluated": [
                 "lead_foot",
                 "dominant_hand_rule",

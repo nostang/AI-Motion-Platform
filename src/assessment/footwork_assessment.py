@@ -12,6 +12,9 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from src.assessment.direction_coverage import evaluate_direction_coverage
+from src.assessment.recovery_speed import evaluate_recovery_speed
+
 
 EXPECTED_DIRECTIONS = (
     "RIGHT_FRONT",
@@ -46,6 +49,7 @@ class FootworkEventRecord:
     returned_frame: int | None
     completed: bool
     returned_to_center: bool
+    motion_features: dict[str, Any] | None
 
 
 class FootworkAssessmentBuilder:
@@ -68,7 +72,12 @@ class FootworkAssessmentBuilder:
         self.assessment_id = f"fa_{uuid4().hex[:16]}"
         self.events: list[FootworkEventRecord] = []
 
-    def add_completed_event(self, event: Any) -> None:
+    def add_completed_event(
+        self,
+        event: Any,
+        *,
+        motion_features: dict[str, Any] | None = None,
+    ) -> None:
         clip_start = (
             max(0, event.move_started_at_ms - self.clip_pre_roll_ms)
             if event.move_started_at_ms is not None
@@ -101,6 +110,7 @@ class FootworkAssessmentBuilder:
                 returned_frame=event.returned_frame,
                 completed=True,
                 returned_to_center=event.returned_at_ms is not None,
+                motion_features=motion_features,
             )
         )
 
@@ -160,8 +170,19 @@ class FootworkAssessmentBuilder:
             else 0.0
         )
 
+        recovery_speed = evaluate_recovery_speed(
+            {"events": [asdict(event) for event in self.events]}
+        )
+        direction_coverage_assessment = evaluate_direction_coverage(
+            direction_coverage=coverage,
+            missing_directions=missing,
+            duplicate_directions=duplicates,
+            unknown_direction_count=unknown_count,
+            expected_direction_count=len(EXPECTED_DIRECTIONS),
+        )
+
         return {
-            "schema_version": "1.1",
+            "schema_version": "1.3",
             "assessment_id": self.assessment_id,
             "engine_version": self.engine_version,
             "config_version": self.config_version,
@@ -188,7 +209,23 @@ class FootworkAssessmentBuilder:
                 "detected_frames": detected_frame_count,
                 "detection_rate": detection_rate,
             },
-            "timing_used_for_score": False,
+            "timing_used_for_score": True,
+            "recovery_speed": recovery_speed,
+            "direction_coverage_assessment": direction_coverage_assessment,
+            "motion_feature_library": {
+                "version": "motion-feature-v1",
+                "status": "EXTRACTED",
+                "scoring_enabled": False,
+                "feature_ids": [
+                    "MF001_shoulder_tilt",
+                    "MF002_hip_tilt",
+                    "MF003_torso_lean",
+                ],
+                "limitations": [
+                    "Features are based on 2D image-normalized landmarks.",
+                    "Feature values are descriptive and are not body-stability scores.",
+                ],
+            },
             "technique_score": None,
             "not_evaluated": [
                 "lead_foot",

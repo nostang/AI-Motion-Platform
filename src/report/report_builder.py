@@ -13,10 +13,11 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Optional
 
 
-REPORT_VERSION = "1.0"
+REPORT_VERSION = "1.2"
 RADAR_LABELS = [
     "Movement Completion",
     "Recovery Speed",
+    "Direction Coverage",
     "Footwork Technique",
     "Body Stability",
 ]
@@ -51,8 +52,11 @@ class ReportBuilder:
         return_center_rule = rules.get("CR002", {})
         direction_rule = rules.get("CR003", {})
         continuity_rule = rules.get("CR004", {})
+        recovery_rule = rules.get("CR005", {})
 
         movement_score = self._pass_only_score(completion_rule)
+        recovery_score = self._rule_numeric_score(recovery_rule)
+        direction_score = self._rule_numeric_score(direction_rule)
         technique_score = self._numeric_or_none(
             coach_evaluation.get("technique_score")
         )
@@ -64,9 +68,9 @@ class ReportBuilder:
                 source_rule_id="CR001",
             ),
             "recovery_speed": self._score_item(
-                score=None,
+                score=recovery_score,
                 max_score=25,
-                source_rule_id=None,
+                source_rule_id="CR005" if recovery_score is not None else None,
             ),
             "footwork_technique": self._score_item(
                 score=technique_score,
@@ -80,9 +84,18 @@ class ReportBuilder:
             ),
         }
 
+        assessment_metrics = {
+            "direction_coverage": self._score_item(
+                score=direction_score,
+                max_score=25,
+                source_rule_id="CR003" if direction_score is not None else None,
+            ),
+        }
+
         radar_scores = [
             skill_score["movement_completion"]["score"],
             skill_score["recovery_speed"]["score"],
+            assessment_metrics["direction_coverage"]["score"],
             skill_score["footwork_technique"]["score"],
             skill_score["body_stability"]["score"],
         ]
@@ -100,11 +113,14 @@ class ReportBuilder:
                 "motion": assessment["assessment_type"],
                 "completed": bool(assessment.get("test_completed", False)),
                 "overall_score": self._overall_score(skill_score),
+                "evaluated_score": self._evaluated_score(skill_score),
+                "evaluated_max_score": self._evaluated_max_score(skill_score),
+                "score_coverage": self._score_coverage(skill_score),
                 "coach_status": coach_evaluation.get("overall_status"),
             },
             "observation": {
                 "return_center": self._pass_fail_or_none(return_center_rule),
-                "recovery_time": None,
+                "recovery_time": self._recovery_observation(recovery_rule),
                 "footwork_correct": self._pass_fail_or_none(direction_rule),
                 "extra_steps": None,
                 "body_stable": None,
@@ -118,6 +134,7 @@ class ReportBuilder:
                 "system_confidence": assessment.get("system_confidence"),
             },
             "skill_score": skill_score,
+            "assessment_metrics": assessment_metrics,
             "feedback": feedback,
             "training_suggestions": training_suggestions,
             "radar_chart": {
@@ -232,6 +249,31 @@ class ReportBuilder:
         return float(value)
 
     @staticmethod
+    def _rule_numeric_score(rule: Mapping[str, Any]) -> Optional[float]:
+        evidence = rule.get("evidence") or {}
+        value = evidence.get("score")
+        if rule.get("result") == "NOT_EVALUATED":
+            return None
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        return float(value)
+
+    @staticmethod
+    def _recovery_observation(rule: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
+        evidence = rule.get("evidence") or {}
+        average = evidence.get("average_seconds")
+        if isinstance(average, bool) or not isinstance(average, (int, float)):
+            return None
+        return {
+            "average_seconds": average,
+            "median_seconds": evidence.get("median_seconds"),
+            "fastest_seconds": evidence.get("fastest_seconds"),
+            "slowest_seconds": evidence.get("slowest_seconds"),
+            "valid_event_count": evidence.get("valid_event_count"),
+            "config_version": evidence.get("config_version"),
+        }
+
+    @staticmethod
     def _pass_only_score(rule: Mapping[str, Any]) -> Optional[int]:
         if rule.get("result") == "PASS":
             return 25
@@ -263,10 +305,42 @@ class ReportBuilder:
 
     @staticmethod
     def _overall_score(skill_score: Mapping[str, Mapping[str, Any]]) -> Optional[float]:
+        """Return a 100-point overall score only after all four dimensions exist."""
         scores = [item.get("score") for item in skill_score.values()]
         if any(score is None for score in scores):
             return None
         return float(sum(scores))
+
+    @staticmethod
+    def _evaluated_score(skill_score: Mapping[str, Mapping[str, Any]]) -> float:
+        return float(
+            sum(
+                item.get("score")
+                for item in skill_score.values()
+                if item.get("score") is not None
+            )
+        )
+
+    @staticmethod
+    def _evaluated_max_score(skill_score: Mapping[str, Mapping[str, Any]]) -> int:
+        return int(
+            sum(
+                item.get("max_score", 0)
+                for item in skill_score.values()
+                if item.get("score") is not None
+            )
+        )
+
+    @staticmethod
+    def _score_coverage(skill_score: Mapping[str, Mapping[str, Any]]) -> float:
+        total = len(skill_score)
+        if total == 0:
+            return 0.0
+        evaluated = sum(
+            item.get("score") is not None
+            for item in skill_score.values()
+        )
+        return round(evaluated / total, 4)
 
     @staticmethod
     def _build_feedback(
@@ -275,12 +349,31 @@ class ReportBuilder:
         feedback: list[Dict[str, str]] = []
 
         return_center = rules.get("CR002", {})
+        recovery_speed = rules.get("CR005", {})
         if return_center.get("result") == "FAIL":
             feedback.append(
                 {
                     "code": "F001",
                     "message": "尚未完全回到中心位置。",
                     "source_rule_id": "CR002",
+                }
+            )
+
+        if recovery_speed.get("result") == "NEEDS_REVIEW":
+            evidence = recovery_speed.get("evidence") or {}
+            average = evidence.get("average_seconds")
+            score = evidence.get("score")
+            feedback.append(
+                {
+                    "code": "F002",
+                    "message": (
+                        f"平均回位時間 {average:.2f} 秒，"
+                        f"Recovery Speed 得分 {score}/25，建議持續觀察。"
+                        if isinstance(average, (int, float))
+                        and isinstance(score, (int, float))
+                        else "回位速度需要進一步確認。"
+                    ),
+                    "source_rule_id": "CR005",
                 }
             )
 
@@ -302,6 +395,18 @@ class ReportBuilder:
                     "sets": 5,
                     "repetitions_per_set": 20,
                     "source_feedback_code": "F001",
+                }
+            )
+
+        if "F002" in codes:
+            suggestions.append(
+                {
+                    "code": "T002",
+                    "title": "回位節奏練習",
+                    "description": "以穩定回中心為優先，進行低強度米字步並記錄每次回位時間。",
+                    "sets": 3,
+                    "repetitions_per_set": 8,
+                    "source_feedback_code": "F002",
                 }
             )
 

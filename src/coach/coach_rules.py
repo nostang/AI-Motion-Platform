@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 RuleResult = Literal["PASS", "FAIL", "NEEDS_REVIEW", "NOT_EVALUATED"]
 
-RULE_COUNT = 4
+RULE_COUNT = 5
 
 
 def build_rule(
@@ -110,18 +110,33 @@ def evaluate_return_to_center(
 def evaluate_direction_coverage(
     assessment: dict[str, Any],
 ) -> dict[str, Any]:
-    """CR003：檢查系統辨識結果是否完整覆蓋八方向。"""
+    """CR003：轉譯 Assessment AR003 方向覆蓋評估。"""
 
+    metric = assessment.get("direction_coverage_assessment") or {}
     coverage_complete = bool(
         assessment.get("direction_coverage_complete", False)
+    )
+    result: RuleResult = metric.get(
+        "result",
+        "PASS" if coverage_complete else "NEEDS_REVIEW",
     )
 
     return build_rule(
         rule_id="CR003",
         name="DIRECTION_COVERAGE",
         display_name="八方向覆蓋",
-        result="PASS" if coverage_complete else "NEEDS_REVIEW",
+        result=result,
         evidence={
+            "assessment_metric_id": metric.get("metric_id", "AR003"),
+            "score": metric.get("score"),
+            "max_score": metric.get("max_score", 25),
+            "observed_direction_count": metric.get(
+                "observed_direction_count"
+            ),
+            "expected_direction_count": metric.get(
+                "expected_direction_count", 8
+            ),
+            "coverage_ratio": metric.get("coverage_ratio"),
             "direction_coverage": assessment.get("direction_coverage", {}),
             "missing_directions": list(
                 assessment.get("missing_directions") or []
@@ -133,16 +148,16 @@ def evaluate_direction_coverage(
                 assessment.get("unknown_direction_count", 0)
             ),
             "system_confidence": assessment.get("system_confidence"),
+            "config_version": metric.get("config_version"),
         },
-        explanation=(
-            "系統辨識到八個方向各一次。"
-            if coverage_complete
-            else "目前系統方向分類未完整覆蓋八方向，需由人工標註確認。"
+        explanation=metric.get(
+            "explanation",
+            "系統方向分類未完整覆蓋八方向，需人工確認。",
         ),
-        limitations=[
+        limitations=list(metric.get("limitations") or [
             "方向分類仍需 Expert Review 與 Calibration 驗證。",
             "NEEDS_REVIEW 不等同於使用者動作錯誤。",
-        ],
+        ]),
     )
 
 
@@ -191,9 +206,48 @@ def evaluate_motion_continuity(
     )
 
 
+def evaluate_recovery_speed(
+    assessment: dict[str, Any],
+) -> dict[str, Any]:
+    """CR005：轉譯 Assessment 已完成的 Recovery Speed 評估。"""
+
+    recovery = assessment.get("recovery_speed") or {}
+    status = recovery.get("status")
+    result = recovery.get("result", "NOT_EVALUATED")
+
+    if status != "EVALUATED":
+        result = "NOT_EVALUATED"
+
+    return build_rule(
+        rule_id="CR005",
+        name="RECOVERY_SPEED",
+        display_name="回位速度",
+        result=result,
+        evidence={
+            "assessment_metric_id": recovery.get("metric_id", "AR002"),
+            "valid_event_count": recovery.get("valid_event_count", 0),
+            "required_event_count": recovery.get("required_event_count"),
+            "average_seconds": recovery.get("average_seconds"),
+            "median_seconds": recovery.get("median_seconds"),
+            "fastest_seconds": recovery.get("fastest_seconds"),
+            "slowest_seconds": recovery.get("slowest_seconds"),
+            "score": recovery.get("score"),
+            "max_score": recovery.get("max_score", 25),
+            "config_version": recovery.get("config_version"),
+            "thresholds": recovery.get("thresholds", {}),
+        },
+        explanation=recovery.get(
+            "explanation",
+            "Recovery Speed 尚未完成評估。",
+        ),
+        limitations=list(recovery.get("limitations") or []),
+    )
+
+
 COACH_RULES = (
     evaluate_eight_event_completion,
     evaluate_return_to_center,
     evaluate_direction_coverage,
     evaluate_motion_continuity,
+    evaluate_recovery_speed,
 )
