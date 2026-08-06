@@ -1,4 +1,4 @@
-"""FastAPI adapter for AI Motion API Contract v1.1."""
+"""FastAPI adapter for AI Motion API Contract v1.2."""
 
 from __future__ import annotations
 
@@ -11,9 +11,11 @@ from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from src.api.repository import AssessmentRepository
 from src.api.service import MotionAssessmentService
+from src.competency.competency_profile import build_competency_profile
 from src.config import PROJECT_ROOT
 from src.motion import registered_motion_types
 
@@ -29,7 +31,7 @@ repository = AssessmentRepository(
     PROJECT_ROOT / "api_data" / "motion_assessments"
 )
 service = MotionAssessmentService(repository)
-app = FastAPI(title="AI Motion API", version="1.1.0")
+app = FastAPI(title="AI Motion API", version="1.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,6 +43,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class CompetencyProfileRequest(BaseModel):
+    player_id: str = Field(min_length=1, max_length=100)
+    footwork_assessment_id: str = Field(min_length=1)
+    serve_assessment_id: str = Field(min_length=1)
+    clear_assessment_id: str = Field(min_length=1)
 
 
 @app.exception_handler(RequestValidationError)
@@ -98,6 +107,71 @@ def _video_duration_seconds(path: Path) -> float:
         return frames / fps if fps > 0 else 0.0
     finally:
         cap.release()
+
+
+def _public_report(
+    assessment_id: str,
+    expected_type: str,
+) -> tuple[dict | None, JSONResponse | None]:
+    task = repository.get(assessment_id)
+
+    if task is None:
+        return None, failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {
+                "assessment_id": assessment_id,
+                "expected_type": expected_type,
+            },
+        )
+
+    actual_type = task.get("assessment_type")
+    if actual_type != expected_type:
+        return None, failure(
+            409,
+            "ASSESSMENT_TYPE_MISMATCH",
+            "分析任務類型與 Competency Profile 欄位不符。",
+            {
+                "assessment_id": assessment_id,
+                "expected_type": expected_type,
+                "actual_type": actual_type,
+            },
+        )
+
+    if task.get("status") != "completed":
+        return None, failure(
+            409,
+            "ASSESSMENT_NOT_READY",
+            "分析任務尚未完成，無法建立 Competency Profile。",
+            {
+                "assessment_id": assessment_id,
+                "assessment_type": actual_type,
+                "status": task.get("status"),
+            },
+        )
+
+    report = repository.report(
+        assessment_id,
+        assessment_type=actual_type,
+    )
+    if report is None:
+        return None, failure(
+            500,
+            "REPORT_NOT_FOUND",
+            "分析任務已完成，但找不到對應 Report JSON。",
+            {
+                "assessment_id": assessment_id,
+                "assessment_type": actual_type,
+            },
+        )
+
+    public_report = dict(report)
+    public_report.setdefault("meta", {})[
+        "engine_assessment_id"
+    ] = public_report.get("assessment_id")
+    public_report["assessment_id"] = assessment_id
+    return public_report, None
 
 
 @app.post(f"{API_PREFIX}/motion-assessments", status_code=202)
@@ -293,3 +367,37 @@ def get_motion_assessment_report(assessment_id: str):
     )
     report["assessment_id"] = assessment_id
     return envelope(report)
+
+
+@app.post(f"{API_PREFIX}/competency-profiles")
+def create_competency_profile(
+    request: CompetencyProfileRequest,
+):
+    footwork_report, error = _public_report(
+        request.footwork_assessment_id,
+        "footwork",
+    )
+    if error is not None:
+        return error
+
+    serve_report, error = _public_report(
+        request.serve_assessment_id,
+        "serve",
+    )
+    if error is not None:
+        return error
+
+    clear_report, error = _public_report(
+        request.clear_assessment_id,
+        "clear",
+    )
+    if error is not None:
+        return error
+
+    profile = build_competency_profile(
+        player_id=request.player_id,
+        footwork_report=footwork_report,
+        serve_report=serve_report,
+        clear_report=clear_report,
+    )
+    return envelope(profile)
