@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "profile_version": "competency-profile-v1.0",
+  "status": "PROVISIONAL",
+  "required_motions": [
+    "footwork",
+    "serve",
+    "clear"
+  ],
+  "score_source": {
+    "artifact": "analysis_report",
+    "field": "summary.overall_score"
+  },
+  "aggregation": {
+    "cross_motion_overall_score": false,
+    "description": "V1 僅整合各動作既有 overall_score，不重新加權或產生跨動作總分。"
+  }
+}
