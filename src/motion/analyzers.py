@@ -1,9 +1,7 @@
 """目前已支援動作的 Analyzer Adapter。"""
 
 from __future__ import annotations
-
 from typing import Any
-
 from src.motion.base import BaseMotionAnalyzer, MotionContext
 
 
@@ -11,14 +9,13 @@ class FootworkAnalyzer(BaseMotionAnalyzer):
     motion_type = "footwork"
 
     def run(self, context: MotionContext) -> dict[str, Any]:
-        # Footwork 已完成驗證，這裡只做 Adapter，不改核心流程。
         from src.pose_demo import run_pose_demo
-
         return run_pose_demo(
             video_path=context.video_path,
             model_path=context.model_path,
             window_name=context.window_name,
             display=context.display,
+            output_dir=context.output_dir,
         )
 
 
@@ -27,7 +24,6 @@ class ServeAnalyzer(BaseMotionAnalyzer):
 
     def run(self, context: MotionContext) -> dict[str, Any]:
         from src.serve_demo import run_serve_demo
-
         return run_serve_demo(
             video_id=context.video_id,
             video_path=context.video_path,
@@ -37,12 +33,12 @@ class ServeAnalyzer(BaseMotionAnalyzer):
             output_dir=context.output_dir,
         )
 
+
 class ClearAnalyzer(BaseMotionAnalyzer):
     motion_type = "clear"
 
-    def run(self, context: MotionContext):
+    def run(self, context: MotionContext) -> dict[str, Any]:
         from src.clear_demo import run_clear_demo
-
         return run_clear_demo(
             video_id=context.video_id,
             video_path=context.video_path,
