@@ -1,4 +1,4 @@
-"""High Clear MVP：影片 → Pose → Event → Features → Assessment。"""
+"""High Clear MVP：影片 → Pose → Event → Features → Assessment → Coach → Report → Validator。"""
 
 from __future__ import annotations
 
@@ -10,10 +10,16 @@ import cv2
 import mediapipe as mp
 
 from src.assessment.clear_assessment import ClearAssessmentBuilder
+from src.coach.clear_coach import build_clear_coach, save_clear_coach
 from src.event.clear_event import build_clear_event
 from src.features.clear_features import ClearFeatureTracker
 from src.overlay import draw_pose_landmarks, draw_status_panel
 from src.pose_demo import create_pose_landmarker
+from src.report.clear_report import build_clear_report, save_clear_report
+from src.validator.clear_validator import (
+    save_clear_validation,
+    validate_clear_pipeline,
+)
 
 
 def _load_calibration() -> dict[str, Any]:
@@ -42,6 +48,9 @@ def run_clear_demo(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     assessment_path = output_dir / "clear_assessment.json"
+    coach_path = output_dir / "clear_coach_evaluation.json"
+    report_path = output_dir / "clear_analysis_report.json"
+    validation_path = output_dir / "clear_pipeline_validation.json"
 
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
@@ -78,13 +87,16 @@ def run_clear_demo(
 
                 if pose_detected:
                     detected_frames += 1
+
                     if first_detected_frame is None:
                         first_detected_frame = frame_index
-                    last_detected_frame = frame_index
 
+                    last_detected_frame = frame_index
                     landmarks = result.pose_landmarks[0]
+
                     tracker.observe(landmarks, timestamp_ms)
                     draw_pose_landmarks(frame, landmarks)
+
                     overlay_lines.append(
                         f"Samples: {len(tracker.samples)}"
                     )
@@ -103,15 +115,18 @@ def run_clear_demo(
 
                 if display:
                     cv2.imshow(window_name, frame)
+
                     key = cv2.waitKey(
                         max(1, int(1000 / fps))
                     ) & 0xFF
+
                     if key in (ord("q"), 27):
                         break
 
                 frame_index += 1
     finally:
         cap.release()
+
         if display:
             cv2.destroyAllWindows()
 
@@ -141,11 +156,45 @@ def run_clear_demo(
         assessment_path,
     )
 
-    print("\n=== AI Motion High Clear MVP v0.2 完成 ===")
+    coach = build_clear_coach(assessment)
+    save_clear_coach(
+        coach,
+        coach_path,
+    )
+
+    report = build_clear_report(
+        assessment,
+        coach,
+    )
+    save_clear_report(
+        report,
+        report_path,
+    )
+
+    validation = validate_clear_pipeline(
+        assessment,
+        coach,
+        report,
+    )
+    save_clear_validation(
+        validation,
+        validation_path,
+    )
+
+    print("\n=== AI Motion High Clear MVP 完成 ===")
     print(f"總處理幀數：{frame_index}")
     print(f"成功偵測幀數：{detected_frames}")
     print(f"Assessment JSON：{assessment_path}")
+    print(f"Coach JSON：{coach_path}")
+    print(f"Analysis Report：{report_path}")
+    print(
+        "Pipeline Validator："
+        f"{validation['status']} | "
+        f"Errors {validation['summary']['error_count']} | "
+        f"Warnings {validation['summary']['warning_count']}"
+    )
     print(f"Clear Overall Score：{assessment.get('overall_score')}")
+    print(f"Coach Status：{coach.get('overall_status')}")
     print(
         "Evaluation Status："
         f"{assessment.get('evaluation_status')}"
@@ -157,7 +206,13 @@ def run_clear_demo(
 
     return {
         "assessment": assessment,
+        "coach_evaluation": coach,
+        "analysis_report": report,
+        "pipeline_validation": validation,
         "artifact_paths": {
             "assessment": str(assessment_path),
+            "coach_evaluation": str(coach_path),
+            "analysis_report": str(report_path),
+            "pipeline_validation": str(validation_path),
         },
     }
