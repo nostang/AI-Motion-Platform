@@ -1,0 +1,3 @@
+video_id,motion_type,subject,camera_angle,camera_height,distance,fps,resolution,environment,skill_level,status,remarks
+FW_001,footwork,P01,45,1.2m,5m,30,1080p,indoor,intermediate,baseline,L3 baseline
+FW_002,footwork,P02,45,1.2m,5m,30,1080p,indoor,intermediate,validation,Second tester

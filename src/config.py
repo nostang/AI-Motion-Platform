@@ -6,7 +6,8 @@ from src.calibration_settings import load_footwork_calibration
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-VIDEO_PATH = PROJECT_ROOT / "videos" / "footwork.mov"
+DEFAULT_VIDEO_ID = "FW_001"
+
 MODEL_PATH = PROJECT_ROOT / "models" / "pose_landmarker_lite.task"
 WINDOW_NAME = "AI Motion - Footwork Pose Demo"
 TRAJECTORY_MAX_POINTS = 90

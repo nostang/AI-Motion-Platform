@@ -154,6 +154,13 @@ class FootworkEvent:
         self.ready_stable_frames = 0
         self.can_start_next_event = False
 
+        # 連續節奏重新解鎖：
+        # 某些球員完成一次回中心後，不會再次停留足夠幀數，
+        # 而是立刻開始下一次移動。此計數器讓 READY 狀態在
+        # 持續離開中心時，仍能安全地建立下一個 Event。
+        self.rearm_candidate_frames = 0
+        self.rearm_confirm_frames = self.ready_confirm_frames
+
         # Debug 用
         self.reach_detected_this_frame = False
         self.completed_this_frame = False
@@ -254,6 +261,7 @@ class FootworkEvent:
 
         self.ready_stable_frames = 0
         self.can_start_next_event = False
+        self.rearm_candidate_frames = 0
 
     def _update_from_calibrating(
         self,
@@ -301,6 +309,7 @@ class FootworkEvent:
                 self.ready_confirm_frames,
                 self.ready_stable_frames + 1,
             )
+            self.rearm_candidate_frames = 0
 
             if (
                 self.ready_stable_frames
@@ -311,16 +320,36 @@ class FootworkEvent:
             return
 
         if (
-            self.can_start_next_event
-            and self.smoothed_center_offset
-            >= self.move_offset_threshold
+            self.smoothed_center_offset
+            < self.move_offset_threshold
+        ):
+            # 位於 Hysteresis 區間時，不視為新移動候選。
+            self.rearm_candidate_frames = 0
+            return
+
+        if self.can_start_next_event:
+            self._start_new_event(
+                current_position=current_position,
+                timestamp_ms=timestamp_ms,
+                frame_index=frame_index,
+            )
+            self.state = FootworkState.MOVE
+            return
+
+        # Fallback：完成上一個 Event 後，球員可能沒有再次於中心
+        # 停留足夠幀數，而是直接連續移動。若 Offset 持續高於
+        # MOVE 門檻，確認為新的移動並重新解鎖，避免漏抓 Event。
+        self.rearm_candidate_frames += 1
+
+        if (
+            self.rearm_candidate_frames
+            >= self.rearm_confirm_frames
         ):
             self._start_new_event(
                 current_position=current_position,
                 timestamp_ms=timestamp_ms,
                 frame_index=frame_index,
             )
-
             self.state = FootworkState.MOVE
 
     def _update_from_move(
@@ -488,6 +517,7 @@ class FootworkEvent:
         self.reversal_candidate_frames = 0
         self.ready_stable_frames = 0
         self.can_start_next_event = False
+        self.rearm_candidate_frames = 0
 
     def _record_reach_event(
         self,

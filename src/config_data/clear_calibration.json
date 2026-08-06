@@ -1,0 +1,51 @@
+{
+  "config_version": "clear-calibration-v0.1",
+  "status": "PROVISIONAL",
+  "minimum_pose_detection_rate": 0.7,
+  "minimum_pose_samples": 12,
+  "thresholds": {
+    "sideways_preparation": {
+      "minimum_shoulder_hip_ratio": {
+        "excellent": 0.75,
+        "good": 0.9,
+        "fair": 1.05
+      },
+      "shoulder_angle_range_degrees": {
+        "excellent": 25.0,
+        "good": 18.0,
+        "fair": 10.0
+      }
+    },
+    "weight_transfer": {
+      "hip_center_shift": {
+        "excellent": 0.8,
+        "good": 0.55,
+        "fair": 0.3
+      }
+    },
+    "non_racket_arm_balance": {
+      "maximum_arm_elevation": {
+        "excellent": 0.9,
+        "good": 0.6,
+        "fair": 0.3
+      },
+      "elevated_sample_ratio": {
+        "excellent": 0.3,
+        "good": 0.2,
+        "fair": 0.1
+      }
+    },
+    "swing_smoothness": {
+      "wrist_path_length": {
+        "excellent": 9.0,
+        "good": 6.0,
+        "fair": 3.0
+      },
+      "wrist_speed_variation": {
+        "excellent": 0.8,
+        "good": 1.1,
+        "fair": 1.5
+      }
+    }
+  }
+}

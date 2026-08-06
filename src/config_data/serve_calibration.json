@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.1",
+  "config_version": "serve-calibration-v0.1",
+  "status": "PROVISIONAL",
+  "description": "Serve MVP 單鏡頭 2D Pose 暫定門檻。",
+  "minimum_pose_detection_rate": 0.8,
+  "minimum_pose_samples": 12,
+  "thresholds": {
+    "preparation_stability_index": {"excellent": 0.012, "good": 0.025, "fair": 0.05},
+    "swing_path_length": {"excellent": 1.2, "good": 0.75, "fair": 0.35},
+    "wrist_extension_range": {"excellent": 0.22, "good": 0.14, "fair": 0.07},
+    "torso_change_degrees": {"excellent": 18.0, "good": 10.0, "fair": 4.0},
+    "wrist_speed_variation": {"excellent": 0.55, "good": 0.85, "fair": 1.25}
+  }
+}
