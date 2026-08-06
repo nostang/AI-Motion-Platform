@@ -1,4 +1,4 @@
-"""High Clear Teaching Assessment MVP。"""
+"""High Clear Teaching Assessment。"""
 
 from __future__ import annotations
 
@@ -9,17 +9,9 @@ from typing import Any
 from uuid import uuid4
 
 
-_LEVEL_SCORE = {
-    "EXCELLENT": 25,
-    "GOOD": 20,
-    "FAIR": 14,
-    "POOR": 7,
-}
-
-
 def _level_higher(
     value: float | None,
-    thresholds: dict[str, float],
+    thresholds: dict[str, Any],
 ) -> str | None:
     if value is None:
         return None
@@ -34,7 +26,7 @@ def _level_higher(
 
 def _level_lower(
     value: float | None,
-    thresholds: dict[str, float],
+    thresholds: dict[str, Any],
 ) -> str | None:
     if value is None:
         return None
@@ -47,40 +39,38 @@ def _level_lower(
     return "POOR"
 
 
-def _safe_score(level: str | None) -> int:
-    return _LEVEL_SCORE.get(level, 0)
-
-
-def _combine_levels(
-    levels: list[str | None],
-) -> tuple[int, str | None]:
-    valid_levels = [level for level in levels if level is not None]
-    if not valid_levels:
-        return 0, None
-
-    score = round(
-        sum(_safe_score(level) for level in valid_levels)
-        / len(valid_levels)
-    )
-
-    level_order = {
-        "EXCELLENT": 4,
-        "GOOD": 3,
-        "FAIR": 2,
-        "POOR": 1,
-    }
-
-    overall_level = min(
-        valid_levels,
-        key=lambda level: level_order[level],
-    )
-
-    return score, overall_level
-
-
 class ClearAssessmentBuilder:
     def __init__(self, calibration: dict[str, Any]) -> None:
         self.calibration = calibration
+        self.level_scores = calibration["level_scores"]
+
+    def _safe_score(self, level: str | None) -> int:
+        return int(self.level_scores.get(level, 0))
+
+    def _combine_levels(
+        self,
+        levels: list[str | None],
+    ) -> tuple[int, str | None]:
+        valid_levels = [level for level in levels if level is not None]
+        if not valid_levels:
+            return 0, None
+
+        score = round(
+            sum(self._safe_score(level) for level in valid_levels)
+            / len(valid_levels)
+        )
+
+        level_order = {
+            "EXCELLENT": 4,
+            "GOOD": 3,
+            "FAIR": 2,
+            "POOR": 1,
+        }
+        overall_level = min(
+            valid_levels,
+            key=lambda level: level_order[level],
+        )
+        return score, overall_level
 
     def build(
         self,
@@ -130,7 +120,7 @@ class ClearAssessmentBuilder:
                 ],
             )
 
-            sideways_score, sideways_level = _combine_levels(
+            sideways_score, sideways_level = self._combine_levels(
                 [sideways_ratio_level, shoulder_angle_level]
             )
 
@@ -153,7 +143,7 @@ class ClearAssessmentBuilder:
                 ],
             )
 
-            arm_score, arm_level = _combine_levels(
+            arm_score, arm_level = self._combine_levels(
                 [arm_elevation_level, arm_duration_level]
             )
 
@@ -169,7 +159,7 @@ class ClearAssessmentBuilder:
                 ],
             )
 
-            swing_score, swing_level = _combine_levels(
+            swing_score, swing_level = self._combine_levels(
                 [wrist_path_level, speed_variation_level]
             )
 
@@ -179,14 +169,12 @@ class ClearAssessmentBuilder:
                     "max_score": 25,
                     "level": sideways_level,
                     "measurement_levels": {
-                        "minimum_shoulder_hip_ratio":
-                            sideways_ratio_level,
-                        "shoulder_angle_range_degrees":
-                            shoulder_angle_level,
+                        "minimum_shoulder_hip_ratio": sideways_ratio_level,
+                        "shoulder_angle_range_degrees": shoulder_angle_level,
                     },
                 },
                 "weight_transfer": {
-                    "score": _safe_score(weight_level),
+                    "score": self._safe_score(weight_level),
                     "max_score": 25,
                     "level": weight_level,
                     "measurement_levels": {
@@ -198,10 +186,8 @@ class ClearAssessmentBuilder:
                     "max_score": 25,
                     "level": arm_level,
                     "measurement_levels": {
-                        "maximum_arm_elevation":
-                            arm_elevation_level,
-                        "elevated_sample_ratio":
-                            arm_duration_level,
+                        "maximum_arm_elevation": arm_elevation_level,
+                        "elevated_sample_ratio": arm_duration_level,
                     },
                 },
                 "swing_smoothness": {
@@ -210,8 +196,7 @@ class ClearAssessmentBuilder:
                     "level": swing_level,
                     "measurement_levels": {
                         "wrist_path_length": wrist_path_level,
-                        "wrist_speed_variation":
-                            speed_variation_level,
+                        "wrist_speed_variation": speed_variation_level,
                     },
                 },
             }
@@ -228,13 +213,14 @@ class ClearAssessmentBuilder:
             evaluation_status = "NOT_EVALUATED"
 
         return {
-            "schema_version": "0.1",
+            "schema_version": "0.2",
             "assessment_id": f"ca_{uuid4().hex[:16]}",
             "assessment_type": "clear",
             "clear_type": "high_clear",
             "test_mode": "HIGH_CLEAR_TEACHING",
-            "engine_version": "high-clear-mvp-v0.2",
+            "engine_version": "high-clear-mvp-v0.3",
             "config_version": self.calibration["config_version"],
+            "rubric_version": self.calibration["rubric_version"],
             "calibration_status": self.calibration.get("status"),
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "video_id": video_id,
@@ -257,11 +243,11 @@ class ClearAssessmentBuilder:
                 4,
             ),
             "limitations": [
-                "This MVP evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks.",
+                "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks.",
                 "The result evaluates body-motion quality, not shuttle outcome.",
                 "Sideways preparation and weight transfer use provisional 2D proxy measurements.",
                 "Racket, shuttle, grip, contact point, trajectory, speed, and landing position are not evaluated.",
-                "Thresholds are provisional and require multi-video and coach calibration.",
+                "Thresholds and level scores are provisional and require multi-video and coach calibration.",
             ],
         }
 
