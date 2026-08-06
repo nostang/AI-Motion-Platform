@@ -344,6 +344,36 @@ class PipelineValidator:
                     f"不支援的 Coach Status：{status}",
                 )
 
+        result_summary = report.get("result_summary")
+        if isinstance(result_summary, Mapping):
+            overall = result_summary.get("overall")
+            required_overall = {
+                "score",
+                "max_score",
+                "level",
+                "confidence",
+                "status",
+                "generated_from",
+            }
+            if not isinstance(overall, Mapping):
+                self._error(
+                    issues,
+                    "PV303",
+                    "analysis_report",
+                    "result_summary.overall",
+                    "overall 必須是 object。",
+                )
+            else:
+                missing = sorted(required_overall - set(overall.keys()))
+                if missing:
+                    self._error(
+                        issues,
+                        "PV304",
+                        "analysis_report",
+                        "result_summary.overall",
+                        "Overall Contract 缺少欄位：" + ", ".join(missing),
+                    )
+
         radar = report.get("radar_chart")
         if isinstance(radar, Mapping):
             labels = radar.get("labels")

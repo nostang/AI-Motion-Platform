@@ -48,6 +48,7 @@ REPORT_REQUIRED_FIELDS: Mapping[str, type | tuple[type, ...]] = {
     "summary": dict,
     "observation": dict,
     "skill_score": dict,
+    "result_summary": dict,
     "feedback": list,
     "training_suggestions": list,
     "radar_chart": dict,

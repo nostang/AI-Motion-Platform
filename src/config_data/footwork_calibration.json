@@ -1,7 +1,7 @@
 {
-  "schema_version": "1.0",
-  "config_version": "footwork-calibration-v1",
-  "description": "Footwork Event、方向分類與專家審查片段的可校正參數。",
+  "schema_version": "1.2",
+  "config_version": "footwork-calibration-v1.2",
+  "description": "Footwork Event、方向分類、Motion Feature、Motion Quality 與專家審查片段的可校正參數。",
   "center": {
     "calibration_seconds": 1.0,
     "region_radius": 0.06
@@ -27,5 +27,74 @@
     "clip_post_roll_ms": 350,
     "minimum_reviewers_for_consensus": 3,
     "consensus_votes_required": 2
+  },
+  "feature_calibration": {
+    "schema_version": "1.0",
+    "config_version": "motion-feature-calibration-v1.1",
+    "status": "PROVISIONAL",
+    "description": "Body Stability 與 Motion Quality V1 前置校正。門檻為暫定值，尚未經教練樣本驗證。",
+    "features": {
+      "MF001_shoulder_tilt": {
+        "display_name": "Shoulder Tilt",
+        "input_statistic": "mean_absolute_degrees",
+        "unit": "degrees",
+        "direction": "lower_is_better",
+        "thresholds": {
+          "EXCELLENT": 3.0,
+          "GOOD": 6.0,
+          "FAIR": 12.0
+        },
+        "limitations": [
+          "2D image-normalized landmarks only.",
+          "Camera angle and perspective can affect the value."
+        ]
+      },
+      "MF002_hip_tilt": {
+        "display_name": "Hip Tilt",
+        "input_statistic": "mean_absolute_degrees",
+        "unit": "degrees",
+        "direction": "lower_is_better",
+        "thresholds": {
+          "EXCELLENT": 3.0,
+          "GOOD": 6.0,
+          "FAIR": 10.0
+        },
+        "limitations": [
+          "2D image-normalized landmarks only.",
+          "Camera angle and perspective can affect the value."
+        ]
+      },
+      "MF003_torso_lean": {
+        "display_name": "Torso Lean",
+        "input_statistic": "mean_absolute_degrees",
+        "unit": "degrees",
+        "direction": "lower_is_better",
+        "thresholds": {
+          "EXCELLENT": 5.0,
+          "GOOD": 10.0,
+          "FAIR": 18.0
+        },
+        "limitations": [
+          "2D image-normalized landmarks only.",
+          "The value describes image-plane lean, not 3D biomechanics."
+        ]
+      },
+      "MF005_motion_smoothness": {
+        "display_name": "Motion Smoothness",
+        "input_statistic": "combined_smoothness_index",
+        "unit": "index",
+        "direction": "lower_is_better",
+        "thresholds": {
+          "EXCELLENT": 0.35,
+          "GOOD": 0.6,
+          "FAIR": 0.95
+        },
+        "limitations": [
+          "Uses image-normalized pelvis-center offset and velocity.",
+          "Thresholds are provisional and require multi-video calibration.",
+          "Does not evaluate badminton-specific technique."
+        ]
+      }
+    }
   }
 }

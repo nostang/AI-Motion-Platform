@@ -1,4 +1,4 @@
-"""Coach Module V1.2。
+"""Coach Module V1.3。
 
 將 Footwork Assessment 的客觀結果轉換為教練可理解、可追溯的
 Coach Evaluation JSON。本模組不產生技術分數，也不重新分析影片。
@@ -12,12 +12,13 @@ from pathlib import Path
 from typing import Any
 
 from src.coach.coach_rules import COACH_RULES
+from src.coach.feature_coach import build_feature_feedback
 
 
 class CoachEngine:
     """執行 Coach Rule Library 並建立 Coach Evaluation JSON。"""
 
-    def __init__(self, version: str = "1.2") -> None:
+    def __init__(self, version: str = "1.5") -> None:
         self.version = version
 
     @staticmethod
@@ -57,6 +58,10 @@ class CoachEngine:
 
         rules = [rule(assessment) for rule in COACH_RULES]
         results = [rule["result"] for rule in rules]
+        body_stability = assessment.get("body_stability") or {}
+        feature_feedback = build_feature_feedback(
+            body_stability.get("feature_levels") or []
+        )
 
         if "FAIL" in results:
             overall_status = "FAIL"
@@ -80,6 +85,7 @@ class CoachEngine:
                 assessment.get("test_completed", False)
             ),
             "rules": rules,
+            "feature_feedback": feature_feedback,
             "checklist_summary": {
                 "pass_count": results.count("PASS"),
                 "fail_count": results.count("FAIL"),
@@ -88,13 +94,13 @@ class CoachEngine:
             },
             "overall_status": overall_status,
             "technique_score": None,
+            "motion_quality_score": (assessment.get("motion_quality") or {}).get("score"),
             "timing_used_for_score": True,
             "not_evaluated": [
                 "lead_foot",
                 "dominant_hand_rule",
                 "extra_steps",
                 "split_step",
-                "body_stability_score",
                 "coach_similarity_score",
             ],
             "expert_review_recommended": (

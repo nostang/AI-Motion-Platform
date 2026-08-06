@@ -1,4 +1,4 @@
-"""Footwork Assessment JSON V1.1。
+"""Footwork Assessment JSON V1.4。
 
 輸出客觀分析結果、可重現的設定版本，以及提供專家審查使用的片段範圍。
 本模組不產生教練技術分數。
@@ -12,8 +12,11 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from src.assessment.body_stability import evaluate_body_stability
 from src.assessment.direction_coverage import evaluate_direction_coverage
 from src.assessment.recovery_speed import evaluate_recovery_speed
+from src.assessment.motion_quality import evaluate_motion_quality
+from src.calibration import MotionFeatureCalibrationEngine
 
 
 EXPECTED_DIRECTIONS = (
@@ -180,9 +183,21 @@ class FootworkAssessmentBuilder:
             unknown_direction_count=unknown_count,
             expected_direction_count=len(EXPECTED_DIRECTIONS),
         )
+        feature_calibration = self.calibration_snapshot.get(
+            "feature_calibration", {}
+        )
+        calibration_engine = MotionFeatureCalibrationEngine(feature_calibration)
+        body_stability = evaluate_body_stability(
+            events=[asdict(event) for event in self.events],
+            calibration_engine=calibration_engine,
+        )
+        motion_quality = evaluate_motion_quality(
+            events=[asdict(event) for event in self.events],
+            calibration_engine=calibration_engine,
+        )
 
         return {
-            "schema_version": "1.3",
+            "schema_version": "1.5",
             "assessment_id": self.assessment_id,
             "engine_version": self.engine_version,
             "config_version": self.config_version,
@@ -212,14 +227,21 @@ class FootworkAssessmentBuilder:
             "timing_used_for_score": True,
             "recovery_speed": recovery_speed,
             "direction_coverage_assessment": direction_coverage_assessment,
+            "body_stability": body_stability,
+            "motion_quality": motion_quality,
             "motion_feature_library": {
-                "version": "motion-feature-v1",
+                "version": "motion-feature-v1.2",
                 "status": "EXTRACTED",
-                "scoring_enabled": False,
+                "scoring_enabled": True,
+                "consumed_by": [
+                    "AR004_BODY_STABILITY",
+                    "AR005_MOTION_QUALITY",
+                ],
                 "feature_ids": [
                     "MF001_shoulder_tilt",
                     "MF002_hip_tilt",
                     "MF003_torso_lean",
+                    "MF005_motion_smoothness",
                 ],
                 "limitations": [
                     "Features are based on 2D image-normalized landmarks.",

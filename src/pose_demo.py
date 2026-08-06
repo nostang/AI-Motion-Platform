@@ -335,6 +335,14 @@ def run_pose_demo(
                             current_state=footwork_event.state.value,
                             landmarks=landmarks,
                             timestamp_ms=timestamp_ms,
+                            smoothed_center_offset=(
+                                footwork_event.smoothed_center_offset
+                            ),
+                            pelvis_speed=(
+                                pelvis_velocity["speed"]
+                                if pelvis_velocity["valid"]
+                                else None
+                            ),
                         )
 
                         draw_footwork_state(
@@ -602,12 +610,20 @@ def run_pose_demo(
         "Coach Evaluation："
         f"{coach_output_path}"
     )
+    checklist_summary = coach_evaluation["checklist_summary"]
+
+    evaluated_rule_count = (
+        checklist_summary["pass_count"]
+        + checklist_summary["fail_count"]
+        + checklist_summary["needs_review_count"]
+    )
+
     print(
         "Coach Engine："
         f"{coach_evaluation['overall_status']}"
         " | PASS "
-        f"{coach_evaluation['checklist_summary']['pass_count']}"
-        "/4"
+        f"{checklist_summary['pass_count']}"
+        f"/{evaluated_rule_count}"
     )
     print(
         "Analysis Report："

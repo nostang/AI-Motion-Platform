@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 RuleResult = Literal["PASS", "FAIL", "NEEDS_REVIEW", "NOT_EVALUATED"]
 
-RULE_COUNT = 5
+RULE_COUNT = 7
 
 
 def build_rule(
@@ -244,10 +244,85 @@ def evaluate_recovery_speed(
     )
 
 
+def evaluate_body_stability(
+    assessment: dict[str, Any],
+) -> dict[str, Any]:
+    """CR006：轉譯 Assessment AR004 身體穩定度評估。"""
+
+    metric = assessment.get("body_stability") or {}
+    status = metric.get("status")
+    result: RuleResult = metric.get("result", "NOT_EVALUATED")
+    if status != "EVALUATED":
+        result = "NOT_EVALUATED"
+
+    return build_rule(
+        rule_id="CR006",
+        name="BODY_STABILITY",
+        display_name="身體穩定度",
+        result=result,
+        evidence={
+            "assessment_metric_id": metric.get("metric_id", "AR004"),
+            "level": metric.get("level"),
+            "score": metric.get("score"),
+            "max_score": metric.get("max_score", 25),
+            "weighted_level_points": metric.get("weighted_level_points"),
+            "feature_levels": list(metric.get("feature_levels") or []),
+            "config_version": metric.get("config_version"),
+            "calibration_version": metric.get("calibration_version"),
+            "calibration_status": metric.get("calibration_status"),
+        },
+        explanation=metric.get(
+            "explanation",
+            "Body Stability 尚未完成評估。",
+        ),
+        limitations=list(metric.get("limitations") or []),
+    )
+
+
+def evaluate_motion_quality(
+    assessment: dict[str, Any],
+) -> dict[str, Any]:
+    """CR007：轉譯 Assessment AR005 動作品質評估。"""
+
+    metric = assessment.get("motion_quality") or {}
+    status = metric.get("status")
+    result: RuleResult = metric.get("result", "NOT_EVALUATED")
+    if status != "EVALUATED":
+        result = "NOT_EVALUATED"
+
+    return build_rule(
+        rule_id="CR007",
+        name="MOTION_QUALITY",
+        display_name="動作品質",
+        result=result,
+        evidence={
+            "assessment_metric_id": metric.get("metric_id", "AR005"),
+            "level": metric.get("level"),
+            "score": metric.get("score"),
+            "max_score": metric.get("max_score", 25),
+            "feature_id": metric.get("feature_id"),
+            "input_statistic": metric.get("input_statistic"),
+            "aggregate_value": metric.get("aggregate_value"),
+            "valid_event_count": metric.get("valid_event_count"),
+            "required_event_count": metric.get("required_event_count"),
+            "config_version": metric.get("config_version"),
+            "calibration_version": metric.get("calibration_version"),
+            "calibration_status": metric.get("calibration_status"),
+        },
+        explanation=metric.get(
+            "explanation",
+            "Motion Quality 尚未完成評估。",
+        ),
+        limitations=list(metric.get("limitations") or []),
+    )
+
+
 COACH_RULES = (
     evaluate_eight_event_completion,
     evaluate_return_to_center,
     evaluate_direction_coverage,
     evaluate_motion_continuity,
     evaluate_recovery_speed,
+    evaluate_body_stability,
+    evaluate_motion_quality,
 )

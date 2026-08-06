@@ -47,7 +47,7 @@ AI Coach evaluation with radar visualization.
 
 ## Architecture
 
-![](docs/images/architecture.png)
+![](docs/Architecture/architecture.png)
 
 ---
 
@@ -182,31 +182,41 @@ http://127.0.0.1:8080
 
 # Current Version
 
-**v1.0 MVP**
+**v1.0.0-L3 Release Candidate**
 
 Implemented
 
-- REST API
-- Motion Pipeline
-- Footwork Assessment
-- Coach Engine
-- Interactive Report
-- Swagger API
-- Web Frontend
+- REST API and web frontend
+- Pose estimation and footwork event detection
+- Motion Feature Library
+- Calibration Engine
+- Movement Completion assessment
+- Recovery Speed assessment
+- Direction Coverage review metric
+- Body Stability assessment
+- Motion Quality assessment
+- Explainable Coach feedback and training suggestions
+- Stable L3 Summary and Report contract
+
+## Current Assessment Support
+
+- ✅ Footwork Motion Assessment
+- ⏳ Serve Assessment — planned after L3 freeze
+- ⏳ Clear Assessment — planned after L3 freeze
+
+The current L3 release evaluates general motion quality. Badminton-specific technique rules such as split step, lead foot, and extra-step detection remain L4 work.
 
 ---
 
-# Future Roadmap
+# Development Roadmap
 
-- Body Stability Score
-- Recovery Speed Score
-- Split Step Detection
-- Extra Steps Detection
-- Coach Similarity
-- Multi-player Analysis
-- Cloud Deployment
-- Authentication
-- History Dashboard
+- **L1 Motion Capture:** complete
+- **L2 Motion Engine:** complete
+- **L3 Motion Assessment Platform:** release candidate
+- **L4 Sport-specific Technique Rules:** planned
+- **Future Assessment Modules:** Serve and Clear
+
+Release details: [`RELEASE_L3.md`](RELEASE_L3.md)
 
 ---
 

@@ -1,7 +1,10 @@
 from dataclasses import dataclass
 import unittest
 
-from src.features.motion_features import MotionFeatureTracker
+from src.features.motion_features import (
+    MotionFeatureTracker,
+    _normalize_undirected_line_angle,
+)
 
 
 @dataclass
@@ -45,6 +48,39 @@ class MotionFeatureTrackerTests(unittest.TestCase):
         self.assertEqual(result["valid_sample_count"], 2)
         self.assertIn("MF001_shoulder_tilt", result["features"])
         self.assertIn("MF003_torso_lean", result["features"])
+
+    def test_normalizes_angle_wraparound_for_undirected_lines(self):
+        self.assertAlmostEqual(_normalize_undirected_line_angle(179.0), -1.0)
+        self.assertAlmostEqual(_normalize_undirected_line_angle(-179.0), 1.0)
+        self.assertAlmostEqual(_normalize_undirected_line_angle(-160.0), 20.0)
+        self.assertAlmostEqual(_normalize_undirected_line_angle(170.0), -10.0)
+        self.assertAlmostEqual(_normalize_undirected_line_angle(90.0), -90.0)
+
+    def test_reversed_landmark_order_keeps_same_physical_tilt(self):
+        tracker = MotionFeatureTracker()
+        landmarks = self._landmarks()
+
+        # Reverse shoulder and hip point ordering. Raw atan2 angles move close
+        # to +/-180 degrees, but normalized tilt must remain near the original.
+        landmarks[11], landmarks[12] = landmarks[12], landmarks[11]
+        landmarks[23], landmarks[24] = landmarks[24], landmarks[23]
+
+        tracker.observe(
+            event_id=3,
+            previous_state="READY",
+            current_state="MOVE",
+            landmarks=landmarks,
+            timestamp_ms=1000,
+        )
+        result = tracker.finalize_event(3)
+
+        shoulder = result["features"]["MF001_shoulder_tilt"]
+        hip = result["features"]["MF002_hip_tilt"]
+
+        self.assertLess(abs(shoulder["mean_degrees"]), 10.0)
+        self.assertLess(abs(shoulder["mean_absolute_degrees"]), 10.0)
+        self.assertAlmostEqual(hip["mean_degrees"], 0.0, places=4)
+        self.assertAlmostEqual(hip["mean_absolute_degrees"], 0.0, places=4)
 
     def test_low_visibility_is_not_used_as_valid_sample(self):
         tracker = MotionFeatureTracker(min_visibility=0.5)

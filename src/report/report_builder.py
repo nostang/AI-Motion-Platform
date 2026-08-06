@@ -12,13 +12,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Optional
 
+from src.report.summary_builder import SummaryBuilder
 
-REPORT_VERSION = "1.2"
+
+REPORT_VERSION = "2.0"
 RADAR_LABELS = [
     "Movement Completion",
     "Recovery Speed",
     "Direction Coverage",
-    "Footwork Technique",
+    "Motion Quality",
     "Body Stability",
 ]
 
@@ -53,12 +55,15 @@ class ReportBuilder:
         direction_rule = rules.get("CR003", {})
         continuity_rule = rules.get("CR004", {})
         recovery_rule = rules.get("CR005", {})
+        body_stability_rule = rules.get("CR006", {})
+        motion_quality_rule = rules.get("CR007", {})
 
         movement_score = self._pass_only_score(completion_rule)
         recovery_score = self._rule_numeric_score(recovery_rule)
         direction_score = self._rule_numeric_score(direction_rule)
-        technique_score = self._numeric_or_none(
-            coach_evaluation.get("technique_score")
+        motion_quality_score = self._rule_numeric_score(motion_quality_rule)
+        body_stability_score = self._rule_numeric_score(
+            body_stability_rule
         )
 
         skill_score = {
@@ -72,15 +77,19 @@ class ReportBuilder:
                 max_score=25,
                 source_rule_id="CR005" if recovery_score is not None else None,
             ),
-            "footwork_technique": self._score_item(
-                score=technique_score,
+            "motion_quality": self._score_item(
+                score=motion_quality_score,
                 max_score=25,
-                source_rule_id=None,
+                source_rule_id=(
+                    "CR007" if motion_quality_score is not None else None
+                ),
             ),
             "body_stability": self._score_item(
-                score=None,
+                score=body_stability_score,
                 max_score=25,
-                source_rule_id=None,
+                source_rule_id=(
+                    "CR006" if body_stability_score is not None else None
+                ),
             ),
         }
 
@@ -96,12 +105,24 @@ class ReportBuilder:
             skill_score["movement_completion"]["score"],
             skill_score["recovery_speed"]["score"],
             assessment_metrics["direction_coverage"]["score"],
-            skill_score["footwork_technique"]["score"],
+            skill_score["motion_quality"]["score"],
             skill_score["body_stability"]["score"],
         ]
 
         feedback = self._build_feedback(rules)
-        training_suggestions = self._build_training_suggestions(feedback)
+        feature_feedback = self._normalize_feature_feedback(
+            coach_evaluation.get("feature_feedback", [])
+        )
+        training_suggestions = self._build_training_suggestions(
+            feedback,
+            feature_feedback,
+        )
+        result_summary = SummaryBuilder().build(
+            assessment=assessment,
+            coach_evaluation=coach_evaluation,
+            skill_score=skill_score,
+            assessment_metrics=assessment_metrics,
+        )
 
         return {
             "assessment_id": assessment["assessment_id"],
@@ -123,8 +144,13 @@ class ReportBuilder:
                 "recovery_time": self._recovery_observation(recovery_rule),
                 "footwork_correct": self._pass_fail_or_none(direction_rule),
                 "extra_steps": None,
-                "body_stable": None,
+                "body_stable": self._body_stability_observation(
+                    body_stability_rule
+                ),
                 "motion_continuous": self._pass_fail_or_none(continuity_rule),
+                "motion_quality": self._motion_quality_observation(
+                    motion_quality_rule
+                ),
                 "direction_coverage_complete": assessment.get(
                     "direction_coverage_complete"
                 ),
@@ -135,7 +161,9 @@ class ReportBuilder:
             },
             "skill_score": skill_score,
             "assessment_metrics": assessment_metrics,
+            "result_summary": result_summary,
             "feedback": feedback,
+            "feature_feedback": feature_feedback,
             "training_suggestions": training_suggestions,
             "radar_chart": {
                 "labels": list(RADAR_LABELS),
@@ -274,6 +302,39 @@ class ReportBuilder:
         }
 
     @staticmethod
+    def _body_stability_observation(
+        rule: Mapping[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        evidence = rule.get("evidence") or {}
+        if rule.get("result") == "NOT_EVALUATED":
+            return None
+        return {
+            "level": evidence.get("level"),
+            "score": evidence.get("score"),
+            "max_score": evidence.get("max_score", 25),
+            "feature_levels": list(evidence.get("feature_levels") or []),
+            "config_version": evidence.get("config_version"),
+            "calibration_version": evidence.get("calibration_version"),
+        }
+
+    @staticmethod
+    def _motion_quality_observation(
+        rule: Mapping[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        evidence = rule.get("evidence") or {}
+        if rule.get("result") == "NOT_EVALUATED":
+            return None
+        return {
+            "level": evidence.get("level"),
+            "score": evidence.get("score"),
+            "max_score": evidence.get("max_score", 25),
+            "aggregate_value": evidence.get("aggregate_value"),
+            "feature_id": evidence.get("feature_id"),
+            "config_version": evidence.get("config_version"),
+            "calibration_version": evidence.get("calibration_version"),
+        }
+
+    @staticmethod
     def _pass_only_score(rule: Mapping[str, Any]) -> Optional[int]:
         if rule.get("result") == "PASS":
             return 25
@@ -350,6 +411,8 @@ class ReportBuilder:
 
         return_center = rules.get("CR002", {})
         recovery_speed = rules.get("CR005", {})
+        body_stability = rules.get("CR006", {})
+        motion_quality = rules.get("CR007", {})
         if return_center.get("result") == "FAIL":
             feedback.append(
                 {
@@ -377,11 +440,69 @@ class ReportBuilder:
                 }
             )
 
+        if body_stability.get("result") == "NEEDS_REVIEW":
+            evidence = body_stability.get("evidence") or {}
+            level = evidence.get("level")
+            feedback.append(
+                {
+                    "code": "F003",
+                    "message": (
+                        f"Body Stability 評估為 {level}，"
+                        "建議在移動與回位時維持核心穩定。"
+                        if level
+                        else "身體穩定度需要進一步確認。"
+                    ),
+                    "source_rule_id": "CR006",
+                }
+            )
+
+        if motion_quality.get("result") == "NEEDS_REVIEW":
+            evidence = motion_quality.get("evidence") or {}
+            level = evidence.get("level")
+            feedback.append(
+                {
+                    "code": "F004",
+                    "message": (
+                        f"Motion Quality 評估為 {level}，建議以較慢速度練習穩定動作節奏。"
+                        if level
+                        else "動作品質需要進一步確認。"
+                    ),
+                    "source_rule_id": "CR007",
+                }
+            )
+
         return feedback
+
+    @staticmethod
+    def _normalize_feature_feedback(
+        feature_feedback: Iterable[Mapping[str, Any]],
+    ) -> list[Dict[str, Any]]:
+        normalized: list[Dict[str, Any]] = []
+        for item in feature_feedback:
+            if not isinstance(item, Mapping):
+                continue
+            normalized.append({
+                "coach_id": item.get("coach_id"),
+                "feature_id": item.get("feature_id"),
+                "display_name": item.get("display_name"),
+                "level": item.get("level"),
+                "aggregate_value": item.get("aggregate_value"),
+                "unit": item.get("unit"),
+                "input_statistic": item.get("input_statistic"),
+                "valid_event_count": item.get("valid_event_count"),
+                "message": item.get("message"),
+                "source_metric_id": item.get("source_metric_id"),
+                "source_rule_id": item.get("source_rule_id"),
+                "feature_coach_version": item.get("feature_coach_version"),
+                "provisional": bool(item.get("provisional", True)),
+                "training_suggestion": item.get("training_suggestion"),
+            })
+        return normalized
 
     @staticmethod
     def _build_training_suggestions(
         feedback: Iterable[Mapping[str, Any]],
+        feature_feedback: Iterable[Mapping[str, Any]] = (),
     ) -> list[Dict[str, Any]]:
         codes = {item.get("code") for item in feedback}
         suggestions: list[Dict[str, Any]] = []
@@ -409,6 +530,44 @@ class ReportBuilder:
                     "source_feedback_code": "F002",
                 }
             )
+
+        if "F003" in codes:
+            suggestions.append(
+                {
+                    "code": "T003",
+                    "title": "核心穩定米字步",
+                    "description": "以低速完成米字步，維持肩線、髖線與軀幹傾斜穩定，再逐步增加速度。",
+                    "sets": 3,
+                    "repetitions_per_set": 8,
+                    "source_feedback_code": "F003",
+                }
+            )
+
+        if "F004" in codes:
+            suggestions.append(
+                {
+                    "code": "T007",
+                    "title": "動作節奏穩定練習",
+                    "description": "以低速完成動作，維持連續的位移與速度變化，再逐步增加速度。",
+                    "sets": 3,
+                    "repetitions_per_set": 8,
+                    "source_feedback_code": "F004",
+                }
+            )
+
+        existing_codes = {item.get("code") for item in suggestions}
+        for item in feature_feedback:
+            suggestion = item.get("training_suggestion")
+            if not isinstance(suggestion, Mapping):
+                continue
+            code = suggestion.get("code")
+            if not code or code in existing_codes:
+                continue
+            normalized = dict(suggestion)
+            normalized["source_feature_id"] = item.get("feature_id")
+            normalized["source_coach_id"] = item.get("coach_id")
+            suggestions.append(normalized)
+            existing_codes.add(code)
 
         return suggestions
 
