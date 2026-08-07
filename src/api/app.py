@@ -27,6 +27,7 @@ from src.report.competency_profile_report import (
     build_competency_profile_report,
 )
 from src.report.user_result_builder import build_user_result
+from src.report.summary_result_builder import build_summary_result
 from src.config import PROJECT_ROOT
 from src.motion import registered_motion_types
 
@@ -70,7 +71,7 @@ progress_engine = ProgressEngine()
 
 app = FastAPI(
     title="AI Motion API",
-    version="2.3.0",
+    version="2.4.0",
 )
 
 app.add_middleware(
@@ -586,6 +587,29 @@ def list_user_motion_assessments(
             "items": analyses,
         }
     )
+
+
+@app.get(
+    f"{API_PREFIX}/users/{{user_id}}/summary"
+)
+def get_user_summary(
+    user_id: int,
+):
+    if not repository.user_exists(user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": user_id},
+        )
+
+    latest = repository.get_latest_required_motions(
+        user_id
+    )
+
+    summary = build_summary_result(latest)
+
+    return envelope(summary)
 
 
 @app.get(
