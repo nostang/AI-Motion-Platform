@@ -28,6 +28,7 @@ from src.report.competency_profile_report import (
 )
 from src.report.user_result_builder import build_user_result
 from src.report.summary_result_builder import build_summary_result
+from src.report.summary_progress_builder import build_summary_progress
 from src.config import PROJECT_ROOT
 from src.motion import registered_motion_types
 
@@ -71,7 +72,7 @@ progress_engine = ProgressEngine()
 
 app = FastAPI(
     title="AI Motion API",
-    version="2.4.0",
+    version="2.5.0",
 )
 
 app.add_middleware(
@@ -607,7 +608,27 @@ def get_user_summary(
         user_id
     )
 
-    summary = build_summary_result(latest)
+    histories = {
+        motion_type: repository.get_motion_history(
+            user_id,
+            motion_type,
+        )
+        for motion_type in (
+            "footwork",
+            "serve",
+            "clear",
+        )
+    }
+
+    progress = build_summary_progress(
+        histories,
+        progress_engine,
+    )
+
+    summary = build_summary_result(
+        latest,
+        progress=progress,
+    )
 
     return envelope(summary)
 

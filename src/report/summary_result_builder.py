@@ -22,6 +22,7 @@ MOTION_ORDER = ("footwork", "serve", "clear")
 
 def build_summary_result(
     latest: Mapping[str, Mapping[str, Any]],
+    progress: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build a compact summary from latest repository motion records."""
 
@@ -47,16 +48,29 @@ def build_summary_result(
         result = build_user_result(public_report)
         score = result.get("score")
 
-        motions.append(
-            {
-                "assessment_id": result.get("assessment_id"),
-                "motion_type": motion_type,
-                "label": MOTION_LABELS[motion_type],
-                "score": score,
-                "max_score": result.get("max_score", 100.0),
-                "level": result.get("level"),
-            }
-        )
+        motion_item = {
+            "assessment_id": result.get("assessment_id"),
+            "motion_type": motion_type,
+            "label": MOTION_LABELS[motion_type],
+            "score": score,
+            "max_score": result.get("max_score", 100.0),
+            "level": result.get("level"),
+        }
+
+        if progress is not None:
+            motion_item["progress"] = dict(
+                progress.get(
+                    motion_type,
+                    {
+                        "status": "NOT_READY",
+                        "previous_score": None,
+                        "change": None,
+                        "direction": None,
+                    },
+                )
+            )
+
+        motions.append(motion_item)
 
         if score is not None:
             radar_labels.append(MOTION_LABELS[motion_type])
