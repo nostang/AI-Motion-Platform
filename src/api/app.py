@@ -26,6 +26,7 @@ from src.competency.competency_profile import build_competency_profile
 from src.report.competency_profile_report import (
     build_competency_profile_report,
 )
+from src.report.user_result_builder import build_user_result
 from src.config import PROJECT_ROOT
 from src.motion import registered_motion_types
 
@@ -69,7 +70,7 @@ progress_engine = ProgressEngine()
 
 app = FastAPI(
     title="AI Motion API",
-    version="2.2.0",
+    version="2.3.0",
 )
 
 app.add_middleware(
@@ -497,6 +498,64 @@ def get_motion_assessment_report(
     )
 
     return envelope(report)
+
+
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/result"
+)
+def get_motion_assessment_result(
+    assessment_id: str,
+):
+    task = repository.get_analysis(
+        assessment_id
+    )
+
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+
+    if task["status"] != "completed":
+        return failure(
+            409,
+            "RESULT_NOT_READY",
+            "分析尚未完成，暫時無法取得結果。",
+            {
+                "assessment_id": assessment_id,
+                "status": task["status"],
+            },
+        )
+
+    report = repository.get_report(
+        assessment_id,
+        analysis_type=task.get(
+            "assessment_type"
+        ),
+    )
+
+    if report is None:
+        return failure(
+            500,
+            "ANALYSIS_FAILED",
+            "分析完成但找不到 Report JSON。",
+            {
+                "assessment_id": assessment_id,
+                "assessment_type": task.get(
+                    "assessment_type"
+                ),
+            },
+        )
+
+    result = build_user_result(report)
+
+    # Public/Web API always uses the external ma_ assessment ID.
+    result["assessment_id"] = assessment_id
+
+    return envelope(result)
 
 
 @app.get(
