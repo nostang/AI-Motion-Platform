@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "rule_version": "competency-engine-rule-v1.0",
+  "status": "PROVISIONAL",
+  "description": "Competency Profile V1 interpretation rules. Does not create new scores or badminton levels.",
+  "interpretation": {
+    "strength_min_score": 80.0,
+    "priority_score_below": 80.0,
+    "needs_review_first": true
+  },
+  "mapping": {
+    "enabled": false,
+    "mapping_version": null,
+    "description": "Disabled until an agreed badminton grading-system mapping contract exists."
+  },
+  "aggregation": {
+    "cross_motion_overall_score": false
+  }
+}

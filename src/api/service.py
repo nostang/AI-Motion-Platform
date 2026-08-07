@@ -1,10 +1,10 @@
-"""Application service that executes the existing AI Motion pipelines."""
+"""Application service for AI Motion pipelines."""
 
 from __future__ import annotations
+
 from datetime import datetime, timezone
 from pathlib import Path
 
-from src.api.repository import AssessmentRepository
 from src.config import MODEL_PATH
 from src.motion import MotionContext, get_motion_analyzer
 
@@ -14,24 +14,24 @@ def utc_now() -> str:
 
 
 class MotionAssessmentService:
-    def __init__(self, repository: AssessmentRepository) -> None:
+    def __init__(self, repository) -> None:
         self.repository = repository
 
     def process(self, assessment_id: str) -> None:
-        task = self.repository.get(assessment_id)
+        task = self.repository.get_analysis(assessment_id)
         if task is None:
             return
 
-        assessment_type = str(task.get("assessment_type", "")).strip().lower()
+        assessment_type = str(task["assessment_type"]).strip().lower()
         output_dir = self.repository.task_dir(assessment_id) / "output"
 
-        task.update(
-            status="processing",
+        self.repository.update_status(
+            assessment_id,
+            processing_status="processing",
             progress=10,
             current_stage="pose_detection",
             updated_at=utc_now(),
         )
-        self.repository.save(task)
 
         try:
             analyzer = get_motion_analyzer(assessment_type)
@@ -47,30 +47,27 @@ class MotionAssessmentService:
             result = analyzer.run(context)
             report = result["analysis_report"]
 
-            task.update(
-                status="completed",
+            self.repository.save_report(
+                assessment_id,
+                report,
+            )
+
+            self.repository.update_status(
+                assessment_id,
+                processing_status="completed",
                 progress=100,
                 current_stage="completed",
                 updated_at=utc_now(),
                 completed_at=utc_now(),
-                engine_assessment_id=report.get("assessment_id"),
-                report_filename=Path(
-                    result["artifact_paths"]["analysis_report"]
-                ).name,
-                failure=None,
+                error_message=None,
             )
         except Exception as exc:
-            task.update(
-                status="failed",
+            self.repository.update_status(
+                assessment_id,
+                processing_status="failed",
                 progress=100,
                 current_stage="analysis",
                 updated_at=utc_now(),
                 completed_at=utc_now(),
-                failure={
-                    "code": "ANALYSIS_FAILED",
-                    "message": str(exc),
-                    "retryable": True,
-                },
+                error_message=str(exc),
             )
-
-        self.repository.save(task)

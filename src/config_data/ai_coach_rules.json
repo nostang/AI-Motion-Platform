@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "rule_version": "ai-coach-rule-v1.0",
+  "status": "PROVISIONAL",
+  "training_recommendations": {
+    "footwork": {
+      "priority_message": "優先加強步法穩定、回位與動作一致性。",
+      "maintain_message": "維持目前步法節奏，持續強化穩定與回位品質。"
+    },
+    "serve": {
+      "priority_message": "優先加強發球穩定性與揮拍流暢度。",
+      "maintain_message": "維持目前發球完整度，持續提升穩定與流暢性。"
+    },
+    "clear": {
+      "priority_message": "優先改善高遠球動作節奏、重心轉移與揮拍流暢度。",
+      "maintain_message": "高遠球目前為優勢項目，可維持技術並持續提升穩定性。"
+    }
+  },
+  "suggested_playing_level": {
+    "enabled": false,
+    "status_when_disabled": "INSUFFICIENT_EVIDENCE",
+    "reason": "Current V1 contains isolated motion assessments only and does not include rally or match competency evidence."
+  },
+  "confidence": {
+    "enabled": false,
+    "reason": "Playing-level confidence requires a future evidence-coverage contract."
+  },
+  "limitations": [
+    "V1 coaching recommendations use existing Competency Profile and Competency Interpretation only.",
+    "V1 does not re-score motions or calculate a cross-motion overall score.",
+    "V1 does not produce an official or suggested playing level from isolated motion assessments.",
+    "Future playing-level recommendations require rally or match competency evidence.",
+    "Video evidence may be affected by camera angle, lighting, occlusion, blur, frame loss, and incomplete skill coverage."
+  ]
+}

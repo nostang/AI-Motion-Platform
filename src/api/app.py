@@ -1,26 +1,34 @@
-"""FastAPI adapter for AI Motion API Contract v1.2."""
+"""FastAPI adapter for AI Motion API Contract v1.9."""
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 from uuid import uuid4
 
 import cv2
+from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from src.api.repository import AssessmentRepository
+from src.api.dashboard_service import build_user_dashboard
+from src.api.postgres_repository import PostgresVideoAnalysisRepository
 from src.api.service import MotionAssessmentService
+from src.coach.ai_coach_engine import AICoachEngine
+from src.competency.competency_engine import CompetencyEngine
 from src.competency.competency_profile import build_competency_profile
 from src.report.competency_profile_report import (
     build_competency_profile_report,
 )
 from src.config import PROJECT_ROOT
 from src.motion import registered_motion_types
+
+
+load_dotenv(PROJECT_ROOT / ".env")
 
 
 API_PREFIX = "/api/v1"
@@ -30,11 +38,31 @@ MAX_VIDEO_BYTES = 100 * 1024 * 1024
 MIN_VIDEO_SECONDS = 3.0
 MAX_VIDEO_SECONDS = 30.0
 
-repository = AssessmentRepository(
-    PROJECT_ROOT / "api_data" / "motion_assessments"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL 未設定。"
+        "例如：postgresql://ivesmi@localhost:5432/ai_motion"
+    )
+
+repository = PostgresVideoAnalysisRepository(
+    DATABASE_URL,
+    PROJECT_ROOT / "api_data" / "motion_assessments",
 )
 service = MotionAssessmentService(repository)
-app = FastAPI(title="AI Motion API", version="1.3.0")
+
+competency_engine = CompetencyEngine.from_file(
+    PROJECT_ROOT / "src/config_data/competency_engine_rules.json"
+)
+
+ai_coach_engine = AICoachEngine.from_file(
+    PROJECT_ROOT / "src/config_data/ai_coach_rules.json"
+)
+
+app = FastAPI(
+    title="AI Motion API",
+    version="2.0.0",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,7 +95,11 @@ async def request_validation_error_handler(
     }
 
     if "video" in missing_fields:
-        return failure(400, "VIDEO_REQUIRED", "未提供影片檔案。")
+        return failure(
+            400,
+            "VIDEO_REQUIRED",
+            "未提供影片檔案。",
+        )
 
     return failure(
         400,
@@ -78,10 +110,19 @@ async def request_validation_error_handler(
 
 
 def envelope(data=None, error=None, success=True):
-    return {"success": success, "data": data, "error": error}
+    return {
+        "success": success,
+        "data": data,
+        "error": error,
+    }
 
 
-def failure(status: int, code: str, message: str, details=None):
+def failure(
+    status: int,
+    code: str,
+    message: str,
+    details=None,
+):
     return JSONResponse(
         status_code=status,
         content=envelope(
@@ -102,11 +143,14 @@ def utc_now() -> str:
 
 def _video_duration_seconds(path: Path) -> float:
     cap = cv2.VideoCapture(str(path))
+
     try:
         if not cap.isOpened():
             return 0.0
+
         fps = cap.get(cv2.CAP_PROP_FPS)
         frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+
         return frames / fps if fps > 0 else 0.0
     finally:
         cap.release()
@@ -116,7 +160,7 @@ def _public_report(
     assessment_id: str,
     expected_type: str,
 ) -> tuple[dict | None, JSONResponse | None]:
-    task = repository.get(assessment_id)
+    task = repository.get_analysis(assessment_id)
 
     if task is None:
         return None, failure(
@@ -130,6 +174,7 @@ def _public_report(
         )
 
     actual_type = task.get("assessment_type")
+
     if actual_type != expected_type:
         return None, failure(
             409,
@@ -154,10 +199,11 @@ def _public_report(
             },
         )
 
-    report = repository.report(
+    report = repository.get_report(
         assessment_id,
-        assessment_type=actual_type,
+        analysis_type=actual_type,
     )
+
     if report is None:
         return None, failure(
             500,
@@ -174,18 +220,31 @@ def _public_report(
         "engine_assessment_id"
     ] = public_report.get("assessment_id")
     public_report["assessment_id"] = assessment_id
+
     return public_report, None
 
 
-@app.post(f"{API_PREFIX}/motion-assessments", status_code=202)
+@app.post(
+    f"{API_PREFIX}/motion-assessments",
+    status_code=202,
+)
 async def create_motion_assessment(
     background_tasks: BackgroundTasks,
     assessment_type: str = Form(...),
+    user_id: int = Form(...),
     video: UploadFile = File(...),
     client_recorded_at: str | None = Form(None),
     notes: str | None = Form(None),
 ):
     normalized_type = assessment_type.strip().lower()
+
+    if not repository.user_exists(user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": user_id},
+        )
 
     if normalized_type not in SUPPORTED_ASSESSMENT_TYPES:
         return failure(
@@ -194,11 +253,16 @@ async def create_motion_assessment(
             "不支援指定的 assessment_type。",
             {
                 "received": assessment_type,
-                "supported": sorted(SUPPORTED_ASSESSMENT_TYPES),
+                "supported": sorted(
+                    SUPPORTED_ASSESSMENT_TYPES
+                ),
             },
         )
 
-    suffix = Path(video.filename or "").suffix.lower()
+    suffix = Path(
+        video.filename or ""
+    ).suffix.lower()
+
     if suffix not in SUPPORTED_EXTENSIONS:
         return failure(
             400,
@@ -207,30 +271,46 @@ async def create_motion_assessment(
         )
 
     assessment_id = f"ma_{uuid4().hex[:16]}"
-    directory = repository.task_dir(assessment_id)
-    directory.mkdir(parents=True, exist_ok=True)
+    directory = repository.task_dir(
+        assessment_id
+    )
+    directory.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
 
     video_path = directory / f"source{suffix}"
     size = 0
 
     with video_path.open("wb") as target:
-        while chunk := await video.read(1024 * 1024):
+        while chunk := await video.read(
+            1024 * 1024
+        ):
             size += len(chunk)
+
             if size > MAX_VIDEO_BYTES:
                 target.close()
-                video_path.unlink(missing_ok=True)
+                video_path.unlink(
+                    missing_ok=True
+                )
+
                 return failure(
                     413,
                     "VIDEO_TOO_LARGE",
                     "影片檔案不可超過 100 MB。",
                 )
+
             target.write(chunk)
 
     await video.close()
-    duration = _video_duration_seconds(video_path)
+
+    duration = _video_duration_seconds(
+        video_path
+    )
 
     if duration <= 0:
         video_path.unlink(missing_ok=True)
+
         return failure(
             400,
             "INVALID_VIDEO_FORMAT",
@@ -239,42 +319,52 @@ async def create_motion_assessment(
 
     if duration > MAX_VIDEO_SECONDS:
         video_path.unlink(missing_ok=True)
+
         return failure(
             400,
             "VIDEO_TOO_LONG",
             "影片不可超過 30 秒。",
-            {"duration_seconds": round(duration, 3)},
+            {
+                "duration_seconds": round(
+                    duration,
+                    3,
+                )
+            },
         )
 
     if duration < MIN_VIDEO_SECONDS:
         video_path.unlink(missing_ok=True)
+
         return failure(
             422,
             "VIDEO_DURATION_INVALID",
             "影片長度至少需要 3 秒。",
-            {"duration_seconds": round(duration, 3)},
+            {
+                "duration_seconds": round(
+                    duration,
+                    3,
+                )
+            },
         )
 
     now = utc_now()
-    task = {
-        "assessment_id": assessment_id,
-        "assessment_type": normalized_type,
-        "status": "uploaded",
-        "progress": 0,
-        "current_stage": "uploaded",
-        "created_at": now,
-        "updated_at": now,
-        "completed_at": None,
-        "client_recorded_at": client_recorded_at,
-        "notes": notes,
-        "original_filename": video.filename,
-        "video_path": str(video_path),
-        "video_duration_seconds": round(duration, 3),
-        "failure": None,
-    }
 
-    repository.save(task)
-    background_tasks.add_task(service.process, assessment_id)
+    repository.create_analysis(
+        user_id=user_id,
+        external_analysis_id=assessment_id,
+        video_url=str(video_path),
+        analysis_type=normalized_type,
+        processing_status="uploaded",
+        progress=0,
+        current_stage="uploaded",
+        created_at=now,
+        updated_at=now,
+    )
+
+    background_tasks.add_task(
+        service.process,
+        assessment_id,
+    )
 
     return envelope(
         {
@@ -282,17 +372,28 @@ async def create_motion_assessment(
             "assessment_type": normalized_type,
             "status": "uploaded",
             "created_at": now,
-            "status_url": f"{API_PREFIX}/motion-assessments/{assessment_id}",
+            "status_url": (
+                f"{API_PREFIX}/motion-assessments/"
+                f"{assessment_id}"
+            ),
             "report_url": (
-                f"{API_PREFIX}/motion-assessments/{assessment_id}/report"
+                f"{API_PREFIX}/motion-assessments/"
+                f"{assessment_id}/report"
             ),
         }
     )
 
 
-@app.get(f"{API_PREFIX}/motion-assessments/{{assessment_id}}")
-def get_motion_assessment(assessment_id: str):
-    task = repository.get(assessment_id)
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}"
+)
+def get_motion_assessment(
+    assessment_id: str,
+):
+    task = repository.get_analysis(
+        assessment_id
+    )
 
     if task is None:
         return failure(
@@ -319,15 +420,23 @@ def get_motion_assessment(assessment_id: str):
 
     if task["status"] == "completed":
         data["report_url"] = (
-            f"{API_PREFIX}/motion-assessments/{assessment_id}/report"
+            f"{API_PREFIX}/motion-assessments/"
+            f"{assessment_id}/report"
         )
 
     return envelope(data)
 
 
-@app.get(f"{API_PREFIX}/motion-assessments/{{assessment_id}}/report")
-def get_motion_assessment_report(assessment_id: str):
-    task = repository.get(assessment_id)
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/report"
+)
+def get_motion_assessment_report(
+    assessment_id: str,
+):
+    task = repository.get_analysis(
+        assessment_id
+    )
 
     if task is None:
         return failure(
@@ -348,9 +457,11 @@ def get_motion_assessment_report(assessment_id: str):
             },
         )
 
-    report = repository.report(
+    report = repository.get_report(
         assessment_id,
-        assessment_type=task.get("assessment_type"),
+        analysis_type=task.get(
+            "assessment_type"
+        ),
     )
 
     if report is None:
@@ -360,16 +471,83 @@ def get_motion_assessment_report(assessment_id: str):
             "分析完成但找不到 Report JSON。",
             {
                 "assessment_id": assessment_id,
-                "assessment_type": task.get("assessment_type"),
+                "assessment_type": task.get(
+                    "assessment_type"
+                ),
             },
         )
 
     report = dict(report)
-    report.setdefault("meta", {})["engine_assessment_id"] = report.get(
-        "assessment_id"
+    report.setdefault(
+        "meta",
+        {},
+    )["engine_assessment_id"] = (
+        report.get("assessment_id")
     )
-    report["assessment_id"] = assessment_id
+    report["assessment_id"] = (
+        assessment_id
+    )
+
     return envelope(report)
+
+
+@app.get(
+    f"{API_PREFIX}/users/{{user_id}}/"
+    "motion-assessments"
+)
+def list_user_motion_assessments(
+    user_id: int,
+    limit: int = 20,
+):
+    if not repository.user_exists(user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": user_id},
+        )
+
+    analyses = repository.list_by_user(
+        user_id,
+        limit=limit,
+    )
+
+    return envelope(
+        {
+            "user_id": user_id,
+            "count": len(analyses),
+            "items": analyses,
+        }
+    )
+
+
+@app.get(
+    f"{API_PREFIX}/users/{{user_id}}/"
+    "dashboard"
+)
+def get_user_dashboard(
+    user_id: int,
+    limit: int = 20,
+):
+    if not repository.user_exists(user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": user_id},
+        )
+
+    analyses = repository.list_by_user(
+        user_id,
+        limit=limit,
+    )
+
+    dashboard = build_user_dashboard(
+        user_id=user_id,
+        analyses=analyses,
+    )
+
+    return envelope(dashboard)
 
 
 def _build_profile_from_request(
@@ -402,26 +580,206 @@ def _build_profile_from_request(
         serve_report=serve_report,
         clear_report=clear_report,
     )
+
     return profile, None
 
 
-@app.post(f"{API_PREFIX}/competency-profiles")
+@app.post(
+    f"{API_PREFIX}/competency-profiles"
+)
 def create_competency_profile(
     request: CompetencyProfileRequest,
 ):
-    profile, error = _build_profile_from_request(request)
+    profile, error = (
+        _build_profile_from_request(request)
+    )
+
     if error is not None:
         return error
+
     return envelope(profile)
 
 
-@app.post(f"{API_PREFIX}/competency-profile-reports")
+@app.post(
+    f"{API_PREFIX}/competency-profile-reports"
+)
 def create_competency_profile_report(
     request: CompetencyProfileRequest,
 ):
-    profile, error = _build_profile_from_request(request)
+    profile, error = (
+        _build_profile_from_request(request)
+    )
+
     if error is not None:
         return error
 
-    report = build_competency_profile_report(profile)
+    report = build_competency_profile_report(
+        profile
+    )
+
     return envelope(report)
+
+
+@app.post(
+    f"{API_PREFIX}/users/{{user_id}}/"
+    "competency"
+)
+def create_user_competency(
+    user_id: int,
+):
+    if not repository.user_exists(user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": user_id},
+        )
+
+    latest = (
+        repository.get_latest_required_motions(
+            user_id
+        )
+    )
+
+    required = {
+        "footwork",
+        "serve",
+        "clear",
+    }
+
+    missing = sorted(
+        required - set(latest)
+    )
+
+    if missing:
+        return failure(
+            409,
+            "COMPETENCY_NOT_READY",
+            "尚未完成建立能力檔案所需的全部測驗。",
+            {
+                "user_id": user_id,
+                "missing_motions": missing,
+                "available_motions": sorted(
+                    latest
+                ),
+            },
+        )
+
+    reports = {}
+
+    for motion_type in required:
+        item = latest[motion_type]
+        report = dict(item["report"])
+
+        report.setdefault(
+            "meta",
+            {},
+        )["engine_assessment_id"] = (
+            report.get("assessment_id")
+        )
+
+        report["assessment_id"] = (
+            item["assessment_id"]
+        )
+
+        reports[motion_type] = report
+
+    profile = build_competency_profile(
+        player_id=str(user_id),
+        footwork_report=reports["footwork"],
+        serve_report=reports["serve"],
+        clear_report=reports["clear"],
+    )
+
+    interpretation = (
+        competency_engine.evaluate(profile)
+    )
+
+    return envelope(
+        {
+            "profile": profile,
+            "interpretation": interpretation,
+        }
+    )
+
+@app.post(
+    f"{API_PREFIX}/users/{{user_id}}/coach"
+)
+def create_user_coach(
+    user_id: int,
+):
+    if not repository.user_exists(user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": user_id},
+        )
+
+    latest = (
+        repository.get_latest_required_motions(
+            user_id
+        )
+    )
+
+    required = {
+        "footwork",
+        "serve",
+        "clear",
+    }
+
+    missing = sorted(
+        required - set(latest)
+    )
+
+    if missing:
+        return failure(
+            409,
+            "COACH_NOT_READY",
+            "尚未完成產生 AI Coach 建議所需的全部測驗。",
+            {
+                "user_id": user_id,
+                "missing_motions": missing,
+                "available_motions": sorted(
+                    latest
+                ),
+            },
+        )
+
+    reports = {}
+
+    for motion_type in required:
+        item = latest[motion_type]
+        report = dict(item["report"])
+
+        report.setdefault(
+            "meta",
+            {},
+        )["engine_assessment_id"] = (
+            report.get("assessment_id")
+        )
+
+        report["assessment_id"] = (
+            item["assessment_id"]
+        )
+
+        reports[motion_type] = report
+
+    profile = build_competency_profile(
+        player_id=str(user_id),
+        footwork_report=reports["footwork"],
+        serve_report=reports["serve"],
+        clear_report=reports["clear"],
+    )
+
+    interpretation = (
+        competency_engine.evaluate(profile)
+    )
+
+    coach = ai_coach_engine.generate(
+        profile,
+        interpretation,
+    )
+
+    return envelope(coach)
+
