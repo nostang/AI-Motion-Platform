@@ -369,6 +369,60 @@ class PostgresVideoAnalysisRepository:
 
         return result
 
+
+    def get_motion_history(
+        self,
+        user_id: int,
+        motion_type: str,
+    ) -> list[dict[str, Any]]:
+        """取得同一使用者、同一 Motion 的完整已完成 Assessment History。
+
+        Progress Engine 只需要永久保存的數值證據與版本資訊，
+        不需要讀取完整 Report JSON 或 AI Coach 文字。
+        """
+
+        normalized_type = motion_type.strip().lower()
+
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    external_analysis_id,
+                    analysis_type,
+                    overall_score,
+                    model_version,
+                    rule_version,
+                    created_at,
+                    completed_at
+                FROM video_analyses
+                WHERE user_id = %s
+                  AND analysis_type = %s
+                  AND processing_status = 'completed'
+                  AND overall_score IS NOT NULL
+                ORDER BY created_at ASC, analysis_id ASC
+                """,
+                (user_id, normalized_type),
+            )
+            rows = cur.fetchall()
+
+        return [
+            {
+                "assessment_id": row["external_analysis_id"],
+                "motion_type": row["analysis_type"],
+                "assessment_type": row["analysis_type"],
+                "overall_score": float(row["overall_score"]),
+                "model_version": row["model_version"],
+                "rule_version": row["rule_version"],
+                "created_at": row["created_at"].isoformat(),
+                "completed_at": (
+                    row["completed_at"].isoformat()
+                    if row["completed_at"] is not None
+                    else None
+                ),
+            }
+            for row in rows
+        ]
+
     def list_by_user(
         self,
         user_id: int,

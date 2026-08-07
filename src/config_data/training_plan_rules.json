@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "rule_version": "training-plan-rule-v1.0",
+  "status": "PROVISIONAL",
+  "session_allocation": {
+    "HIGH": 3,
+    "MEDIUM": 2,
+    "LOW": 1,
+    "MAINTAIN": 1
+  },
+  "reassessment": {
+    "enabled": true,
+    "use_priority_sessions_only": true,
+    "recommended_motion_source": "FIRST_PRIORITY"
+  },
+  "limitations": [
+    "Session counts are provisional planning rules and have not been calibrated by badminton coaches.",
+    "The planner does not re-score motion assessments or competency results.",
+    "The planner does not know actual session duration, intensity, fatigue, injury status, or completion.",
+    "Training Plan V1 is intended as a practice-planning reference only."
+  ]
+}

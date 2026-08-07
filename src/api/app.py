@@ -19,6 +19,8 @@ from src.api.dashboard_service import build_user_dashboard
 from src.api.postgres_repository import PostgresVideoAnalysisRepository
 from src.api.service import MotionAssessmentService
 from src.coach.ai_coach_engine import AICoachEngine
+from src.training.training_planner import AITrainingPlanner
+from src.progress.progress_engine import ProgressEngine
 from src.competency.competency_engine import CompetencyEngine
 from src.competency.competency_profile import build_competency_profile
 from src.report.competency_profile_report import (
@@ -59,9 +61,15 @@ ai_coach_engine = AICoachEngine.from_file(
     PROJECT_ROOT / "src/config_data/ai_coach_rules.json"
 )
 
+training_planner = AITrainingPlanner.from_file(
+    PROJECT_ROOT / "src/config_data/training_plan_rules.json"
+)
+
+progress_engine = ProgressEngine()
+
 app = FastAPI(
     title="AI Motion API",
-    version="2.0.0",
+    version="2.2.0",
 )
 
 app.add_middleware(
@@ -782,4 +790,167 @@ def create_user_coach(
     )
 
     return envelope(coach)
+
+@app.post(
+    f"{API_PREFIX}/users/{{user_id}}/training-plan"
+)
+def create_user_training_plan(
+    user_id: int,
+):
+    if not repository.user_exists(user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": user_id},
+        )
+
+    latest = (
+        repository.get_latest_required_motions(
+            user_id
+        )
+    )
+
+    required = {
+        "footwork",
+        "serve",
+        "clear",
+    }
+
+    missing = sorted(
+        required - set(latest)
+    )
+
+    if missing:
+        return failure(
+            409,
+            "TRAINING_PLAN_NOT_READY",
+            "尚未完成產生訓練計畫所需的全部測驗。",
+            {
+                "user_id": user_id,
+                "missing_motions": missing,
+                "available_motions": sorted(
+                    latest
+                ),
+            },
+        )
+
+    reports = {}
+
+    for motion_type in required:
+        item = latest[motion_type]
+        report = dict(item["report"])
+
+        report.setdefault(
+            "meta",
+            {},
+        )["engine_assessment_id"] = (
+            report.get("assessment_id")
+        )
+
+        report["assessment_id"] = (
+            item["assessment_id"]
+        )
+
+        reports[motion_type] = report
+
+    profile = build_competency_profile(
+        player_id=str(user_id),
+        footwork_report=reports["footwork"],
+        serve_report=reports["serve"],
+        clear_report=reports["clear"],
+    )
+
+    interpretation = (
+        competency_engine.evaluate(profile)
+    )
+
+    coach = ai_coach_engine.generate(
+        profile,
+        interpretation,
+    )
+
+    plan = training_planner.build(
+        coach
+    )
+
+    return envelope(plan)
+
+@app.get(
+    f"{API_PREFIX}/users/{{user_id}}/progress/{{motion_type}}"
+)
+def get_user_progress(
+    user_id: int,
+    motion_type: str,
+    mode: str = "PREVIOUS",
+    reference_assessment_id: str | None = None,
+):
+    if not repository.user_exists(user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": user_id},
+        )
+
+    normalized_type = motion_type.strip().lower()
+
+    if normalized_type not in SUPPORTED_ASSESSMENT_TYPES:
+        return failure(
+            400,
+            "INVALID_ASSESSMENT_TYPE",
+            "不支援的動作類型。",
+            {
+                "motion_type": normalized_type,
+                "supported_types": sorted(
+                    SUPPORTED_ASSESSMENT_TYPES
+                ),
+            },
+        )
+
+    history = repository.get_motion_history(
+        user_id,
+        normalized_type,
+    )
+
+    try:
+        result = progress_engine.compare(
+            history,
+            mode=mode,
+            reference_assessment_id=reference_assessment_id,
+        )
+    except ValueError as exc:
+        return failure(
+            400,
+            "INVALID_PROGRESS_REQUEST",
+            str(exc),
+            {
+                "mode": mode,
+                "reference_assessment_id": (
+                    reference_assessment_id
+                ),
+            },
+        )
+
+    if result.get("status") != "READY":
+        return failure(
+            409,
+            "PROGRESS_NOT_READY",
+            result.get(
+                "reason",
+                {},
+            ).get(
+                "message",
+                "目前沒有足夠的歷史資料可比較。",
+            ),
+            {
+                "user_id": user_id,
+                "motion_type": normalized_type,
+                "comparison_mode": mode.upper(),
+                "reason": result.get("reason"),
+                "history_count": len(history),
+            },
+        )
+
+    return envelope(result)
 
