@@ -16,6 +16,9 @@ from pydantic import BaseModel, Field
 from src.api.repository import AssessmentRepository
 from src.api.service import MotionAssessmentService
 from src.competency.competency_profile import build_competency_profile
+from src.report.competency_profile_report import (
+    build_competency_profile_report,
+)
 from src.config import PROJECT_ROOT
 from src.motion import registered_motion_types
 
@@ -31,7 +34,7 @@ repository = AssessmentRepository(
     PROJECT_ROOT / "api_data" / "motion_assessments"
 )
 service = MotionAssessmentService(repository)
-app = FastAPI(title="AI Motion API", version="1.2.0")
+app = FastAPI(title="AI Motion API", version="1.3.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -369,8 +372,7 @@ def get_motion_assessment_report(assessment_id: str):
     return envelope(report)
 
 
-@app.post(f"{API_PREFIX}/competency-profiles")
-def create_competency_profile(
+def _build_profile_from_request(
     request: CompetencyProfileRequest,
 ):
     footwork_report, error = _public_report(
@@ -378,21 +380,21 @@ def create_competency_profile(
         "footwork",
     )
     if error is not None:
-        return error
+        return None, error
 
     serve_report, error = _public_report(
         request.serve_assessment_id,
         "serve",
     )
     if error is not None:
-        return error
+        return None, error
 
     clear_report, error = _public_report(
         request.clear_assessment_id,
         "clear",
     )
     if error is not None:
-        return error
+        return None, error
 
     profile = build_competency_profile(
         player_id=request.player_id,
@@ -400,4 +402,26 @@ def create_competency_profile(
         serve_report=serve_report,
         clear_report=clear_report,
     )
+    return profile, None
+
+
+@app.post(f"{API_PREFIX}/competency-profiles")
+def create_competency_profile(
+    request: CompetencyProfileRequest,
+):
+    profile, error = _build_profile_from_request(request)
+    if error is not None:
+        return error
     return envelope(profile)
+
+
+@app.post(f"{API_PREFIX}/competency-profile-reports")
+def create_competency_profile_report(
+    request: CompetencyProfileRequest,
+):
+    profile, error = _build_profile_from_request(request)
+    if error is not None:
+        return error
+
+    report = build_competency_profile_report(profile)
+    return envelope(report)
