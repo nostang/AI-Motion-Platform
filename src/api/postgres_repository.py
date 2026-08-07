@@ -203,6 +203,29 @@ class PostgresVideoAnalysisRepository:
                     f"找不到 VIDEO_ANALYSES：{external_analysis_id}"
                 )
 
+    def clear_video_reference(
+        self,
+        external_analysis_id: str,
+    ) -> None:
+        """清除已完成分析的暫存影片路徑。"""
+
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE video_analyses
+                SET
+                    video_url = NULL,
+                    updated_at = NOW()
+                WHERE external_analysis_id = %s
+                """,
+                (external_analysis_id,),
+            )
+
+            if cur.rowcount != 1:
+                raise KeyError(
+                    f"找不到 VIDEO_ANALYSES：{external_analysis_id}"
+                )
+
     def get_analysis(
         self,
         external_analysis_id: str,

@@ -58,6 +58,12 @@ class VideoAnalysisRepository(Protocol):
     ) -> None:
         ...
 
+    def clear_video_reference(
+        self,
+        external_analysis_id: str,
+    ) -> None:
+        ...
+
     def get_analysis(
         self,
         external_analysis_id: str,
@@ -82,6 +88,14 @@ class VideoAnalysisRepository(Protocol):
         self,
         user_id: int,
     ) -> dict[str, dict[str, Any]]:
+        ...
+
+
+    def get_motion_history(
+        self,
+        user_id: int,
+        motion_type: str,
+    ) -> list[dict[str, Any]]:
         ...
 
     def list_by_user(
