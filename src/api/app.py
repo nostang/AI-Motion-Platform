@@ -29,6 +29,7 @@ from src.report.competency_profile_report import (
 from src.report.user_result_builder import build_user_result
 from src.report.summary_result_builder import build_summary_result
 from src.report.summary_progress_builder import build_summary_progress
+from src.report.ai_summary_builder import build_ai_summary
 from src.config import PROJECT_ROOT
 from src.motion import registered_motion_types
 
@@ -72,7 +73,7 @@ progress_engine = ProgressEngine()
 
 app = FastAPI(
     title="AI Motion API",
-    version="2.5.0",
+    version="2.6.0",
 )
 
 app.add_middleware(
@@ -630,6 +631,26 @@ def get_user_summary(
         progress=progress,
     )
 
+    context, missing = _build_latest_competency_context(
+        user_id
+    )
+
+    if context is not None:
+        coach = ai_coach_engine.generate(
+            context["profile"],
+            context["interpretation"],
+        )
+        summary["ai_summary"] = build_ai_summary(
+            summary,
+            coach,
+        )
+    else:
+        summary["ai_summary"] = {
+            "status": "NOT_READY",
+            "reason": "MISSING_REQUIRED_MOTIONS",
+            "missing_motions": missing,
+        }
+
     return envelope(summary)
 
 
@@ -732,6 +753,64 @@ def create_competency_profile_report(
     return envelope(report)
 
 
+def _build_latest_competency_context(
+    user_id: int,
+):
+    latest = repository.get_latest_required_motions(
+        user_id
+    )
+
+    required = {
+        "footwork",
+        "serve",
+        "clear",
+    }
+
+    missing = sorted(
+        required - set(latest)
+    )
+
+    if missing:
+        return None, missing
+
+    reports = {}
+
+    for motion_type in required:
+        item = latest[motion_type]
+        report = dict(item["report"])
+
+        report.setdefault(
+            "meta",
+            {},
+        )["engine_assessment_id"] = (
+            report.get("assessment_id")
+        )
+
+        report["assessment_id"] = (
+            item["assessment_id"]
+        )
+
+        reports[motion_type] = report
+
+    profile = build_competency_profile(
+        player_id=str(user_id),
+        footwork_report=reports["footwork"],
+        serve_report=reports["serve"],
+        clear_report=reports["clear"],
+    )
+
+    interpretation = competency_engine.evaluate(
+        profile
+    )
+
+    return {
+        "latest": latest,
+        "reports": reports,
+        "profile": profile,
+        "interpretation": interpretation,
+    }, []
+
+
 @app.post(
     f"{API_PREFIX}/users/{{user_id}}/"
     "competency"
@@ -747,23 +826,11 @@ def create_user_competency(
             {"user_id": user_id},
         )
 
-    latest = (
-        repository.get_latest_required_motions(
-            user_id
-        )
+    context, missing = _build_latest_competency_context(
+        user_id
     )
 
-    required = {
-        "footwork",
-        "serve",
-        "clear",
-    }
-
-    missing = sorted(
-        required - set(latest)
-    )
-
-    if missing:
+    if context is None:
         return failure(
             409,
             "COMPETENCY_NOT_READY",
@@ -771,48 +838,16 @@ def create_user_competency(
             {
                 "user_id": user_id,
                 "missing_motions": missing,
-                "available_motions": sorted(
-                    latest
-                ),
             },
         )
 
-    reports = {}
-
-    for motion_type in required:
-        item = latest[motion_type]
-        report = dict(item["report"])
-
-        report.setdefault(
-            "meta",
-            {},
-        )["engine_assessment_id"] = (
-            report.get("assessment_id")
-        )
-
-        report["assessment_id"] = (
-            item["assessment_id"]
-        )
-
-        reports[motion_type] = report
-
-    profile = build_competency_profile(
-        player_id=str(user_id),
-        footwork_report=reports["footwork"],
-        serve_report=reports["serve"],
-        clear_report=reports["clear"],
-    )
-
-    interpretation = (
-        competency_engine.evaluate(profile)
-    )
-
     return envelope(
         {
-            "profile": profile,
-            "interpretation": interpretation,
+            "profile": context["profile"],
+            "interpretation": context["interpretation"],
         }
     )
+
 
 @app.post(
     f"{API_PREFIX}/users/{{user_id}}/coach"
@@ -828,23 +863,11 @@ def create_user_coach(
             {"user_id": user_id},
         )
 
-    latest = (
-        repository.get_latest_required_motions(
-            user_id
-        )
+    context, missing = _build_latest_competency_context(
+        user_id
     )
 
-    required = {
-        "footwork",
-        "serve",
-        "clear",
-    }
-
-    missing = sorted(
-        required - set(latest)
-    )
-
-    if missing:
+    if context is None:
         return failure(
             409,
             "COACH_NOT_READY",
@@ -852,48 +875,16 @@ def create_user_coach(
             {
                 "user_id": user_id,
                 "missing_motions": missing,
-                "available_motions": sorted(
-                    latest
-                ),
             },
         )
 
-    reports = {}
-
-    for motion_type in required:
-        item = latest[motion_type]
-        report = dict(item["report"])
-
-        report.setdefault(
-            "meta",
-            {},
-        )["engine_assessment_id"] = (
-            report.get("assessment_id")
-        )
-
-        report["assessment_id"] = (
-            item["assessment_id"]
-        )
-
-        reports[motion_type] = report
-
-    profile = build_competency_profile(
-        player_id=str(user_id),
-        footwork_report=reports["footwork"],
-        serve_report=reports["serve"],
-        clear_report=reports["clear"],
-    )
-
-    interpretation = (
-        competency_engine.evaluate(profile)
-    )
-
     coach = ai_coach_engine.generate(
-        profile,
-        interpretation,
+        context["profile"],
+        context["interpretation"],
     )
 
     return envelope(coach)
+
 
 @app.post(
     f"{API_PREFIX}/users/{{user_id}}/training-plan"
@@ -909,23 +900,11 @@ def create_user_training_plan(
             {"user_id": user_id},
         )
 
-    latest = (
-        repository.get_latest_required_motions(
-            user_id
-        )
+    context, missing = _build_latest_competency_context(
+        user_id
     )
 
-    required = {
-        "footwork",
-        "serve",
-        "clear",
-    }
-
-    missing = sorted(
-        required - set(latest)
-    )
-
-    if missing:
+    if context is None:
         return failure(
             409,
             "TRAINING_PLAN_NOT_READY",
@@ -933,45 +912,12 @@ def create_user_training_plan(
             {
                 "user_id": user_id,
                 "missing_motions": missing,
-                "available_motions": sorted(
-                    latest
-                ),
             },
         )
 
-    reports = {}
-
-    for motion_type in required:
-        item = latest[motion_type]
-        report = dict(item["report"])
-
-        report.setdefault(
-            "meta",
-            {},
-        )["engine_assessment_id"] = (
-            report.get("assessment_id")
-        )
-
-        report["assessment_id"] = (
-            item["assessment_id"]
-        )
-
-        reports[motion_type] = report
-
-    profile = build_competency_profile(
-        player_id=str(user_id),
-        footwork_report=reports["footwork"],
-        serve_report=reports["serve"],
-        clear_report=reports["clear"],
-    )
-
-    interpretation = (
-        competency_engine.evaluate(profile)
-    )
-
     coach = ai_coach_engine.generate(
-        profile,
-        interpretation,
+        context["profile"],
+        context["interpretation"],
     )
 
     plan = training_planner.build(
@@ -979,6 +925,7 @@ def create_user_training_plan(
     )
 
     return envelope(plan)
+
 
 @app.get(
     f"{API_PREFIX}/users/{{user_id}}/progress/{{motion_type}}"

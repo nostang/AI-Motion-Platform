@@ -84,8 +84,48 @@ def build_summary_result(
 
     status = "READY" if not missing and len(motions) == len(MOTION_ORDER) else "INCOMPLETE"
 
+    # Player Context V1:
+    # racket_hand comes from the latest Clear report's experimental
+    # video-level estimator. It is presentation context only and does
+    # not participate in scoring or progress comparison.
+    player_context = {
+        "racket_hand": {
+            "status": "NOT_AVAILABLE",
+            "estimated": "unknown",
+            "confidence": 0.0,
+            "source_motion": "clear",
+        }
+    }
+
+    clear_item = latest.get("clear")
+    if isinstance(clear_item, Mapping):
+        clear_report = clear_item.get("report")
+        if isinstance(clear_report, Mapping):
+            features = clear_report.get("features")
+            if isinstance(features, Mapping):
+                racket_hand = features.get("racket_hand")
+                if isinstance(racket_hand, Mapping):
+                    estimated = str(
+                        racket_hand.get("estimated") or "unknown"
+                    ).lower()
+                    if estimated not in {"left", "right"}:
+                        estimated = "unknown"
+
+                    player_context["racket_hand"] = {
+                        "status": racket_hand.get(
+                            "status",
+                            "NOT_AVAILABLE",
+                        ),
+                        "estimated": estimated,
+                        "confidence": float(
+                            racket_hand.get("confidence") or 0.0
+                        ),
+                        "source_motion": "clear",
+                    }
+
     return {
         "status": status,
+        "player_context": player_context,
         "motions": motions,
         "radar_chart": {
             "labels": radar_labels,
