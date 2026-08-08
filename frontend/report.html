@@ -1,105 +1,91 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-
+<!doctype html>
+<html lang="zh-Hant">
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>AI Motion Report</title>
-
-    <link rel="stylesheet"
-          href="css/style.css">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#075d3b">
+  <title>AI Motion｜動作分析報告</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
+  <div class="court-lines" aria-hidden="true"></div>
 
-<div class="container">
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="返回 AI Motion 首頁">
+      <span class="brand-mark">AM</span>
+      <span><strong>AI MOTION</strong><small>BADMINTON LAB</small></span>
+    </a>
+    <span class="version-tag">MOTION REPORT</span>
+  </header>
 
-    <header class="hero">
+  <main class="report-shell">
+    <section class="report-hero">
+      <p class="eyebrow">PIXEL COURT / ASSESSMENT RESULT</p>
+      <div class="hero-row">
+        <div>
+          <h1>動作分析報告</h1>
+          <p id="motionSubtitle">正在讀取測驗結果…</p>
+        </div>
+        <span class="motion-chip" id="motionChip">LOADING</span>
+      </div>
+    </section>
 
-        <h1>Motion Report</h1>
+    <section class="score-board" aria-label="測驗總覽">
+      <article class="score-main">
+        <p>OVERALL SCORE</p>
+        <div class="score-line"><strong id="overallScore">--</strong><span>/ 100</span></div>
+        <small id="evaluationStatus">等待評分結果</small>
+      </article>
+      <article class="summary-stat">
+        <p>COACH STATUS</p>
+        <strong id="coachStatus">LOADING</strong>
+      </article>
+      <article class="summary-stat">
+        <p>SYSTEM CONFIDENCE</p>
+        <strong id="confidenceValue">--</strong>
+      </article>
+    </section>
 
-        <p class="subtitle">
+    <section class="report-grid">
+      <article class="report-card coach-card">
+        <div class="card-heading"><span>01</span><div><p>AI COACH</p><h2>教練回饋</h2></div></div>
+        <p class="coach-message" id="coachMessage" hidden></p>
+        <ul id="feedbackList" class="feedback-list"></ul>
+      </article>
 
-            AI Motion Coach Evaluation
+      <article class="report-card chart-card">
+        <div class="card-heading"><span>02</span><div><p>SKILL RADAR</p><h2>能力雷達</h2></div></div>
+        <div class="chart-wrap"><canvas id="radarChart"></canvas></div>
+        <p id="chartEmpty" class="empty-state" hidden>目前沒有可顯示的雷達資料。</p>
+      </article>
+    </section>
 
-        </p>
+    <section class="report-card evidence-card">
+      <div class="card-heading"><span>03</span><div><p>ASSESSMENT CONTEXT</p><h2>分析資訊</h2></div></div>
+      <dl class="evidence-grid">
+        <div><dt>動作類型</dt><dd id="motionTypeValue">--</dd></div>
+        <div><dt>持拍／慣用側</dt><dd id="handValue">--</dd></div>
+        <div><dt>引擎版本</dt><dd id="engineValue">--</dd></div>
+        <div><dt>校正狀態</dt><dd id="calibrationValue">--</dd></div>
+      </dl>
+      <details id="limitationsDetails" hidden>
+        <summary>查看目前版本限制</summary>
+        <ul id="limitationsList"></ul>
+      </details>
+    </section>
 
-    </header>
+    <div class="report-actions">
+      <button id="backButton" type="button">← 返回重新測驗</button>
+      <span id="assessmentLabel"></span>
+    </div>
+  </main>
 
-    <main class="card">
+  <div class="error-banner" id="errorBanner" role="alert" hidden></div>
+  <footer><span>AI MOTION PLATFORM</span><span>PIXEL COURT / 2026</span></footer>
 
-        <section>
-
-            <h2>Overall</h2>
-
-            <div id="overallScore">
-
-                --
-
-            </div>
-
-        </section>
-
-        <section>
-
-            <h2>Coach Status</h2>
-
-            <div id="coachStatus">
-
-                Loading...
-
-            </div>
-
-        </section>
-
-        <section>
-
-            <h2>Coach Feedback</h2>
-
-            <ul id="feedbackList">
-
-            </ul>
-
-        </section>
-
-        <section>
-
-            <h2>Radar Chart</h2>
-
-            <canvas id="radarChart">
-
-            </canvas>
-
-        </section>
-
-        <section>
-
-            <button
-                id="backButton">
-
-                Back
-
-            </button>
-
-        </section>
-
-    </main>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script src="js/config.js"></script>
-
-<script src="js/api.js"></script>
-
-<script src="js/report.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/report.js"></script>
 </body>
-
 </html>

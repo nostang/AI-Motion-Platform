@@ -1,78 +1,107 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+<!doctype html>
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Motion Platform</title>
-
-    <link rel="stylesheet" href="css/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#075d3b">
+  <title>AI Motion｜羽球動作分析</title>
+  <link rel="stylesheet" href="css/home.css">
 </head>
-
 <body>
+  <div class="court-lines" aria-hidden="true"></div>
 
-<div class="container">
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="AI Motion 首頁">
+      <span class="brand-mark">AM</span>
+      <span><strong>AI MOTION</strong><small>BADMINTON LAB</small></span>
+    </a>
+    <span class="version-tag">REFERENCE WEB V1</span>
+  </header>
 
-    <header class="hero">
+  <main>
+    <section class="hero">
+      <p class="eyebrow">PIXEL COURT / MOTION ANALYSIS</p>
+      <h1>把每一次揮拍，<br><span>變成看得懂的進步。</span></h1>
+      <p class="hero-copy">選擇動作並上傳 3–30 秒影片，AI Motion 將分析姿勢、特徵與動作品質。</p>
+      <div class="hero-badge" aria-label="分析流程">POSE → FEATURE → RULE → COACH</div>
+    </section>
 
-        <h1>AI Motion Platform</h1>
+    <section class="panel" aria-labelledby="motion-heading">
+      <div class="step-heading">
+        <span>01</span>
+        <div><p>SELECT MOTION</p><h2 id="motion-heading">選擇分析動作</h2></div>
+      </div>
 
-        <p class="subtitle">
-            AI-powered Badminton Footwork Analysis
-        </p>
+      <div class="motion-grid" role="radiogroup" aria-label="動作類型">
+        <button class="motion-card is-selected" type="button" data-motion="footwork" role="radio" aria-checked="true">
+          <span class="pixel-icon">↗</span><strong>步法</strong><small>FOOTWORK</small><em>01</em>
+        </button>
+        <button class="motion-card" type="button" data-motion="serve" role="radio" aria-checked="false">
+          <span class="pixel-icon">●</span><strong>發球</strong><small>FOREHAND SERVE</small><em>02</em>
+        </button>
+        <button class="motion-card" type="button" data-motion="clear" role="radio" aria-checked="false">
+          <span class="pixel-icon">⌁</span><strong>高遠球</strong><small>CLEAR</small><em>03</em>
+        </button>
+      </div>
+    </section>
 
-    </header>
+    <section class="panel" aria-labelledby="input-heading">
+      <div class="step-heading">
+        <span>02</span>
+        <div><p>VIDEO INPUT</p><h2 id="input-heading">加入測驗影片</h2></div>
+      </div>
 
-    <main class="card">
+      <div class="input-grid">
+        <div class="upload-zone" id="uploadZone">
+          <input id="videoInput" type="file" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>
+          <div class="upload-glyph">↑</div>
+          <h3>上傳影片</h3>
+          <p>拖曳影片到這裡，或選擇檔案</p>
+          <button class="secondary-button" id="chooseFileButton" type="button">CHOOSE VIDEO</button>
+          <small>MP4 / MOV · 3–30 秒 · 最大 100 MB</small>
+        </div>
 
-        <section class="upload-section">
+        <div class="camera-card">
+          <span class="soon-tag">NEXT</span>
+          <div class="camera-glyph">▣</div>
+          <h3>現場錄影</h3>
+          <p>使用瀏覽器相機，跟著畫面指引完成拍攝。</p>
+          <button class="secondary-button" id="cameraButton" type="button">OPEN CAMERA</button>
+          <small>Camera Recording V1.1 下一階段開放</small>
+        </div>
+      </div>
 
-            <h2>Upload Video</h2>
+      <div class="file-bar" id="fileBar" hidden>
+        <div><span class="file-dot"></span><strong id="fileName"></strong><small id="fileMeta"></small></div>
+        <button id="removeFileButton" type="button" aria-label="移除影片">×</button>
+      </div>
 
-            <input
-                type="file"
-                id="videoInput"
-                accept="video/*">
+      <button class="analyze-button" id="analyzeButton" type="button" disabled>
+        <span>START ANALYSIS</span><small>開始動作分析 →</small>
+      </button>
+    </section>
 
-            <button id="analyzeButton">
-                Start Analysis
-            </button>
+    <section class="panel status-panel" id="statusPanel" hidden aria-live="polite">
+      <div class="step-heading">
+        <span>03</span>
+        <div><p>ANALYSIS STATUS</p><h2>系統分析中</h2></div>
+      </div>
+      <div class="pipeline" id="pipeline">
+        <div data-stage="upload"><i></i><span>UPLOAD</span></div>
+        <div data-stage="pose"><i></i><span>POSE</span></div>
+        <div data-stage="feature"><i></i><span>FEATURE</span></div>
+        <div data-stage="assessment"><i></i><span>ASSESSMENT</span></div>
+        <div data-stage="report"><i></i><span>REPORT</span></div>
+      </div>
+      <p class="status-message" id="statusMessage">正在上傳影片…</p>
+    </section>
+  </main>
 
-        </section>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <footer><span>AI MOTION PLATFORM</span><span>PIXEL COURT / 2026</span></footer>
 
-        <section class="status-section">
-
-            <h2>Status</h2>
-
-            <div id="statusText">
-
-                Waiting...
-
-            </div>
-
-        </section>
-
-        <section class="progress-section">
-
-            <h2>Progress</h2>
-
-            <div class="progress-bar">
-
-                <div
-                    id="progressFill"
-                    class="progress-fill">
-                </div>
-
-            </div>
-
-        </section>
-
-    </main>
-
-</div>
-
-<script src="js/config.js"></script>
-<script src="js/api.js"></script>
-<script src="js/app.js"></script>
-
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

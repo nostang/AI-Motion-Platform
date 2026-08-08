@@ -1,393 +1,142 @@
-// =====================================================
-// AI Motion Platform
-// Main Frontend Application
-// =====================================================
+(function () {
+  "use strict";
 
-document.addEventListener("DOMContentLoaded", () => {
-    const videoInput =
-        document.getElementById("videoInput");
+  const config = window.AI_MOTION_CONFIG;
+  const api = window.AIMotionAPI;
+  const motionCards = [...document.querySelectorAll(".motion-card")];
+  const videoInput = document.getElementById("videoInput");
+  const uploadZone = document.getElementById("uploadZone");
+  const chooseFileButton = document.getElementById("chooseFileButton");
+  const removeFileButton = document.getElementById("removeFileButton");
+  const analyzeButton = document.getElementById("analyzeButton");
+  const cameraButton = document.getElementById("cameraButton");
+  const fileBar = document.getElementById("fileBar");
+  const fileName = document.getElementById("fileName");
+  const fileMeta = document.getElementById("fileMeta");
+  const statusPanel = document.getElementById("statusPanel");
+  const statusMessage = document.getElementById("statusMessage");
+  const toast = document.getElementById("toast");
 
-    const analyzeButton =
-        document.getElementById("analyzeButton");
+  let selectedMotion = "footwork";
+  let selectedFile = null;
+  let busy = false;
 
-    const statusText =
-        document.getElementById("statusText");
+  function selectMotion(card) {
+    selectedMotion = card.dataset.motion;
+    motionCards.forEach((item) => {
+      const selected = item === card;
+      item.classList.toggle("is-selected", selected);
+      item.setAttribute("aria-checked", String(selected));
+    });
+  }
 
-    const progressFill =
-        document.getElementById("progressFill");
+  function formatBytes(bytes) {
+    return bytes < 1024 * 1024
+      ? `${Math.ceil(bytes / 1024)} KB`
+      : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
 
-    let selectedVideo = null;
-    let isAnalyzing = false;
+  function showToast(message, duration = 4200) {
+    toast.textContent = message;
+    toast.hidden = false;
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => { toast.hidden = true; }, duration);
+  }
 
-    function setStatus(
-        message,
-        status = "default"
-    ) {
-        statusText.textContent = message;
+  function validateFile(file) {
+    if (!file) return "請選擇影片";
+    const extension = file.name.split(".").pop().toLowerCase();
+    if (!config.ACCEPTED_EXTENSIONS.includes(extension)) return "目前僅支援 MP4 或 MOV 影片";
+    if (file.size > config.MAX_FILE_SIZE_BYTES) return "影片不可超過 100 MB";
+    return null;
+  }
 
-        if (status === "default") {
-            statusText.removeAttribute(
-                "data-status"
-            );
+  function setFile(file) {
+    const error = validateFile(file);
+    if (error) { showToast(error); return; }
+    selectedFile = file;
+    fileName.textContent = file.name;
+    fileMeta.textContent = `${formatBytes(file.size)} · ${selectedMotion.toUpperCase()}`;
+    fileBar.hidden = false;
+    analyzeButton.disabled = false;
+  }
 
-            return;
-        }
+  function clearFile() {
+    selectedFile = null;
+    videoInput.value = "";
+    fileBar.hidden = true;
+    analyzeButton.disabled = true;
+  }
 
-        statusText.dataset.status = status;
+  function setPipeline(stage, message) {
+    const stages = ["upload", "pose", "feature", "assessment", "report"];
+    const activeIndex = Math.max(0, stages.indexOf(stage));
+    document.querySelectorAll("#pipeline [data-stage]").forEach((item, index) => {
+      item.classList.toggle("done", index < activeIndex);
+      item.classList.toggle("active", index === activeIndex);
+    });
+    statusMessage.textContent = message;
+  }
+
+  function inferStage(payload) {
+    const raw = `${api.normalizeStatus(payload)} ${payload?.current_stage || ""}`.toUpperCase();
+    if (raw.includes("REPORT") || raw.includes("COMPLETE") || raw.includes("SUCCESS")) return "report";
+    if (raw.includes("ASSESS") || raw.includes("COACH")) return "assessment";
+    if (raw.includes("FEATURE") || raw.includes("ANALYZ")) return "feature";
+    return "pose";
+  }
+
+  function reportUrl(assessmentId) {
+    const params = new URLSearchParams({ id: assessmentId });
+    return `${config.REPORT_PAGE}?${params.toString()}`;
+  }
+
+  async function startAnalysis() {
+    if (busy || !selectedFile) return;
+    const error = validateFile(selectedFile);
+    if (error) { showToast(error); return; }
+
+    busy = true;
+    analyzeButton.disabled = true;
+    statusPanel.hidden = false;
+    statusPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+    setPipeline("upload", `正在上傳 ${selectedMotion.toUpperCase()} 影片…`);
+
+    try {
+      const created = await api.createAssessment(selectedFile, selectedMotion);
+      const assessmentId = api.extractAssessmentId(created);
+      if (!assessmentId) throw new Error("API 未回傳 assessment_id");
+
+      setPipeline("pose", `Assessment ${assessmentId}：正在進行姿態與動作分析…`);
+      await api.pollAssessment(assessmentId, (payload) => {
+        const stage = inferStage(payload);
+        setPipeline(stage, `Assessment ${assessmentId}：${api.normalizeStatus(payload) || "PROCESSING"}`);
+      });
+
+      setPipeline("report", "分析完成，正在開啟報告…");
+      window.setTimeout(() => { window.location.href = reportUrl(assessmentId); }, 500);
+    } catch (errorObject) {
+      console.error(errorObject);
+      showToast(errorObject.message || "分析失敗，請確認 Backend 是否已啟動", 7000);
+      statusMessage.textContent = `分析未完成：${errorObject.message || "未知錯誤"}`;
+    } finally {
+      busy = false;
+      analyzeButton.disabled = !selectedFile;
     }
-
-    function setProgress(value) {
-        const normalizedValue =
-            Math.min(
-                100,
-                Math.max(
-                    0,
-                    Number(value) || 0
-                )
-            );
-
-        progressFill.style.width =
-            `${normalizedValue}%`;
-    }
-
-    function setAnalyzingState(analyzing) {
-        isAnalyzing = analyzing;
-
-        analyzeButton.disabled = analyzing;
-        videoInput.disabled = analyzing;
-
-        analyzeButton.textContent =
-            analyzing
-                ? "Analyzing..."
-                : "Start Analysis";
-    }
-
-    function validateVideo(file) {
-        if (!file) {
-            throw new Error(
-                "Please choose a video first."
-            );
-        }
-
-        const allowedExtensions = [
-            ".mp4",
-            ".mov"
-        ];
-
-        const fileName =
-            file.name.toLowerCase();
-
-        const isAllowedExtension =
-            allowedExtensions.some(
-                (extension) =>
-                    fileName.endsWith(extension)
-            );
-
-        if (!isAllowedExtension) {
-            throw new Error(
-                "Only MP4 and MOV videos are supported."
-            );
-        }
-
-        const maxFileSize =
-            100 * 1024 * 1024;
-
-        if (file.size > maxFileSize) {
-            throw new Error(
-                "Video size must not exceed 100 MB."
-            );
-        }
-    }
-
-    function getStageMessage(
-        stage,
-        progress
-    ) {
-        const stageMessages = {
-            uploaded:
-                "Video uploaded. Waiting for analysis...",
-
-            processing:
-                "AI Motion Engine is analyzing the video...",
-
-            motion_engine:
-                "Motion Engine is detecting movement events...",
-
-            assessment:
-                "Building the movement assessment...",
-
-            coach:
-                "Coach Module is reviewing the assessment...",
-
-            report:
-                "Generating the analysis report...",
-
-            validator:
-                "Validating the analysis pipeline...",
-
-            completed:
-                "Analysis completed successfully."
-        };
-
-        if (stageMessages[stage]) {
-            return stageMessages[stage];
-        }
-
-        if (progress >= 100) {
-            return (
-                "Analysis completed successfully."
-            );
-        }
-
-        return "Analysis is in progress...";
-    }
-
-    function extractErrorMessage(
-        errorResponse,
-        fallbackMessage
-    ) {
-        return (
-            errorResponse?.error?.message ||
-            errorResponse?.detail ||
-            fallbackMessage
-        );
-    }
-
-    function delay(milliseconds) {
-        return new Promise(
-            (resolve) => {
-                window.setTimeout(
-                    resolve,
-                    milliseconds
-                );
-            }
-        );
-    }
-
-    async function waitForCompletion(
-        assessmentId
-    ) {
-        while (true) {
-            const response =
-                await motionAPI
-                    .getAssessmentStatus(
-                        assessmentId
-                    );
-
-            if (!response.success) {
-                throw new Error(
-                    extractErrorMessage(
-                        response,
-                        "Unable to retrieve assessment status."
-                    )
-                );
-            }
-
-            const assessment =
-                response.data;
-
-            const progress =
-                assessment.progress ?? 0;
-
-            const stage =
-                assessment.current_stage ||
-                assessment.status ||
-                "processing";
-
-            setProgress(progress);
-
-            setStatus(
-                getStageMessage(
-                    stage,
-                    progress
-                ),
-                stage === "completed"
-                    ? "success"
-                    : "default"
-            );
-
-            if (
-                assessment.status ===
-                "completed"
-            ) {
-                return assessment;
-            }
-
-            if (
-                assessment.status ===
-                "failed"
-            ) {
-                const failureMessage =
-                    assessment.failure?.message ||
-                    assessment.failure?.reason ||
-                    "Motion analysis failed.";
-
-                throw new Error(
-                    failureMessage
-                );
-            }
-
-            await delay(
-                CONFIG.POLLING_INTERVAL
-            );
-        }
-    }
-
-    async function startAnalysis() {
-        if (isAnalyzing) {
-            return;
-        }
-
-        try {
-            validateVideo(
-                selectedVideo
-            );
-
-            setAnalyzingState(true);
-
-            setProgress(5);
-
-            setStatus(
-                "Uploading video..."
-            );
-
-            const createResponse =
-                await motionAPI
-                    .createAssessment(
-                        selectedVideo
-                    );
-
-            if (!createResponse.success) {
-                throw new Error(
-                    extractErrorMessage(
-                        createResponse,
-                        "Unable to create motion assessment."
-                    )
-                );
-            }
-
-            const assessmentId =
-                createResponse
-                    .data
-                    ?.assessment_id;
-
-            if (!assessmentId) {
-                throw new Error(
-                    "The API did not return an assessment ID."
-                );
-            }
-
-            sessionStorage.setItem(
-                "aiMotionAssessmentId",
-                assessmentId
-            );
-
-            setProgress(10);
-
-            setStatus(
-                `Assessment created: ${assessmentId}`
-            );
-
-            const completedAssessment =
-                await waitForCompletion(
-                    assessmentId
-                );
-
-            setProgress(96);
-
-            setStatus(
-                "Loading analysis report..."
-            );
-
-            const reportResponse =
-                await motionAPI
-                    .getReport(
-                        assessmentId
-                    );
-
-            if (!reportResponse.success) {
-                throw new Error(
-                    extractErrorMessage(
-                        reportResponse,
-                        "Unable to retrieve the analysis report."
-                    )
-                );
-            }
-
-            sessionStorage.setItem(
-                "aiMotionAssessment",
-                JSON.stringify(
-                    completedAssessment
-                )
-            );
-
-            sessionStorage.setItem(
-                "aiMotionReport",
-                JSON.stringify(
-                    reportResponse.data
-                )
-            );
-
-            setProgress(100);
-
-            setStatus(
-                "Analysis completed. Opening report...",
-                "success"
-            );
-
-            await delay(700);
-
-            window.location.href =
-                `report.html?id=${encodeURIComponent(
-                    assessmentId
-                )}`;
-        } catch (error) {
-            console.error(error);
-
-            setProgress(0);
-
-            setStatus(
-                error.message ||
-                "An unexpected error occurred.",
-                "error"
-            );
-        } finally {
-            setAnalyzingState(false);
-        }
-    }
-
-    videoInput.addEventListener(
-        "change",
-        (event) => {
-            const [file] =
-                event.target.files;
-
-            selectedVideo =
-                file || null;
-
-            setProgress(0);
-
-            if (!selectedVideo) {
-                setStatus("Waiting...");
-                return;
-            }
-
-            const sizeInMB =
-                selectedVideo.size /
-                (1024 * 1024);
-
-            setStatus(
-                `Selected: ${selectedVideo.name} ` +
-                `(${sizeInMB.toFixed(1)} MB)`
-            );
-        }
-    );
-
-    analyzeButton.addEventListener(
-        "click",
-        startAnalysis
-    );
-
-    setProgress(0);
-    setStatus("Waiting...");
-});
+  }
+
+  motionCards.forEach((card) => card.addEventListener("click", () => selectMotion(card)));
+  chooseFileButton.addEventListener("click", () => videoInput.click());
+  videoInput.addEventListener("change", () => setFile(videoInput.files[0]));
+  removeFileButton.addEventListener("click", clearFile);
+  analyzeButton.addEventListener("click", startAnalysis);
+  cameraButton.addEventListener("click", () => showToast("Camera Recording V1.1 將在下一階段實作"));
+
+  ["dragenter", "dragover"].forEach((eventName) => uploadZone.addEventListener(eventName, (event) => {
+    event.preventDefault(); uploadZone.classList.add("is-dragging");
+  }));
+  ["dragleave", "drop"].forEach((eventName) => uploadZone.addEventListener(eventName, (event) => {
+    event.preventDefault(); uploadZone.classList.remove("is-dragging");
+  }));
+  uploadZone.addEventListener("drop", (event) => setFile(event.dataTransfer.files[0]));
+})();

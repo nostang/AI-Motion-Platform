@@ -1,16 +1,8 @@
-// =====================================================
-// AI Motion Platform
-// Frontend Configuration
-// =====================================================
-
-const CONFIG = {
-
-    API_BASE_URL: "http://127.0.0.1:8000",
-
-    API_PREFIX: "/api/v1",
-
-    POLLING_INTERVAL: 1000,
-
-    REQUEST_TIMEOUT: 30000
-
-};
+window.AI_MOTION_CONFIG = Object.freeze({
+  API_BASE_URL: "http://127.0.0.1:8000/api/v1",
+  POLL_INTERVAL_MS: 1500,
+  POLL_TIMEOUT_MS: 120000,
+  MAX_FILE_SIZE_BYTES: 100 * 1024 * 1024,
+  ACCEPTED_EXTENSIONS: ["mp4", "mov"],
+  REPORT_PAGE: "report.html"
+});
