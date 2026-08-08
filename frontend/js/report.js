@@ -8,8 +8,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     evaluationStatus: document.getElementById("evaluationStatus"),
     feedbackList: document.getElementById("feedbackList"),
     coachMessage: document.getElementById("coachMessage"),
-    radarCanvas: document.getElementById("radarChart"),
-    chartEmpty: document.getElementById("chartEmpty"),
+    dimensionList: document.getElementById("dimensionList"),
+    dimensionEmpty: document.getElementById("dimensionEmpty"),
     motionChip: document.getElementById("motionChip"),
     motionSubtitle: document.getElementById("motionSubtitle"),
     motionType: document.getElementById("motionTypeValue"),
@@ -37,12 +37,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     sideways_preparation: "側身準備",
     weight_transfer: "重心轉移",
     non_racket_arm_balance: "非持拍手平衡",
+    non_racket_arm: "非持拍手平衡",
     swing_smoothness: "揮拍流暢度",
+    movement_completion: "動作完成度",
+    recovery_speed: "回位速度",
+    direction_coverage: "方向覆蓋",
+    motion_quality: "動作品質",
+    body_stability: "身體穩定",
     return_center: "回到中心",
     motion_continuous: "動作連續性"
   };
-
-  let radarChartInstance = null;
 
   function getAssessmentId() {
     const parameters = new URLSearchParams(window.location.search);
@@ -106,18 +110,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function renderSummary(report) {
-    const score = report?.summary?.overall_score;
-    const coachStatus = normalized(report?.summary?.coach_status);
-    const evaluation = normalized(report?.summary?.evaluation_status);
-    const confidence = report?.summary?.system_confidence;
-    elements.overallScore.textContent = valueOrDash(score);
-    elements.coachStatus.textContent = coachStatus.replaceAll("_", " ");
-    elements.coachStatus.dataset.status = statusType(coachStatus);
-    elements.evaluationStatus.textContent = evaluation === "UNKNOWN" ? "尚無評估狀態" : evaluation.replaceAll("_", " ");
-    elements.confidence.textContent = Number.isFinite(Number(confidence)) ? `${Math.round(Number(confidence) * 100)}%` : "--";
-  }
+  const score = report?.summary?.overall_score;
+  const coachStatus = normalized(report?.summary?.coach_status);
+  const evaluation = normalized(report?.summary?.evaluation_status);
+  const confidence =
+    report?.summary?.system_confidence ??
+    report?.observation?.system_confidence;
 
-  function renderFeedback(report, motion) {
+  const coachStatusLabels = {
+    PASS: "通過",
+    NEEDS_REVIEW: "建議改善",
+    FAIL: "未通過",
+    NOT_EVALUATED: "尚未評估",
+    UNKNOWN: "尚未評估",
+  };
+
+  const coachStatusLabel =
+    coachStatusLabels[coachStatus] ||
+    coachStatus.replaceAll("_", " ");
+
+  const evaluationLabel =
+    evaluation === "EVALUATED"
+      ? "已完成評估"
+      : evaluation === "NOT_EVALUATED" || evaluation === "UNKNOWN"
+        ? "尚無評估狀態"
+        : evaluation.replaceAll("_", " ");
+
+  elements.overallScore.textContent = valueOrDash(score);
+  elements.coachStatus.textContent = coachStatusLabel;
+  elements.coachStatus.dataset.status = statusType(coachStatus);
+  elements.evaluationStatus.textContent = evaluationLabel;
+  elements.confidence.textContent = Number.isFinite(Number(confidence))
+    ? `${Math.round(Number(confidence) * 100)}%`
+    : "--";
+}
+
+function renderFeedback(report, motion) {
     elements.feedbackList.innerHTML = "";
     const coachMessage = report?.coach?.overall_message;
     if (coachMessage) {
@@ -128,8 +156,27 @@ document.addEventListener("DOMContentLoaded", async () => {
     const nestedFeedback = Array.isArray(report?.coach?.feedback) ? report.coach.feedback : [];
     const legacyFeedback = Array.isArray(report?.feedback) ? report.feedback : [];
     const feedback = nestedFeedback.length ? nestedFeedback : legacyFeedback;
+    const strengths = Array.isArray(report?.highlights?.strengths) ? report.highlights.strengths : [];
+    const priorities = Array.isArray(report?.highlights?.improvement_priorities) ? report.highlights.improvement_priorities : [];
 
-    feedback.forEach((entry) => {
+    if (strengths.length) {
+      elements.feedbackList.appendChild(createFeedbackItem(
+        "本次優勢",
+        strengths.map(formatMetric).join("、"),
+        "success"
+      ));
+    }
+
+    if (priorities.length) {
+      elements.feedbackList.appendChild(createFeedbackItem(
+        "優先改善",
+        priorities.map(formatMetric).join("、"),
+        "warning"
+      ));
+    }
+
+    const shouldShowDetailedFeedback = !strengths.length && !priorities.length;
+    if (shouldShowDetailedFeedback) feedback.forEach((entry) => {
       if (typeof entry === "string") {
         elements.feedbackList.appendChild(createFeedbackItem("教練回饋", entry));
         return;
@@ -154,57 +201,97 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  function renderRadar(report) {
+  function normalizedMetricKey(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+
+  function feedbackForDimension(feedback, label, index, dimensionCount) {
+    const labelKey = normalizedMetricKey(label);
+    const exact = feedback.find((entry) => {
+      if (!entry || typeof entry !== "object") return false;
+      return [entry.metric, entry.title, entry.name]
+        .map(normalizedMetricKey)
+        .some((key) => key && (key === labelKey || key.includes(labelKey) || labelKey.includes(key)));
+    });
+    if (exact) return exact;
+    return feedback.length === dimensionCount ? feedback[index] : null;
+  }
+
+  function reportEntryForDimension(report, label) {
+  const labelKey = normalizedMetricKey(label);
+  const sources = [
+    report?.skill_score,
+    report?.assessment_metrics,
+  ];
+
+  for (const source of sources) {
+    if (!source || typeof source !== "object") continue;
+
+    for (const [key, entry] of Object.entries(source)) {
+      if (
+        normalizedMetricKey(key) === labelKey &&
+        entry &&
+        typeof entry === "object"
+      ) {
+        return entry;
+      }
+    }
+  }
+
+  return null;
+}
+
+function renderDimensions(report) {
     const labels = Array.isArray(report?.radar_chart?.labels) ? report.radar_chart.labels : [];
     const rawScores = Array.isArray(report?.radar_chart?.scores) ? report.radar_chart.scores : [];
     const maximumScore = Number(report?.radar_chart?.max_score) || 25;
-    if (!labels.length || !rawScores.length || typeof window.Chart === "undefined") {
-      elements.radarCanvas.hidden = true;
-      elements.chartEmpty.hidden = false;
+    const nestedFeedback = Array.isArray(report?.coach?.feedback) ? report.coach.feedback : [];
+    const legacyFeedback = Array.isArray(report?.feedback) ? report.feedback : [];
+    const feedback = nestedFeedback.length ? nestedFeedback : legacyFeedback;
+
+    elements.dimensionList.innerHTML = "";
+    if (!labels.length || !rawScores.length) {
+      elements.dimensionEmpty.hidden = false;
       return;
     }
+    elements.dimensionEmpty.hidden = true;
 
-    const scores = rawScores.map((score) => score === null || score === undefined ? null : Number(score));
-    if (radarChartInstance) radarChartInstance.destroy();
-    radarChartInstance = new Chart(elements.radarCanvas, {
-      type: "radar",
-      data: {
-        labels,
-        datasets: [{
-          label: "AI Motion Assessment",
-          data: scores,
-          spanGaps: false,
-          borderWidth: 3,
-          borderColor: "#075d3b",
-          backgroundColor: "rgba(216,255,82,.24)",
-          pointBackgroundColor: "#d8ff52",
-          pointBorderColor: "#075d3b",
-          pointRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        layout: {
-          padding: 32
-        },
-        scales: { r: {
-          beginAtZero: true,
-          min: 0,
-          max: maximumScore,
-          ticks: { display: false, stepSize: Math.max(1, maximumScore / 5) },
-          grid: { color: "rgba(7,93,59,.22)" },
-          angleLines: { color: "rgba(7,93,59,.22)" },
-          pointLabels: { color: "#0b2419", font: { size: 12, weight: "700" } }
-        } },
-        plugins: {
-          legend: { labels: { color: "#0b2419" } },
-          tooltip: { callbacks: { label(context) {
-            const value = rawScores[context.dataIndex];
-            return `${labels[context.dataIndex]}: ${value ?? "Not evaluated"}${value === null || value === undefined ? "" : `/${maximumScore}`}`;
-          } } }
-        }
+    labels.forEach((label, index) => {
+      const score = rawScores[index];
+      const numericScore = Number(score);
+      const evaluated = score !== null && score !== undefined && Number.isFinite(numericScore);
+      const coachEntry = feedbackForDimension(feedback, label, index, labels.length);
+      const reportEntry = reportEntryForDimension(report, label);
+      const level = normalized(
+        reportEntry?.level ||
+        coachEntry?.level ||
+        coachEntry?.status ||
+        coachEntry?.result ||
+        "NOT PROVIDED"
+      );
+      const item = document.createElement("div");
+      item.className = "dimension-item";
+      item.dataset.level = level;
+      const percentage = evaluated ? Math.max(0, Math.min(100, (numericScore / maximumScore) * 100)) : 0;
+      item.innerHTML = `
+        <div class="dimension-topline">
+          <strong class="dimension-name"></strong>
+          <span class="dimension-score">${evaluated ? `${numericScore} / ${maximumScore}` : "NOT EVALUATED"}</span>
+          <span class="level-badge" data-level="${level}">${level.replaceAll("_", " ")}</span>
+        </div>
+        <div class="dimension-track" role="progressbar" aria-valuemin="0" aria-valuemax="${maximumScore}" aria-valuenow="${evaluated ? numericScore : 0}">
+          <div class="dimension-fill" style="width:${percentage}%"></div>
+        </div>
+      `;
+      item.querySelector(".dimension-name").textContent = formatMetric(String(label).toLowerCase().replaceAll(" ", "_"));
+      const message = coachEntry?.message || coachEntry?.description || coachEntry?.explanation;
+      if (message) {
+        const note = document.createElement("p");
+        note.className = "dimension-note";
+        note.textContent = message;
+        item.appendChild(note);
       }
+      elements.dimensionList.appendChild(item);
     });
   }
 
@@ -234,7 +321,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderHeader(report, motion);
     renderSummary(report);
     renderFeedback(report, motion);
-    renderRadar(report);
+    renderDimensions(report);
     renderEvidence(report, motion);
   }
 

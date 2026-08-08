@@ -71,11 +71,21 @@ class ReportBuilder:
                 score=movement_score,
                 max_score=25,
                 source_rule_id="CR001",
+                level=self._dimension_level(
+                    completion_rule,
+                    movement_score,
+                    25,
+                ),
             ),
             "recovery_speed": self._score_item(
                 score=recovery_score,
                 max_score=25,
                 source_rule_id="CR005" if recovery_score is not None else None,
+                level=self._dimension_level(
+                    recovery_rule,
+                    recovery_score,
+                    25,
+                ),
             ),
             "motion_quality": self._score_item(
                 score=motion_quality_score,
@@ -83,12 +93,22 @@ class ReportBuilder:
                 source_rule_id=(
                     "CR007" if motion_quality_score is not None else None
                 ),
+                level=self._dimension_level(
+                    motion_quality_rule,
+                    motion_quality_score,
+                    25,
+                ),
             ),
             "body_stability": self._score_item(
                 score=body_stability_score,
                 max_score=25,
                 source_rule_id=(
                     "CR006" if body_stability_score is not None else None
+                ),
+                level=self._dimension_level(
+                    body_stability_rule,
+                    body_stability_score,
+                    25,
                 ),
             ),
         }
@@ -98,6 +118,11 @@ class ReportBuilder:
                 score=direction_score,
                 max_score=25,
                 source_rule_id="CR003" if direction_score is not None else None,
+                level=self._dimension_level(
+                    direction_rule,
+                    direction_score,
+                    25,
+                ),
             ),
         }
 
@@ -138,6 +163,12 @@ class ReportBuilder:
                 "evaluated_max_score": self._evaluated_max_score(skill_score),
                 "score_coverage": self._score_coverage(skill_score),
                 "coach_status": coach_evaluation.get("overall_status"),
+                "evaluation_status": (
+                    "EVALUATED"
+                    if self._overall_score(skill_score) is not None
+                    else "NOT_EVALUATED"
+                ),
+                "system_confidence": assessment.get("system_confidence"),
             },
             "observation": {
                 "return_center": self._pass_fail_or_none(return_center_rule),
@@ -343,14 +374,41 @@ class ReportBuilder:
         return None
 
     @staticmethod
+    def _dimension_level(
+        rule: Mapping[str, Any],
+        score: Optional[float],
+        max_score: int,
+    ) -> Optional[str]:
+        """Normalize one evaluated dimension to the three-level UI contract."""
+
+        if score is None or max_score <= 0:
+            return None
+
+        evidence = rule.get("evidence") or {}
+        assessment_level = evidence.get("level")
+
+        if assessment_level in {"EXCELLENT", "GOOD", "POOR"}:
+            return assessment_level
+
+        ratio = float(score) / float(max_score)
+
+        if ratio >= 0.88:
+            return "EXCELLENT"
+        if ratio >= 0.68:
+            return "GOOD"
+        return "POOR"
+
+    @staticmethod
     def _score_item(
         score: Optional[float],
         max_score: int,
         source_rule_id: Optional[str],
+        level: Optional[str] = None,
     ) -> Dict[str, Any]:
         return {
             "score": score,
             "max_score": max_score,
+            "level": level,
             "status": "EVALUATED" if score is not None else "NOT_EVALUATED",
             "source_rule_id": source_rule_id,
         }

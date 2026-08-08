@@ -47,16 +47,16 @@
     </section>
 
     <section class="report-grid">
-      <article class="report-card coach-card">
-        <div class="card-heading"><span>01</span><div><p>AI COACH</p><h2>教練回饋</h2></div></div>
-        <p class="coach-message" id="coachMessage" hidden></p>
-        <ul id="feedbackList" class="feedback-list"></ul>
+      <article class="report-card dimension-card">
+        <div class="card-heading"><span>01</span><div><p>DIMENSION SCORES</p><h2>本次評估維度</h2></div></div>
+        <div class="dimension-list" id="dimensionList"></div>
+        <p id="dimensionEmpty" class="empty-state" hidden>目前沒有可顯示的維度分數。</p>
       </article>
 
-      <article class="report-card chart-card">
-        <div class="card-heading"><span>02</span><div><p>SKILL RADAR</p><h2>能力雷達</h2></div></div>
-        <div class="chart-wrap"><canvas id="radarChart"></canvas></div>
-        <p id="chartEmpty" class="empty-state" hidden>目前沒有可顯示的雷達資料。</p>
+      <article class="report-card coach-card">
+        <div class="card-heading"><span>02</span><div><p>AI COACH</p><h2>教練回饋</h2></div></div>
+        <p class="coach-message" id="coachMessage" hidden></p>
+        <ul id="feedbackList" class="feedback-list"></ul>
       </article>
     </section>
 
@@ -83,7 +83,6 @@
   <div class="error-banner" id="errorBanner" role="alert" hidden></div>
   <footer><span>AI MOTION PLATFORM</span><span>PIXEL COURT / 2026</span></footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/report.js"></script>
