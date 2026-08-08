@@ -9,17 +9,31 @@
   const chooseFileButton = document.getElementById("chooseFileButton");
   const removeFileButton = document.getElementById("removeFileButton");
   const analyzeButton = document.getElementById("analyzeButton");
-  const cameraButton = document.getElementById("cameraButton");
   const fileBar = document.getElementById("fileBar");
   const fileName = document.getElementById("fileName");
   const fileMeta = document.getElementById("fileMeta");
   const statusPanel = document.getElementById("statusPanel");
   const statusMessage = document.getElementById("statusMessage");
   const toast = document.getElementById("toast");
+  const motionGuard = document.getElementById("motionGuard");
+  const motionGuardLabel = document.getElementById("motionGuardLabel");
 
   let selectedMotion = "footwork";
   let selectedFile = null;
   let busy = false;
+
+  const motionNames = {
+    footwork: "步法 FOOTWORK",
+    serve: "正手發球 FOREHAND SERVE",
+    clear: "高遠球 CLEAR"
+  };
+
+  function updateMotionGuard() {
+    if (!selectedFile) return;
+    motionGuardLabel.textContent = motionNames[selectedMotion];
+    fileMeta.textContent =
+      `${formatBytes(selectedFile.size)} · ${selectedMotion.toUpperCase()}`;
+  }
 
   function selectMotion(card) {
     selectedMotion = card.dataset.motion;
@@ -28,6 +42,7 @@
       item.classList.toggle("is-selected", selected);
       item.setAttribute("aria-checked", String(selected));
     });
+    updateMotionGuard();
   }
 
   function formatBytes(bytes) {
@@ -58,6 +73,8 @@
     fileName.textContent = file.name;
     fileMeta.textContent = `${formatBytes(file.size)} · ${selectedMotion.toUpperCase()}`;
     fileBar.hidden = false;
+    motionGuard.hidden = false;
+    updateMotionGuard();
     analyzeButton.disabled = false;
   }
 
@@ -65,6 +82,7 @@
     selectedFile = null;
     videoInput.value = "";
     fileBar.hidden = true;
+    motionGuard.hidden = true;
     analyzeButton.disabled = true;
   }
 
@@ -93,6 +111,7 @@
 
   async function startAnalysis() {
     if (busy || !selectedFile) return;
+
     const error = validateFile(selectedFile);
     if (error) { showToast(error); return; }
 
@@ -130,7 +149,9 @@
   videoInput.addEventListener("change", () => setFile(videoInput.files[0]));
   removeFileButton.addEventListener("click", clearFile);
   analyzeButton.addEventListener("click", startAnalysis);
-  cameraButton.addEventListener("click", () => showToast("Camera Recording V1.1 將在下一階段實作"));
+  window.addEventListener("aimotion:camera-recorded", (event) => {
+    if (event.detail?.file) setFile(event.detail.file);
+  });
 
   ["dragenter", "dragover"].forEach((eventName) => uploadZone.addEventListener(eventName, (event) => {
     event.preventDefault(); uploadZone.classList.add("is-dragging");

@@ -62,18 +62,24 @@
         </div>
 
         <div class="camera-card">
-          <span class="soon-tag">NEXT</span>
+          <span class="soon-tag">MP4</span>
           <div class="camera-glyph">▣</div>
           <h3>現場錄影</h3>
           <p>使用瀏覽器相機，跟著畫面指引完成拍攝。</p>
           <button class="secondary-button" id="cameraButton" type="button">OPEN CAMERA</button>
-          <small>Camera Recording V1.1 下一階段開放</small>
+          <small>3–30 秒 · MP4 / H.264</small>
         </div>
       </div>
 
       <div class="file-bar" id="fileBar" hidden>
         <div><span class="file-dot"></span><strong id="fileName"></strong><small id="fileMeta"></small></div>
         <button id="removeFileButton" type="button" aria-label="移除影片">×</button>
+      </div>
+
+      <div class="motion-guard" id="motionGuard" hidden>
+        <span>即將分析</span>
+        <strong id="motionGuardLabel">步法 FOOTWORK</strong>
+        <small>請確認影片中的實際動作與選擇項目相同。</small>
       </div>
 
       <button class="analyze-button" id="analyzeButton" type="button" disabled>
@@ -97,11 +103,51 @@
     </section>
   </main>
 
+  <div class="camera-modal" id="cameraModal" hidden>
+    <div class="camera-dialog" role="dialog" aria-modal="true" aria-labelledby="cameraTitle">
+      <div class="camera-header">
+        <div><p>CAMERA RECORDING V1.1</p><h2 id="cameraTitle">現場錄影</h2></div>
+        <button id="cameraCloseButton" type="button" aria-label="關閉相機">×</button>
+      </div>
+
+      <div class="camera-motion-confirm">
+        <span>目前測驗</span>
+        <strong id="cameraMotionLabel">步法 FOOTWORK</strong>
+        <small>請確認實際拍攝的動作與選擇項目相同。</small>
+      </div>
+
+      <div class="camera-stage">
+        <video id="cameraPreview" autoplay muted playsinline></video>
+        <video id="recordedPreview" controls playsinline hidden></video>
+        <div class="body-guide" id="bodyGuide" aria-hidden="true">
+          <i class="guide-head"></i><i class="guide-body"></i><i class="guide-floor"></i>
+          <span>請保持全身入鏡</span>
+        </div>
+        <div class="countdown" id="cameraCountdown" hidden>3</div>
+        <div class="recording-badge" id="recordingBadge" hidden><i></i><span>REC 00:00</span></div>
+      </div>
+
+      <ul class="camera-tips">
+        <li>手機或鏡頭固定</li><li>全身與球拍入鏡</li><li>保持光線充足</li>
+      </ul>
+
+      <p class="camera-status" id="cameraStatus">按下開始後將倒數 3 秒。</p>
+
+      <div class="camera-actions">
+        <button class="camera-button ghost" id="cameraRetryButton" type="button" hidden>重新錄製</button>
+        <button class="camera-button primary" id="cameraStartButton" type="button">確認動作並開始</button>
+        <button class="camera-button stop" id="cameraStopButton" type="button" hidden disabled>停止錄影</button>
+        <button class="camera-button primary" id="cameraUseButton" type="button" hidden>使用這段影片</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" hidden></div>
   <footer><span>AI MOTION PLATFORM</span><span>PIXEL COURT / 2026</span></footer>
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/camera.js"></script>
 </body>
 </html>
