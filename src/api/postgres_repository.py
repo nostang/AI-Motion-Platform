@@ -373,6 +373,63 @@ class PostgresVideoAnalysisRepository:
             ),
         }
 
+    def get_previous_motion(
+        self,
+        user_id: int,
+        motion_type: str,
+    ) -> dict[str, Any] | None:
+        """取得某一 Motion 前一次已完成且具有完整 Report 的結果。"""
+
+        normalized_type = motion_type.strip().lower()
+
+        with self._connect() as conn, conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    external_analysis_id,
+                    analysis_type,
+                    processing_status,
+                    overall_score,
+                    metrics_json,
+                    model_version,
+                    rule_version,
+                    created_at,
+                    completed_at
+                FROM video_analyses
+                WHERE user_id = %s
+                  AND analysis_type = %s
+                  AND processing_status = 'completed'
+                  AND metrics_json IS NOT NULL
+                ORDER BY created_at DESC, analysis_id DESC
+                LIMIT 1 OFFSET 1
+                """,
+                (user_id, normalized_type),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            return None
+
+        return {
+            "assessment_id": row["external_analysis_id"],
+            "assessment_type": row["analysis_type"],
+            "status": row["processing_status"],
+            "overall_score": (
+                float(row["overall_score"])
+                if row["overall_score"] is not None
+                else None
+            ),
+            "report": dict(row["metrics_json"]),
+            "model_version": row["model_version"],
+            "rule_version": row["rule_version"],
+            "created_at": row["created_at"].isoformat(),
+            "completed_at": (
+                row["completed_at"].isoformat()
+                if row["completed_at"] is not None
+                else None
+            ),
+        }
+
     def get_latest_required_motions(
         self,
         user_id: int,

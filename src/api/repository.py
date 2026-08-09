@@ -84,6 +84,13 @@ class VideoAnalysisRepository(Protocol):
     ) -> dict[str, Any] | None:
         ...
 
+    def get_previous_motion(
+        self,
+        user_id: int,
+        motion_type: str,
+    ) -> dict[str, Any] | None:
+        ...
+
     def get_latest_required_motions(
         self,
         user_id: int,

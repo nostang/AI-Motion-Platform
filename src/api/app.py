@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from datetime import datetime, timezone
 import os
 from pathlib import Path
@@ -23,6 +25,9 @@ from src.training.training_planner import AITrainingPlanner
 from src.progress.progress_engine import ProgressEngine
 from src.competency.competency_engine import CompetencyEngine
 from src.competency.competency_profile import build_competency_profile
+from src.competency.motion_competency_mapping import (
+    build_motion_competency_comparison,
+)
 from src.report.competency_profile_report import (
     build_competency_profile_report,
 )
@@ -629,6 +634,40 @@ def get_user_summary(
     summary = build_summary_result(
         latest,
         progress=progress,
+    )
+
+    current_reports = {
+        motion_type: item["report"]
+        for motion_type, item in latest.items()
+        if isinstance(item, Mapping)
+        and isinstance(item.get("report"), Mapping)
+    }
+
+    previous_items = {
+        motion_type: repository.get_previous_motion(
+            user_id,
+            motion_type,
+        )
+        for motion_type in (
+            "footwork",
+            "serve",
+            "clear",
+        )
+    }
+
+    previous_reports = {
+        motion_type: item["report"]
+        for motion_type, item in previous_items.items()
+        if isinstance(item, Mapping)
+        and isinstance(item.get("report"), Mapping)
+    }
+
+    summary["competency_axes"] = (
+        build_motion_competency_comparison(
+            current_reports,
+            previous_reports,
+            progress,
+        )
     )
 
     context, missing = _build_latest_competency_context(
