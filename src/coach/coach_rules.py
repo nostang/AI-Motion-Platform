@@ -73,37 +73,90 @@ def evaluate_eight_event_completion(
 def evaluate_return_to_center(
     assessment: dict[str, Any],
 ) -> dict[str, Any]:
-    """CR002：檢查每個納入測驗的 Event 是否返回中心。"""
+    """CR002：區分嚴格回中心、Base Zone 與未完成。"""
 
     events = assessment.get("events") or []
-    expected_count = int(assessment.get("expected_event_count", 8))
-    detected_count = int(assessment.get("event_count", len(events)))
-    returned_count = sum(
-        bool(event.get("returned_to_center")) for event in events
+    expected_count = int(
+        assessment.get("expected_event_count", 8)
+    )
+    detected_count = int(
+        assessment.get("event_count", len(events))
     )
 
-    passed = (
-        detected_count == expected_count
-        and returned_count == expected_count
+    strict_center_count = sum(
+        bool(event.get("returned_to_center"))
+        or event.get("completion_reason")
+        == "STRICT_CENTER"
+        for event in events
     )
+
+    base_zone_count = sum(
+        event.get("completion_reason")
+        == "BASE_ZONE"
+        for event in events
+    )
+
+    completed_return_count = (
+        strict_center_count + base_zone_count
+    )
+
+    incomplete_event_count = max(
+        0,
+        detected_count - completed_return_count,
+    )
+
+    if (
+        detected_count != expected_count
+        or incomplete_event_count > 0
+    ):
+        result: RuleResult = "FAIL"
+        explanation = (
+            "至少有一次動作未完成返回中心或基準區。"
+        )
+    elif strict_center_count == expected_count:
+        result = "PASS"
+        explanation = "每次移動後皆有返回原始中心。"
+    else:
+        result = "NEEDS_REVIEW"
+        explanation = (
+            f"{strict_center_count} 次回到原始中心，"
+            f"{base_zone_count} 次回到基準區後轉向；"
+            "測驗流程已完成，但回位精準度需人工複核。"
+        )
 
     return build_rule(
         rule_id="CR002",
         name="RETURN_TO_CENTER_COMPLETION",
         display_name="回中心完成",
-        result="PASS" if passed else "FAIL",
+        result=result,
         evidence={
-            "returned_to_center_count": returned_count,
+            "strict_center_count": strict_center_count,
+            "base_zone_count": base_zone_count,
+            "completed_return_count": (
+                completed_return_count
+            ),
+            "incomplete_event_count": (
+                incomplete_event_count
+            ),
             "expected_event_count": expected_count,
             "all_events_returned_to_center": bool(
-                assessment.get("all_events_returned_to_center", False)
+                assessment.get(
+                    "all_events_returned_to_center",
+                    False,
+                )
             ),
         },
-        explanation=(
-            "每次移動後皆有返回中心。"
-            if passed
-            else "至少有一次動作未完成返回中心。"
-        ),
+        explanation=explanation,
+        limitations=[
+            (
+                "BASE_ZONE 表示回到基準區後直接轉向"
+                "下一次移動，不等同精準回到原始中心。"
+            ),
+            (
+                "Base Zone 門檻目前仍為暫定值，"
+                "需要更多影片與人工標註驗證。"
+            ),
+        ],
     )
 
 

@@ -47,10 +47,12 @@ class FootworkEvent:
         *,
         move_offset_threshold: float,
         return_offset_threshold: float,
+        base_zone_offset_threshold: float,
         smoothing_window: int,
         reversal_confirm_frames: int,
         reversal_min_drop: float,
         ready_confirm_frames: int,
+        base_transition_confirm_frames: int,
     ) -> None:
         """
         建立 Footwork Event V2。
@@ -61,7 +63,11 @@ class FootworkEvent:
             離開中心多少距離後開始 MOVE。
 
         return_offset_threshold:
-            回到多少距離內才視為返回中心。
+            回到多少距離內才視為完整返回中心。
+
+        base_zone_offset_threshold:
+            回到此範圍後，若再次向外移動，
+            可判定上一個 Event 已回到 Base Zone。
 
         smoothing_window:
             Center Offset 移動平均視窗大小。
@@ -74,6 +80,10 @@ class FootworkEvent:
 
         ready_confirm_frames:
             回到中心後需穩定多少幀才恢復 READY。
+
+        base_transition_confirm_frames:
+            進入 Base Zone 後，需連續多少幀向外移動，
+            才切開下一個 Event。
         """
 
         if return_offset_threshold >= move_offset_threshold:
@@ -82,12 +92,27 @@ class FootworkEvent:
                 "move_offset_threshold，才能形成 Hysteresis。"
             )
 
+        if not (
+            return_offset_threshold
+            < base_zone_offset_threshold
+            <= move_offset_threshold
+        ):
+            raise ValueError(
+                "base_zone_offset_threshold 必須大於 "
+                "return_offset_threshold，且不可大於 "
+                "move_offset_threshold。"
+            )
+
         self.move_offset_threshold = (
             move_offset_threshold
         )
 
         self.return_offset_threshold = (
             return_offset_threshold
+        )
+
+        self.base_zone_offset_threshold = (
+            base_zone_offset_threshold
         )
 
         self.smoothing_window = max(
@@ -110,6 +135,11 @@ class FootworkEvent:
             ready_confirm_frames,
         )
 
+        self.base_transition_confirm_frames = max(
+            1,
+            base_transition_confirm_frames,
+        )
+
         self.offset_history: deque[float] = deque(
             maxlen=self.smoothing_window
         )
@@ -126,12 +156,19 @@ class FootworkEvent:
         self.reach_at_ms: int | None = None
         self.recover_started_at_ms: int | None = None
         self.returned_at_ms: int | None = None
+        self.completed_at_ms: int | None = None
 
         # Event Frame
         self.move_started_frame: int | None = None
         self.reach_frame: int | None = None
         self.recover_started_frame: int | None = None
         self.returned_frame: int | None = None
+        self.completed_frame: int | None = None
+
+        # Event 完成方式：
+        # STRICT_CENTER = 完整回到原中心
+        # BASE_ZONE = 回到 T 字附近後轉向下一次移動
+        self.completion_reason: str | None = None
 
         # Offset 資料
         self.smoothed_center_offset: float | None = None
@@ -148,11 +185,17 @@ class FootworkEvent:
         self.direction_angle_degrees: float | None = None
         self.direction_confidence: float | None = None
         self.direction_vector_length: float | None = None
+        self.direction_boundary_ambiguous = False
 
         # 防抖與趨勢確認
         self.reversal_candidate_frames = 0
         self.ready_stable_frames = 0
         self.can_start_next_event = False
+
+        # Base Zone 轉向判斷
+        self.base_zone_reached = False
+        self.minimum_recovery_offset: float | None = None
+        self.base_transition_candidate_frames = 0
 
         # 連續節奏重新解鎖：
         # 某些球員完成一次回中心後，不會再次停留足夠幀數，
@@ -445,14 +488,27 @@ class FootworkEvent:
         """
         RECOVER → READY
 
-        進入回中心門檻後，需連續穩定數幀，
-        才正式完成 Event。
+        有兩種完成方式：
+
+        1. STRICT_CENTER：
+           完整回到原始中心範圍並穩定數幀。
+
+        2. BASE_ZONE：
+           回到 T 字附近後，再次穩定向外移動。
+           這代表上一個 Event 已結束，
+           但不宣稱球員完整回到原始中心。
         """
 
-        if (
-            self.smoothed_center_offset
-            <= self.return_offset_threshold
-        ):
+        current_offset = self.smoothed_center_offset
+
+        if current_offset is None:
+            return
+
+        # ------------------------------------------
+        # A. Strict Center：優先判斷完整回中心
+        # ------------------------------------------
+
+        if current_offset <= self.return_offset_threshold:
             self.ready_stable_frames += 1
         else:
             self.ready_stable_frames = 0
@@ -463,14 +519,85 @@ class FootworkEvent:
         ):
             self.returned_at_ms = timestamp_ms
             self.returned_frame = frame_index
+            self.completed_at_ms = timestamp_ms
+            self.completed_frame = frame_index
+            self.completion_reason = "STRICT_CENTER"
 
             self.state = FootworkState.READY
             self.completed_this_frame = True
 
-            # 必須重新在 READY 累積穩定度，
-            # 才能開始下一個 Event。
+            # 完整回中心後，必須重新在 READY 累積穩定度。
             self.ready_stable_frames = 0
             self.can_start_next_event = False
+
+            self.base_zone_reached = False
+            self.minimum_recovery_offset = None
+            self.base_transition_candidate_frames = 0
+            return
+
+        # ------------------------------------------
+        # B. 記錄 Recovery 期間最靠近中心的位置
+        # ------------------------------------------
+
+        if (
+            self.minimum_recovery_offset is None
+            or current_offset
+            < self.minimum_recovery_offset
+        ):
+            self.minimum_recovery_offset = current_offset
+
+        if current_offset <= self.base_zone_offset_threshold:
+            self.base_zone_reached = True
+
+        # 只進入 Base Zone 還不算完成。
+        # 必須看到 Offset 再次增加，才代表開始下一次向外移動。
+        previous_offset = self.previous_smoothed_offset
+
+        moving_outward = (
+            self.base_zone_reached
+            and previous_offset is not None
+            and current_offset > previous_offset
+            and self.minimum_recovery_offset is not None
+            and (
+                current_offset
+                - self.minimum_recovery_offset
+            )
+            >= self.reversal_min_drop
+        )
+
+        if moving_outward:
+            self.base_transition_candidate_frames += 1
+        elif (
+            previous_offset is not None
+            and current_offset <= previous_offset
+        ):
+            self.base_transition_candidate_frames = 0
+
+        if (
+            self.base_transition_candidate_frames
+            < self.base_transition_confirm_frames
+        ):
+            return
+
+        # Base Zone 完成不等於完整回中心，
+        # 因此不填 returned_at_ms，也不產生 Recovery Time。
+        self.returned_at_ms = None
+        self.returned_frame = None
+        self.completed_at_ms = timestamp_ms
+        self.completed_frame = frame_index
+        self.completion_reason = "BASE_ZONE"
+
+        self.state = FootworkState.READY
+        self.completed_this_frame = True
+
+        # 已觀察到下一次向外移動的趨勢，
+        # READY 可在下一幀直接建立新 Event。
+        self.ready_stable_frames = 0
+        self.can_start_next_event = True
+
+        self.base_zone_reached = False
+        self.minimum_recovery_offset = None
+        self.base_transition_candidate_frames = 0
 
     def _start_new_event(
         self,
@@ -495,12 +622,16 @@ class FootworkEvent:
         self.direction_angle_degrees = None
         self.direction_confidence = None
         self.direction_vector_length = None
+        self.direction_boundary_ambiguous = False
 
         self.recover_started_at_ms = None
         self.recover_started_frame = None
 
         self.returned_at_ms = None
         self.returned_frame = None
+        self.completed_at_ms = None
+        self.completed_frame = None
+        self.completion_reason = None
 
         self.maximum_center_offset = (
             self.smoothed_center_offset
@@ -518,6 +649,10 @@ class FootworkEvent:
         self.ready_stable_frames = 0
         self.can_start_next_event = False
         self.rearm_candidate_frames = 0
+
+        self.base_zone_reached = False
+        self.minimum_recovery_offset = None
+        self.base_transition_candidate_frames = 0
 
     def _record_reach_event(
         self,
@@ -550,6 +685,7 @@ class FootworkEvent:
         angle_degrees: float | None,
         confidence: float,
         vector_length: float,
+        boundary_ambiguous: bool,
     ) -> None:
         """保存 Motion Classification 的方向與信心結果。"""
 
@@ -557,6 +693,9 @@ class FootworkEvent:
         self.direction_angle_degrees = angle_degrees
         self.direction_confidence = confidence
         self.direction_vector_length = vector_length
+        self.direction_boundary_ambiguous = (
+            boundary_ambiguous
+        )
 
     def state_changed(self) -> bool:
         """判斷目前影格是否發生 State 切換。"""

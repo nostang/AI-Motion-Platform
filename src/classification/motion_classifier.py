@@ -36,6 +36,7 @@ class DirectionResult:
     angle_degrees: float | None
     confidence: float
     valid: bool
+    boundary_ambiguous: bool
 
 
 class MotionClassifier:
@@ -90,6 +91,7 @@ class MotionClassifier:
                 angle_degrees=None,
                 confidence=0.0,
                 valid=False,
+                boundary_ambiguous=False,
             )
 
         angle = degrees(atan2(scaled_dy, scaled_dx))
@@ -99,14 +101,14 @@ class MotionClassifier:
             vector_length=vector_length,
         )
 
-        direction = (
-            raw_direction
-            if confidence >= self.min_confidence
-            else MotionDirection.UNKNOWN
-        )
+        # 有效位移應保留最佳方向候選。
+        #
+        # min_confidence 在 V2.1 起代表方向是否靠近 Sector
+        # 邊界，而不再把有效 Event 直接丟棄為 UNKNOWN。
+        boundary_ambiguous = confidence < self.min_confidence
 
         return DirectionResult(
-            direction=direction,
+            direction=raw_direction,
             image_dx=image_dx,
             image_dy=image_dy,
             player_dx=scaled_dx,
@@ -114,7 +116,8 @@ class MotionClassifier:
             vector_length=vector_length,
             angle_degrees=angle,
             confidence=confidence,
-            valid=direction is not MotionDirection.UNKNOWN,
+            valid=True,
+            boundary_ambiguous=boundary_ambiguous,
         )
 
     def _calculate_confidence(

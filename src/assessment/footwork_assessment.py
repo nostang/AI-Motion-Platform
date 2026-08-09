@@ -1,4 +1,4 @@
-"""Footwork Assessment JSON V1.4。
+"""Footwork Assessment JSON V1.7。
 
 輸出客觀分析結果、可重現的設定版本，以及提供專家審查使用的片段範圍。
 本模組不產生教練技術分數。
@@ -38,9 +38,12 @@ class FootworkEventRecord:
     classification_confidence: float | None
     direction_angle_degrees: float | None
     direction_vector_length: float | None
+    boundary_ambiguous: bool
+    completion_reason: str
     move_started_at_ms: int | None
     reach_at_ms: int | None
     returned_at_ms: int | None
+    completed_at_ms: int | None
     clip_start_ms: int | None
     clip_end_ms: int | None
     move_time_seconds: float | None
@@ -50,6 +53,7 @@ class FootworkEventRecord:
     move_started_frame: int | None
     reach_frame: int | None
     returned_frame: int | None
+    completed_frame: int | None
     completed: bool
     returned_to_center: bool
     motion_features: dict[str, Any] | None
@@ -87,8 +91,8 @@ class FootworkAssessmentBuilder:
             else None
         )
         clip_end = (
-            event.returned_at_ms + self.clip_post_roll_ms
-            if event.returned_at_ms is not None
+            event.completed_at_ms + self.clip_post_roll_ms
+            if event.completed_at_ms is not None
             else None
         )
 
@@ -99,9 +103,16 @@ class FootworkAssessmentBuilder:
                 classification_confidence=event.direction_confidence,
                 direction_angle_degrees=event.direction_angle_degrees,
                 direction_vector_length=event.direction_vector_length,
+                boundary_ambiguous=(
+                    event.direction_boundary_ambiguous
+                ),
+                completion_reason=(
+                    event.completion_reason or "UNKNOWN"
+                ),
                 move_started_at_ms=event.move_started_at_ms,
                 reach_at_ms=event.reach_at_ms,
                 returned_at_ms=event.returned_at_ms,
+                completed_at_ms=event.completed_at_ms,
                 clip_start_ms=clip_start,
                 clip_end_ms=clip_end,
                 move_time_seconds=event.get_move_time_seconds(),
@@ -111,8 +122,12 @@ class FootworkAssessmentBuilder:
                 move_started_frame=event.move_started_frame,
                 reach_frame=event.reach_frame,
                 returned_frame=event.returned_frame,
+                completed_frame=event.completed_frame,
                 completed=True,
-                returned_to_center=event.returned_at_ms is not None,
+                returned_to_center=(
+                    event.completion_reason
+                    == "STRICT_CENTER"
+                ),
                 motion_features=motion_features,
             )
         )
@@ -137,10 +152,31 @@ class FootworkAssessmentBuilder:
         }
         unknown_count = counts.get("UNKNOWN", 0)
 
-        event_count_valid = len(self.events) == self.expected_event_count
-        all_events_returned = all(e.returned_to_center for e in self.events)
-        direction_coverage_complete = all(coverage.values())
-        test_completed = event_count_valid and all_events_returned
+        event_count_valid = (
+            len(self.events)
+            == self.expected_event_count
+        )
+        all_events_completed = all(
+            event.completed
+            for event in self.events
+        )
+        all_events_returned = all(
+            event.returned_to_center
+            for event in self.events
+        )
+        base_zone_completion_count = sum(
+            event.completion_reason == "BASE_ZONE"
+            for event in self.events
+        )
+        direction_coverage_complete = all(
+            coverage.values()
+        )
+
+        # 測驗完成與精準回中心分開記錄。
+        test_completed = (
+            event_count_valid
+            and all_events_completed
+        )
 
         confidences = [
             e.classification_confidence
@@ -155,11 +191,19 @@ class FootworkAssessmentBuilder:
 
         failure_reasons: list[str] = []
         if not event_count_valid:
-            failure_reasons.append("EVENT_COUNT_NOT_EQUAL_TO_8")
-        if not all_events_returned:
-            failure_reasons.append("EVENT_NOT_RETURNED_TO_CENTER")
+            failure_reasons.append(
+                "EVENT_COUNT_NOT_EQUAL_TO_8"
+            )
+        if not all_events_completed:
+            failure_reasons.append(
+                "EVENT_NOT_COMPLETED"
+            )
 
         quality_notes: list[str] = []
+        if base_zone_completion_count:
+            quality_notes.append(
+                "BASE_ZONE_RETURN_DETECTED"
+            )
         if missing:
             quality_notes.append("DIRECTION_COVERAGE_INCOMPLETE")
         if duplicates:
@@ -197,7 +241,7 @@ class FootworkAssessmentBuilder:
         )
 
         return {
-            "schema_version": "1.5",
+            "schema_version": "1.7",
             "assessment_id": self.assessment_id,
             "engine_version": self.engine_version,
             "config_version": self.config_version,
@@ -210,7 +254,11 @@ class FootworkAssessmentBuilder:
             "event_count": len(self.events),
             "expected_event_count": self.expected_event_count,
             "event_count_valid": event_count_valid,
+            "all_events_completed": all_events_completed,
             "all_events_returned_to_center": all_events_returned,
+            "base_zone_completion_count": (
+                base_zone_completion_count
+            ),
             "direction_coverage_complete": direction_coverage_complete,
             "direction_coverage": coverage,
             "missing_directions": missing,

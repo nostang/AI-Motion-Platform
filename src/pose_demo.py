@@ -48,10 +48,12 @@ from src.config import (
     DIRECTION_X_SCALE,
     DIRECTION_Y_SCALE,
     FOOTWORK_MOVE_OFFSET_THRESHOLD,
+    FOOTWORK_BASE_ZONE_OFFSET_THRESHOLD,
     FOOTWORK_READY_CONFIRM_FRAMES,
     FOOTWORK_RETURN_OFFSET_THRESHOLD,
     FOOTWORK_REVERSAL_CONFIRM_FRAMES,
     FOOTWORK_REVERSAL_MIN_DROP,
+    FOOTWORK_BASE_TRANSITION_CONFIRM_FRAMES,
     EXPECTED_FOOTWORK_EVENT_COUNT,
     FOOTWORK_SMOOTHING_WINDOW,
     TRAJECTORY_MAX_POINTS,
@@ -170,10 +172,16 @@ def run_pose_demo(
     footwork_event = FootworkEvent(
         move_offset_threshold=FOOTWORK_MOVE_OFFSET_THRESHOLD,
         return_offset_threshold=FOOTWORK_RETURN_OFFSET_THRESHOLD,
+        base_zone_offset_threshold=(
+            FOOTWORK_BASE_ZONE_OFFSET_THRESHOLD
+        ),
         smoothing_window=FOOTWORK_SMOOTHING_WINDOW,
         reversal_confirm_frames=FOOTWORK_REVERSAL_CONFIRM_FRAMES,
         reversal_min_drop=FOOTWORK_REVERSAL_MIN_DROP,
         ready_confirm_frames=FOOTWORK_READY_CONFIRM_FRAMES,
+        base_transition_confirm_frames=(
+            FOOTWORK_BASE_TRANSITION_CONFIRM_FRAMES
+        ),
     )
 
     motion_feature_tracker = MotionFeatureTracker()
@@ -396,6 +404,9 @@ def run_pose_demo(
                                 angle_degrees=direction_result.angle_degrees,
                                 confidence=direction_result.confidence,
                                 vector_length=direction_result.vector_length,
+                                boundary_ambiguous=(
+                                    direction_result.boundary_ambiguous
+                                ),
                             )
 
                             angle_text = (
@@ -410,7 +421,9 @@ def run_pose_demo(
                                 f"{direction_result.direction.value} | "
                                 f"Angle {angle_text} | "
                                 f"Vector {direction_result.vector_length:.4f} | "
-                                f"Confidence {direction_result.confidence:.2f}"
+                                f"Confidence {direction_result.confidence:.2f} | "
+                                "Boundary "
+                                f"{direction_result.boundary_ambiguous}"
                             )
 
                         if footwork_event.reach_detected_this_frame:
@@ -434,16 +447,42 @@ def run_pose_demo(
                                 motion_features=motion_features,
                             )
 
+                            move_seconds = (
+                                footwork_event.get_move_time_seconds()
+                            )
+                            recovery_seconds = (
+                                footwork_event.get_recovery_time_seconds()
+                            )
+                            total_seconds = (
+                                footwork_event.get_total_time_seconds()
+                            )
+
+                            move_text = (
+                                f"{move_seconds:.2f}s"
+                                if move_seconds is not None
+                                else "--"
+                            )
+                            recovery_text = (
+                                f"{recovery_seconds:.2f}s"
+                                if recovery_seconds is not None
+                                else "--"
+                            )
+                            total_text = (
+                                f"{total_seconds:.2f}s"
+                                if total_seconds is not None
+                                else "--"
+                            )
+
                             print(
                                 "[Footwork Complete] "
                                 f"Event {footwork_event.event_id} | "
-                                f"Direction {footwork_event.direction or 'UNKNOWN'} | "
-                                "Move "
-                                f"{footwork_event.get_move_time_seconds():.2f}s | "
-                                "Recovery "
-                                f"{footwork_event.get_recovery_time_seconds():.2f}s | "
-                                "Total "
-                                f"{footwork_event.get_total_time_seconds():.2f}s"
+                                f"Direction "
+                                f"{footwork_event.direction or 'UNKNOWN'} | "
+                                f"Reason "
+                                f"{footwork_event.completion_reason or 'UNKNOWN'} | "
+                                f"Move {move_text} | "
+                                f"Recovery {recovery_text} | "
+                                f"Total {total_text}"
                             )
 
                         draw_pelvis_motion(

@@ -1,0 +1,147 @@
+{
+  "schema_version": "1.0",
+  "assessment_id": "fa_cb9e8539e9124e00",
+  "assessment_type": "footwork",
+  "engine_version": "0.5.1",
+  "config_version": "footwork-calibration-v1.2",
+  "source_video": "/path/to/AI-Motion-Platform/dataset/footwork/videos/FW_002.mov",
+  "review_status": "PENDING",
+  "review_policy": {
+    "minimum_reviewers": 3,
+    "consensus_votes_required": 2,
+    "direction_options": [
+      "RIGHT_FRONT",
+      "LEFT_FRONT",
+      "RIGHT_BACK",
+      "LEFT_BACK",
+      "RIGHT",
+      "LEFT",
+      "FRONT",
+      "BACK",
+      "UNKNOWN"
+    ],
+    "note": "審查者只提供人工標註，不直接修改 Calibration 參數。"
+  },
+  "events": [
+    {
+      "event_id": 1,
+      "clip_start_ms": 841,
+      "clip_end_ms": 6220,
+      "reach_at_ms": 1721,
+      "system_result": {
+        "direction": "RIGHT_FRONT",
+        "classification_confidence": 0.3853,
+        "boundary_ambiguous": false,
+        "returned_to_center": true,
+        "completed": true
+      },
+      "review_form": {
+        "actual_direction": null,
+        "returned_to_center": null,
+        "motion_continuous": null,
+        "cannot_judge": false,
+        "comment": ""
+      }
+    },
+    {
+      "event_id": 2,
+      "clip_start_ms": 6182,
+      "clip_end_ms": 10016,
+      "reach_at_ms": 7657,
+      "system_result": {
+        "direction": "RIGHT_BACK",
+        "classification_confidence": 0.4119,
+        "boundary_ambiguous": false,
+        "returned_to_center": true,
+        "completed": true
+      },
+      "review_form": {
+        "actual_direction": null,
+        "returned_to_center": null,
+        "motion_continuous": null,
+        "cannot_judge": false,
+        "comment": ""
+      }
+    },
+    {
+      "event_id": 3,
+      "clip_start_ms": 9647,
+      "clip_end_ms": 13547,
+      "reach_at_ms": 11144,
+      "system_result": {
+        "direction": "LEFT_BACK",
+        "classification_confidence": 0.5307,
+        "boundary_ambiguous": false,
+        "returned_to_center": true,
+        "completed": true
+      },
+      "review_form": {
+        "actual_direction": null,
+        "returned_to_center": null,
+        "motion_continuous": null,
+        "cannot_judge": false,
+        "comment": ""
+      }
+    },
+    {
+      "event_id": 4,
+      "clip_start_ms": 13266,
+      "clip_end_ms": 14805,
+      "reach_at_ms": 13903,
+      "system_result": {
+        "direction": "RIGHT",
+        "classification_confidence": 0.2501,
+        "boundary_ambiguous": true,
+        "returned_to_center": true,
+        "completed": true
+      },
+      "review_form": {
+        "actual_direction": null,
+        "returned_to_center": null,
+        "motion_continuous": null,
+        "cannot_judge": false,
+        "comment": ""
+      }
+    },
+    {
+      "event_id": 5,
+      "clip_start_ms": 14370,
+      "clip_end_ms": 17365,
+      "reach_at_ms": 14808,
+      "system_result": {
+        "direction": "LEFT_FRONT",
+        "classification_confidence": 0.4552,
+        "boundary_ambiguous": false,
+        "returned_to_center": true,
+        "completed": true
+      },
+      "review_form": {
+        "actual_direction": null,
+        "returned_to_center": null,
+        "motion_continuous": null,
+        "cannot_judge": false,
+        "comment": ""
+      }
+    },
+    {
+      "event_id": 6,
+      "clip_start_ms": 17636,
+      "clip_end_ms": 20344,
+      "reach_at_ms": 18317,
+      "system_result": {
+        "direction": "BACK",
+        "classification_confidence": 0.8738,
+        "boundary_ambiguous": false,
+        "returned_to_center": true,
+        "completed": true
+      },
+      "review_form": {
+        "actual_direction": null,
+        "returned_to_center": null,
+        "motion_continuous": null,
+        "cannot_judge": false,
+        "comment": ""
+      }
+    }
+  ]
+}

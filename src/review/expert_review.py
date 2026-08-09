@@ -39,6 +39,10 @@ def build_expert_review_package(
                     "classification_confidence": event.get(
                         "classification_confidence"
                     ),
+                    "boundary_ambiguous": event.get(
+                        "boundary_ambiguous",
+                        False,
+                    ),
                     "returned_to_center": event.get(
                         "returned_to_center", False
                     ),

@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.2",
-  "config_version": "footwork-calibration-v1.2",
+  "schema_version": "1.3",
+  "config_version": "footwork-calibration-v1.3",
   "description": "Footwork Event、方向分類、Motion Feature、Motion Quality 與專家審查片段的可校正參數。",
   "center": {
     "calibration_seconds": 1.0,
@@ -9,10 +9,12 @@
   "event": {
     "move_offset_threshold": 0.08,
     "return_offset_threshold": 0.05,
+    "base_zone_offset_threshold": 0.08,
     "smoothing_window": 5,
     "reversal_confirm_frames": 3,
     "reversal_min_drop": 0.012,
     "ready_confirm_frames": 5,
+    "base_transition_confirm_frames": 2,
     "expected_event_count": 8
   },
   "direction": {

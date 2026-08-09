@@ -40,6 +40,11 @@ FOOTWORK_MOVE_OFFSET_THRESHOLD = float(
 FOOTWORK_RETURN_OFFSET_THRESHOLD = float(
     CALIBRATION_SETTINGS.event["return_offset_threshold"]
 )
+FOOTWORK_BASE_ZONE_OFFSET_THRESHOLD = float(
+    CALIBRATION_SETTINGS.event[
+        "base_zone_offset_threshold"
+    ]
+)
 FOOTWORK_SMOOTHING_WINDOW = int(
     CALIBRATION_SETTINGS.event["smoothing_window"]
 )
@@ -51,6 +56,11 @@ FOOTWORK_REVERSAL_MIN_DROP = float(
 )
 FOOTWORK_READY_CONFIRM_FRAMES = int(
     CALIBRATION_SETTINGS.event["ready_confirm_frames"]
+)
+FOOTWORK_BASE_TRANSITION_CONFIRM_FRAMES = int(
+    CALIBRATION_SETTINGS.event[
+        "base_transition_confirm_frames"
+    ]
 )
 EXPECTED_FOOTWORK_EVENT_COUNT = int(
     CALIBRATION_SETTINGS.event["expected_event_count"]

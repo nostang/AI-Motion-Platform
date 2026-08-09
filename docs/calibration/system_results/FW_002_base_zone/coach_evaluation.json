@@ -1,0 +1,294 @@
+{
+  "schema_version": "1.0",
+  "coach_engine_version": "1.0",
+  "generated_at": "2026-08-09T10:45:52.586775+00:00",
+  "assessment_id": "fa_ccef335bf3794203",
+  "assessment_type": "footwork",
+  "engine_version": "0.5.1",
+  "config_version": "footwork-calibration-v1.3",
+  "assessment_analysis_status": "completed",
+  "test_completed": true,
+  "rules": [
+    {
+      "rule_id": "CR001",
+      "name": "EIGHT_EVENT_COMPLETION",
+      "display_name": "八次動作完成",
+      "result": "PASS",
+      "evidence": {
+        "detected_event_count": 8,
+        "completed_event_count": 8,
+        "expected_event_count": 8
+      },
+      "explanation": "已剛好完成八次有效動作。",
+      "limitations": []
+    },
+    {
+      "rule_id": "CR002",
+      "name": "RETURN_TO_CENTER_COMPLETION",
+      "display_name": "回中心完成",
+      "result": "NEEDS_REVIEW",
+      "evidence": {
+        "strict_center_count": 6,
+        "base_zone_count": 2,
+        "completed_return_count": 8,
+        "incomplete_event_count": 0,
+        "expected_event_count": 8,
+        "all_events_returned_to_center": false
+      },
+      "explanation": "6 次回到原始中心，2 次回到基準區後轉向；測驗流程已完成，但回位精準度需人工複核。",
+      "limitations": [
+        "BASE_ZONE 表示回到基準區後直接轉向下一次移動，不等同精準回到原始中心。",
+        "Base Zone 門檻目前仍為暫定值，需要更多影片與人工標註驗證。"
+      ]
+    },
+    {
+      "rule_id": "CR003",
+      "name": "DIRECTION_COVERAGE",
+      "display_name": "八方向覆蓋",
+      "result": "NEEDS_REVIEW",
+      "evidence": {
+        "assessment_metric_id": "AR003",
+        "score": 21.88,
+        "max_score": 25,
+        "observed_direction_count": 7,
+        "expected_direction_count": 8,
+        "coverage_ratio": 0.875,
+        "direction_coverage": {
+          "RIGHT_FRONT": true,
+          "LEFT_FRONT": true,
+          "RIGHT_BACK": true,
+          "LEFT_BACK": true,
+          "RIGHT": true,
+          "LEFT": false,
+          "FRONT": true,
+          "BACK": true
+        },
+        "missing_directions": [
+          "LEFT"
+        ],
+        "duplicate_directions": {
+          "LEFT_FRONT": 2
+        },
+        "unknown_direction_count": 0,
+        "system_confidence": 0.5314,
+        "config_version": "direction-coverage-v1"
+      },
+      "explanation": "系統辨識到 7/8 個預期方向，需人工確認缺少方向。",
+      "limitations": [
+        "此分數描述系統辨識到的方向覆蓋，不等同於完整步法技術分數。",
+        "缺少方向可能來自動作、拍攝角度或方向分類誤差。",
+        "方向分類仍需 Expert Review 與 Calibration 驗證。"
+      ]
+    },
+    {
+      "rule_id": "CR004",
+      "name": "MOTION_CONTINUITY",
+      "display_name": "動作流程連續性",
+      "result": "PASS",
+      "evidence": {
+        "event_count_valid": true,
+        "completed_event_count": 8,
+        "detected_event_count": 8,
+        "pose_detection_rate": 1.0,
+        "analysis_failure_reasons": []
+      },
+      "explanation": "八次 Event 均完整結束，且未以速度作為通過條件。",
+      "limitations": [
+        "V1 尚未評估停頓時長、碎步、啟動步與腳部時序。",
+        "時間資料僅保存，不用於 V1 通過或失敗判斷。"
+      ]
+    },
+    {
+      "rule_id": "CR005",
+      "name": "RECOVERY_SPEED",
+      "display_name": "回位速度",
+      "result": "NEEDS_REVIEW",
+      "evidence": {
+        "assessment_metric_id": "AR002",
+        "valid_event_count": 6,
+        "required_event_count": 6,
+        "average_seconds": 1.512,
+        "median_seconds": 1.7215,
+        "fastest_seconds": 0.552,
+        "slowest_seconds": 2.053,
+        "score": 5,
+        "max_score": 25,
+        "config_version": "recovery-speed-v1",
+        "thresholds": {
+          "fast_reference_seconds": 0.6,
+          "slow_reference_seconds": 1.5,
+          "pass_score": 18
+        }
+      },
+      "explanation": "平均回位時間為 1.51 秒，Recovery Speed 得分 5/25。",
+      "limitations": [
+        "Recovery Speed V1 使用暫定 Calibration 門檻，尚未經教練樣本驗證。",
+        "此分數只描述目前影片中的回位時間，不代表完整步法技術能力。",
+        "不同方向、拍攝角度與場地尺度可能影響回位時間。"
+      ]
+    },
+    {
+      "rule_id": "CR006",
+      "name": "BODY_STABILITY",
+      "display_name": "身體穩定度",
+      "result": "NEEDS_REVIEW",
+      "evidence": {
+        "assessment_metric_id": "AR004",
+        "level": "POOR",
+        "score": 12,
+        "max_score": 25,
+        "weighted_level_points": 1.6,
+        "feature_levels": [
+          {
+            "feature_id": "MF001_shoulder_tilt",
+            "input_statistic": "mean_absolute_degrees",
+            "aggregate_value": 19.3697,
+            "unit": "degrees",
+            "level": "POOR",
+            "valid_event_count": 8,
+            "calibration_version": "motion-feature-calibration-v1.1",
+            "provisional": true
+          },
+          {
+            "feature_id": "MF002_hip_tilt",
+            "input_statistic": "mean_absolute_degrees",
+            "aggregate_value": 11.1425,
+            "unit": "degrees",
+            "level": "POOR",
+            "valid_event_count": 8,
+            "calibration_version": "motion-feature-calibration-v1.1",
+            "provisional": true
+          },
+          {
+            "feature_id": "MF003_torso_lean",
+            "input_statistic": "mean_absolute_degrees",
+            "aggregate_value": 6.4212,
+            "unit": "degrees",
+            "level": "GOOD",
+            "valid_event_count": 8,
+            "calibration_version": "motion-feature-calibration-v1.1",
+            "provisional": true
+          }
+        ],
+        "config_version": "body-stability-v1",
+        "calibration_version": "motion-feature-calibration-v1.1",
+        "calibration_status": "PROVISIONAL"
+      },
+      "explanation": "移動過程的軀幹傾斜較明顯，建議人工複核。",
+      "limitations": [
+        "Body Stability V1 使用暫定 Calibration，尚未經羽球教練樣本驗證。",
+        "評估僅使用 2D 影像平面的肩線、髖線與軀幹傾斜 Feature。",
+        "拍攝角度、透視與衣物遮擋可能影響結果。",
+        "NEEDS_REVIEW 不等同於使用者動作錯誤。"
+      ]
+    },
+    {
+      "rule_id": "CR007",
+      "name": "MOTION_QUALITY",
+      "display_name": "動作品質",
+      "result": "PASS",
+      "evidence": {
+        "assessment_metric_id": "AR005",
+        "level": "GOOD",
+        "score": 22,
+        "max_score": 25,
+        "feature_id": "MF005_motion_smoothness",
+        "input_statistic": "combined_smoothness_index",
+        "aggregate_value": 0.5527,
+        "valid_event_count": 8,
+        "required_event_count": 6,
+        "config_version": "motion-quality-v1",
+        "calibration_version": "motion-feature-calibration-v1.1",
+        "calibration_status": "PROVISIONAL"
+      },
+      "explanation": "整體動作節奏與位移變化大致流暢。",
+      "limitations": [
+        "Motion Quality V1 使用暫定 Calibration，尚未經教練樣本驗證。",
+        "本評估描述一般動作流暢度，不等同於羽球專項技術正確性。",
+        "速度與位移皆為 2D image-normalized measurement。",
+        "NEEDS_REVIEW 不等同於使用者動作錯誤。"
+      ]
+    }
+  ],
+  "feature_feedback": [
+    {
+      "coach_id": "CF001",
+      "feature_id": "MF001_shoulder_tilt",
+      "display_name": "肩線穩定度",
+      "level": "POOR",
+      "aggregate_value": 19.3697,
+      "unit": "degrees",
+      "input_statistic": "mean_absolute_degrees",
+      "valid_event_count": 8,
+      "message": "肩線傾斜較明顯，建議以低速米字步練習上半身穩定。",
+      "training_suggestion": {
+        "code": "T004",
+        "title": "肩線控制練習",
+        "description": "以低速完成米字步，目標是在移動與回位時保持雙肩平穩，再逐步增加速度。",
+        "sets": 3,
+        "repetitions_per_set": 8
+      },
+      "source_metric_id": "AR004",
+      "source_rule_id": "CR006",
+      "feature_coach_version": "feature-coach-v1",
+      "provisional": true
+    },
+    {
+      "coach_id": "CF002",
+      "feature_id": "MF002_hip_tilt",
+      "display_name": "髖線穩定度",
+      "level": "POOR",
+      "aggregate_value": 11.1425,
+      "unit": "degrees",
+      "input_statistic": "mean_absolute_degrees",
+      "valid_event_count": 8,
+      "message": "髖線左右傾斜較明顯，建議先降低移動速度並維持骨盆穩定。",
+      "training_suggestion": {
+        "code": "T005",
+        "title": "骨盆穩定練習",
+        "description": "進行低速側向與斜向移動，保持骨盆水平，避免重心過度偏向單側。",
+        "sets": 3,
+        "repetitions_per_set": 8
+      },
+      "source_metric_id": "AR004",
+      "source_rule_id": "CR006",
+      "feature_coach_version": "feature-coach-v1",
+      "provisional": true
+    },
+    {
+      "coach_id": "CF003",
+      "feature_id": "MF003_torso_lean",
+      "display_name": "軀幹傾斜控制",
+      "level": "GOOD",
+      "aggregate_value": 6.4212,
+      "unit": "degrees",
+      "input_statistic": "mean_absolute_degrees",
+      "valid_event_count": 8,
+      "message": "軀幹整體穩定，可繼續維持核心控制。",
+      "training_suggestion": null,
+      "source_metric_id": "AR004",
+      "source_rule_id": "CR006",
+      "feature_coach_version": "feature-coach-v1",
+      "provisional": true
+    }
+  ],
+  "checklist_summary": {
+    "pass_count": 3,
+    "fail_count": 0,
+    "needs_review_count": 4,
+    "not_evaluated_count": 0
+  },
+  "overall_status": "NEEDS_REVIEW",
+  "technique_score": null,
+  "motion_quality_score": 22,
+  "timing_used_for_score": true,
+  "not_evaluated": [
+    "lead_foot",
+    "dominant_hand_rule",
+    "extra_steps",
+    "split_step",
+    "coach_similarity_score"
+  ],
+  "expert_review_recommended": true,
+  "gemini_input_ready": true
+}

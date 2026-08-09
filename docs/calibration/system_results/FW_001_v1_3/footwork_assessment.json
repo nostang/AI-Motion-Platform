@@ -1,0 +1,1010 @@
+{
+  "schema_version": "1.7",
+  "assessment_id": "fa_2fee0e74c57c4e3e",
+  "engine_version": "0.5.1",
+  "config_version": "footwork-calibration-v1.3",
+  "calibration_snapshot": {
+    "schema_version": "1.3",
+    "config_version": "footwork-calibration-v1.3",
+    "description": "Footwork Event、方向分類、Motion Feature、Motion Quality 與專家審查片段的可校正參數。",
+    "center": {
+      "calibration_seconds": 1.0,
+      "region_radius": 0.06
+    },
+    "event": {
+      "move_offset_threshold": 0.08,
+      "return_offset_threshold": 0.05,
+      "base_zone_offset_threshold": 0.08,
+      "smoothing_window": 5,
+      "reversal_confirm_frames": 3,
+      "reversal_min_drop": 0.012,
+      "ready_confirm_frames": 5,
+      "base_transition_confirm_frames": 2,
+      "expected_event_count": 8
+    },
+    "direction": {
+      "mirror_x": true,
+      "x_scale": 1.0,
+      "y_scale": 1.8,
+      "min_vector_length": 0.035,
+      "min_confidence": 0.3
+    },
+    "review": {
+      "clip_pre_roll_ms": 350,
+      "clip_post_roll_ms": 350,
+      "minimum_reviewers_for_consensus": 3,
+      "consensus_votes_required": 2
+    },
+    "feature_calibration": {
+      "schema_version": "1.0",
+      "config_version": "motion-feature-calibration-v1.1",
+      "status": "PROVISIONAL",
+      "description": "Body Stability 與 Motion Quality V1 前置校正。門檻為暫定值，尚未經教練樣本驗證。",
+      "features": {
+        "MF001_shoulder_tilt": {
+          "display_name": "Shoulder Tilt",
+          "input_statistic": "mean_absolute_degrees",
+          "unit": "degrees",
+          "direction": "lower_is_better",
+          "thresholds": {
+            "EXCELLENT": 3.0,
+            "GOOD": 6.0,
+            "FAIR": 12.0
+          },
+          "limitations": [
+            "2D image-normalized landmarks only.",
+            "Camera angle and perspective can affect the value."
+          ]
+        },
+        "MF002_hip_tilt": {
+          "display_name": "Hip Tilt",
+          "input_statistic": "mean_absolute_degrees",
+          "unit": "degrees",
+          "direction": "lower_is_better",
+          "thresholds": {
+            "EXCELLENT": 3.0,
+            "GOOD": 6.0,
+            "FAIR": 10.0
+          },
+          "limitations": [
+            "2D image-normalized landmarks only.",
+            "Camera angle and perspective can affect the value."
+          ]
+        },
+        "MF003_torso_lean": {
+          "display_name": "Torso Lean",
+          "input_statistic": "mean_absolute_degrees",
+          "unit": "degrees",
+          "direction": "lower_is_better",
+          "thresholds": {
+            "EXCELLENT": 5.0,
+            "GOOD": 10.0,
+            "FAIR": 18.0
+          },
+          "limitations": [
+            "2D image-normalized landmarks only.",
+            "The value describes image-plane lean, not 3D biomechanics."
+          ]
+        },
+        "MF005_motion_smoothness": {
+          "display_name": "Motion Smoothness",
+          "input_statistic": "combined_smoothness_index",
+          "unit": "index",
+          "direction": "lower_is_better",
+          "thresholds": {
+            "EXCELLENT": 0.35,
+            "GOOD": 0.6,
+            "FAIR": 0.95
+          },
+          "limitations": [
+            "Uses image-normalized pelvis-center offset and velocity.",
+            "Thresholds are provisional and require multi-video calibration.",
+            "Does not evaluate badminton-specific technique."
+          ]
+        }
+      }
+    }
+  },
+  "assessment_type": "footwork",
+  "generated_at": "2026-08-09T10:49:24.350683+00:00",
+  "source_video": "/path/to/AI-Motion-Platform/dataset/footwork/videos/FW_001.mov",
+  "analysis_status": "completed",
+  "test_completed": true,
+  "event_count": 8,
+  "expected_event_count": 8,
+  "event_count_valid": true,
+  "all_events_completed": true,
+  "all_events_returned_to_center": true,
+  "base_zone_completion_count": 0,
+  "direction_coverage_complete": false,
+  "direction_coverage": {
+    "RIGHT_FRONT": true,
+    "LEFT_FRONT": true,
+    "RIGHT_BACK": true,
+    "LEFT_BACK": false,
+    "RIGHT": false,
+    "LEFT": true,
+    "FRONT": true,
+    "BACK": true
+  },
+  "missing_directions": [
+    "LEFT_BACK",
+    "RIGHT"
+  ],
+  "duplicate_directions": {
+    "RIGHT_FRONT": 2,
+    "LEFT_FRONT": 2
+  },
+  "unknown_direction_count": 0,
+  "system_confidence": 0.8341,
+  "failure_reasons": [],
+  "quality_notes": [
+    "DIRECTION_COVERAGE_INCOMPLETE",
+    "DUPLICATE_DIRECTION_DETECTED"
+  ],
+  "pose_detection": {
+    "total_frames": 693,
+    "detected_frames": 693,
+    "detection_rate": 1.0
+  },
+  "timing_used_for_score": true,
+  "recovery_speed": {
+    "metric_id": "AR002",
+    "name": "RECOVERY_SPEED",
+    "display_name": "回位速度",
+    "config_version": "recovery-speed-v1",
+    "valid_event_count": 8,
+    "required_event_count": 6,
+    "average_seconds": 0.8975,
+    "median_seconds": 0.8035,
+    "fastest_seconds": 0.402,
+    "slowest_seconds": 1.5,
+    "score": 18,
+    "max_score": 25,
+    "status": "EVALUATED",
+    "result": "PASS",
+    "thresholds": {
+      "fast_reference_seconds": 0.6,
+      "slow_reference_seconds": 1.5,
+      "pass_score": 18
+    },
+    "explanation": "平均回位時間為 0.90 秒，Recovery Speed 得分 18/25。",
+    "limitations": [
+      "Recovery Speed V1 使用暫定 Calibration 門檻，尚未經教練樣本驗證。",
+      "此分數只描述目前影片中的回位時間，不代表完整步法技術能力。",
+      "不同方向、拍攝角度與場地尺度可能影響回位時間。"
+    ]
+  },
+  "direction_coverage_assessment": {
+    "metric_id": "AR003",
+    "name": "DIRECTION_COVERAGE",
+    "display_name": "方向覆蓋",
+    "status": "EVALUATED",
+    "result": "NEEDS_REVIEW",
+    "score": 18.75,
+    "max_score": 25,
+    "observed_direction_count": 6,
+    "expected_direction_count": 8,
+    "coverage_ratio": 0.75,
+    "direction_coverage": {
+      "RIGHT_FRONT": true,
+      "LEFT_FRONT": true,
+      "RIGHT_BACK": true,
+      "LEFT_BACK": false,
+      "RIGHT": false,
+      "LEFT": true,
+      "FRONT": true,
+      "BACK": true
+    },
+    "missing_directions": [
+      "LEFT_BACK",
+      "RIGHT"
+    ],
+    "duplicate_directions": {
+      "RIGHT_FRONT": 2,
+      "LEFT_FRONT": 2
+    },
+    "unknown_direction_count": 0,
+    "config_version": "direction-coverage-v1",
+    "explanation": "系統辨識到 6/8 個預期方向，需人工確認缺少方向。",
+    "limitations": [
+      "此分數描述系統辨識到的方向覆蓋，不等同於完整步法技術分數。",
+      "缺少方向可能來自動作、拍攝角度或方向分類誤差。",
+      "方向分類仍需 Expert Review 與 Calibration 驗證。"
+    ]
+  },
+  "body_stability": {
+    "metric_id": "AR004",
+    "name": "BODY_STABILITY",
+    "display_name": "身體穩定度",
+    "status": "EVALUATED",
+    "result": "NEEDS_REVIEW",
+    "level": "POOR",
+    "score": 12,
+    "max_score": 25,
+    "required_event_count": 6,
+    "evaluated_feature_count": 3,
+    "weighted_level_points": 1.9,
+    "feature_levels": [
+      {
+        "feature_id": "MF001_shoulder_tilt",
+        "input_statistic": "mean_absolute_degrees",
+        "aggregate_value": 14.3409,
+        "unit": "degrees",
+        "level": "POOR",
+        "valid_event_count": 8,
+        "calibration_version": "motion-feature-calibration-v1.1",
+        "provisional": true
+      },
+      {
+        "feature_id": "MF002_hip_tilt",
+        "input_statistic": "mean_absolute_degrees",
+        "aggregate_value": 10.2795,
+        "unit": "degrees",
+        "level": "POOR",
+        "valid_event_count": 8,
+        "calibration_version": "motion-feature-calibration-v1.1",
+        "provisional": true
+      },
+      {
+        "feature_id": "MF003_torso_lean",
+        "input_statistic": "mean_absolute_degrees",
+        "aggregate_value": 3.3406,
+        "unit": "degrees",
+        "level": "EXCELLENT",
+        "valid_event_count": 8,
+        "calibration_version": "motion-feature-calibration-v1.1",
+        "provisional": true
+      }
+    ],
+    "missing_features": [],
+    "config_version": "body-stability-v1",
+    "calibration_version": "motion-feature-calibration-v1.1",
+    "calibration_status": "PROVISIONAL",
+    "explanation": "移動過程的軀幹傾斜較明顯，建議人工複核。",
+    "limitations": [
+      "Body Stability V1 使用暫定 Calibration，尚未經羽球教練樣本驗證。",
+      "評估僅使用 2D 影像平面的肩線、髖線與軀幹傾斜 Feature。",
+      "拍攝角度、透視與衣物遮擋可能影響結果。",
+      "NEEDS_REVIEW 不等同於使用者動作錯誤。"
+    ]
+  },
+  "motion_quality": {
+    "metric_id": "AR005",
+    "name": "MOTION_QUALITY",
+    "display_name": "動作品質",
+    "status": "EVALUATED",
+    "result": "PASS",
+    "level": "GOOD",
+    "score": 22,
+    "max_score": 25,
+    "valid_event_count": 8,
+    "required_event_count": 6,
+    "feature_id": "MF005_motion_smoothness",
+    "input_statistic": "combined_smoothness_index",
+    "aggregate_value": 0.4405,
+    "unit": "index",
+    "config_version": "motion-quality-v1",
+    "calibration_version": "motion-feature-calibration-v1.1",
+    "calibration_status": "PROVISIONAL",
+    "provisional": true,
+    "explanation": "整體動作節奏與位移變化大致流暢。",
+    "limitations": [
+      "Motion Quality V1 使用暫定 Calibration，尚未經教練樣本驗證。",
+      "本評估描述一般動作流暢度，不等同於羽球專項技術正確性。",
+      "速度與位移皆為 2D image-normalized measurement。",
+      "NEEDS_REVIEW 不等同於使用者動作錯誤。"
+    ]
+  },
+  "motion_feature_library": {
+    "version": "motion-feature-v1.2",
+    "status": "EXTRACTED",
+    "scoring_enabled": true,
+    "consumed_by": [
+      "AR004_BODY_STABILITY",
+      "AR005_MOTION_QUALITY"
+    ],
+    "feature_ids": [
+      "MF001_shoulder_tilt",
+      "MF002_hip_tilt",
+      "MF003_torso_lean",
+      "MF005_motion_smoothness"
+    ],
+    "limitations": [
+      "Features are based on 2D image-normalized landmarks.",
+      "Feature values are descriptive and are not body-stability scores."
+    ]
+  },
+  "technique_score": null,
+  "not_evaluated": [
+    "lead_foot",
+    "dominant_hand_rule",
+    "extra_steps",
+    "split_step",
+    "coach_similarity_score"
+  ],
+  "events": [
+    {
+      "event_id": 1,
+      "direction": "RIGHT_FRONT",
+      "classification_confidence": 0.9826,
+      "direction_angle_degrees": 45.52243884252285,
+      "direction_vector_length": 0.33077168886843705,
+      "boundary_ambiguous": false,
+      "completion_reason": "STRICT_CENTER",
+      "move_started_at_ms": 1714,
+      "reach_at_ms": 2625,
+      "returned_at_ms": 3965,
+      "completed_at_ms": 3965,
+      "clip_start_ms": 1364,
+      "clip_end_ms": 4315,
+      "move_time_seconds": 0.911,
+      "recovery_time_seconds": 1.34,
+      "total_time_seconds": 2.251,
+      "maximum_center_offset": 0.266601,
+      "move_started_frame": 64,
+      "reach_frame": 98,
+      "returned_frame": 148,
+      "completed_frame": 148,
+      "completed": true,
+      "returned_to_center": true,
+      "motion_features": {
+        "feature_version": "motion-feature-v1.2",
+        "event_id": 1,
+        "status": "EXTRACTED",
+        "sample_count": 85,
+        "valid_sample_count": 85,
+        "valid_sample_ratio": 1.0,
+        "phase_samples": {
+          "move": 44,
+          "recovery": 41
+        },
+        "time_range_ms": {
+          "start": 1714,
+          "end": 3965
+        },
+        "pose_quality": {
+          "minimum_visibility": 0.9997,
+          "average_visibility": 0.9998,
+          "minimum_required_visibility": 0.5
+        },
+        "features": {
+          "MF001_shoulder_tilt": {
+            "sample_count": 85,
+            "mean_degrees": -6.3075,
+            "mean_absolute_degrees": 9.7532,
+            "max_absolute_degrees": 34.8793,
+            "standard_deviation_degrees": 12.6935
+          },
+          "MF002_hip_tilt": {
+            "sample_count": 85,
+            "mean_degrees": -2.4422,
+            "mean_absolute_degrees": 5.691,
+            "max_absolute_degrees": 14.0132,
+            "standard_deviation_degrees": 6.553
+          },
+          "MF003_torso_lean": {
+            "sample_count": 85,
+            "mean_degrees": -1.3667,
+            "mean_absolute_degrees": 2.3115,
+            "max_absolute_degrees": 6.707,
+            "standard_deviation_degrees": 2.728
+          },
+          "MF005_motion_smoothness": {
+            "sample_count": 85,
+            "offset_sample_count": 85,
+            "velocity_sample_count": 85,
+            "path_roughness_index": 0.1711,
+            "velocity_variation_index": 0.7397,
+            "combined_smoothness_index": 0.4554,
+            "direction": "lower_is_better",
+            "status": "EXTRACTED"
+          }
+        },
+        "limitations": [
+          "Angles are derived from 2D image-normalized landmarks.",
+          "Camera angle and perspective can affect the values.",
+          "V1.2 smoothness uses pelvis-center offset and image-normalized speed.",
+          "MF005 does not identify sport-specific footwork technique."
+        ]
+      }
+    },
+    {
+      "event_id": 2,
+      "direction": "LEFT_FRONT",
+      "classification_confidence": 0.9793,
+      "direction_angle_degrees": 134.3780183791047,
+      "direction_vector_length": 0.3632227233140542,
+      "boundary_ambiguous": false,
+      "completion_reason": "STRICT_CENTER",
+      "move_started_at_ms": 4581,
+      "reach_at_ms": 5251,
+      "returned_at_ms": 6403,
+      "completed_at_ms": 6403,
+      "clip_start_ms": 4231,
+      "clip_end_ms": 6753,
+      "move_time_seconds": 0.67,
+      "recovery_time_seconds": 1.152,
+      "total_time_seconds": 1.822,
+      "maximum_center_offset": 0.29348,
+      "move_started_frame": 171,
+      "reach_frame": 196,
+      "returned_frame": 239,
+      "completed_frame": 239,
+      "completed": true,
+      "returned_to_center": true,
+      "motion_features": {
+        "feature_version": "motion-feature-v1.2",
+        "event_id": 2,
+        "status": "EXTRACTED",
+        "sample_count": 69,
+        "valid_sample_count": 69,
+        "valid_sample_ratio": 1.0,
+        "phase_samples": {
+          "move": 31,
+          "recovery": 38
+        },
+        "time_range_ms": {
+          "start": 4581,
+          "end": 6403
+        },
+        "pose_quality": {
+          "minimum_visibility": 0.9991,
+          "average_visibility": 0.9997,
+          "minimum_required_visibility": 0.5
+        },
+        "features": {
+          "MF001_shoulder_tilt": {
+            "sample_count": 69,
+            "mean_degrees": 16.3223,
+            "mean_absolute_degrees": 29.1358,
+            "max_absolute_degrees": 83.7765,
+            "standard_deviation_degrees": 35.7706
+          },
+          "MF002_hip_tilt": {
+            "sample_count": 69,
+            "mean_degrees": 2.5024,
+            "mean_absolute_degrees": 21.3415,
+            "max_absolute_degrees": 87.9597,
+            "standard_deviation_degrees": 32.5293
+          },
+          "MF003_torso_lean": {
+            "sample_count": 69,
+            "mean_degrees": 2.2819,
+            "mean_absolute_degrees": 3.2518,
+            "max_absolute_degrees": 7.4483,
+            "standard_deviation_degrees": 3.1027
+          },
+          "MF005_motion_smoothness": {
+            "sample_count": 69,
+            "offset_sample_count": 69,
+            "velocity_sample_count": 69,
+            "path_roughness_index": 0.139,
+            "velocity_variation_index": 0.5377,
+            "combined_smoothness_index": 0.3384,
+            "direction": "lower_is_better",
+            "status": "EXTRACTED"
+          }
+        },
+        "limitations": [
+          "Angles are derived from 2D image-normalized landmarks.",
+          "Camera angle and perspective can affect the values.",
+          "V1.2 smoothness uses pelvis-center offset and image-normalized speed.",
+          "MF005 does not identify sport-specific footwork technique."
+        ]
+      }
+    },
+    {
+      "event_id": 3,
+      "direction": "RIGHT_FRONT",
+      "classification_confidence": 0.6402,
+      "direction_angle_degrees": 34.20650909120544,
+      "direction_vector_length": 0.19063944086299114,
+      "boundary_ambiguous": false,
+      "completion_reason": "STRICT_CENTER",
+      "move_started_at_ms": 6805,
+      "reach_at_ms": 7154,
+      "returned_at_ms": 7743,
+      "completed_at_ms": 7743,
+      "clip_start_ms": 6455,
+      "clip_end_ms": 8093,
+      "move_time_seconds": 0.349,
+      "recovery_time_seconds": 0.589,
+      "total_time_seconds": 0.938,
+      "maximum_center_offset": 0.168918,
+      "move_started_frame": 254,
+      "reach_frame": 267,
+      "returned_frame": 289,
+      "completed_frame": 289,
+      "completed": true,
+      "returned_to_center": true,
+      "motion_features": {
+        "feature_version": "motion-feature-v1.2",
+        "event_id": 3,
+        "status": "EXTRACTED",
+        "sample_count": 36,
+        "valid_sample_count": 36,
+        "valid_sample_ratio": 1.0,
+        "phase_samples": {
+          "move": 20,
+          "recovery": 16
+        },
+        "time_range_ms": {
+          "start": 6805,
+          "end": 7743
+        },
+        "pose_quality": {
+          "minimum_visibility": 0.9996,
+          "average_visibility": 0.9998,
+          "minimum_required_visibility": 0.5
+        },
+        "features": {
+          "MF001_shoulder_tilt": {
+            "sample_count": 36,
+            "mean_degrees": -7.062,
+            "mean_absolute_degrees": 15.0145,
+            "max_absolute_degrees": 30.1251,
+            "standard_deviation_degrees": 16.0137
+          },
+          "MF002_hip_tilt": {
+            "sample_count": 36,
+            "mean_degrees": -0.1974,
+            "mean_absolute_degrees": 6.563,
+            "max_absolute_degrees": 15.5276,
+            "standard_deviation_degrees": 7.6282
+          },
+          "MF003_torso_lean": {
+            "sample_count": 36,
+            "mean_degrees": 0.5314,
+            "mean_absolute_degrees": 3.1178,
+            "max_absolute_degrees": 4.9076,
+            "standard_deviation_degrees": 3.2383
+          },
+          "MF005_motion_smoothness": {
+            "sample_count": 36,
+            "offset_sample_count": 36,
+            "velocity_sample_count": 36,
+            "path_roughness_index": 0.1247,
+            "velocity_variation_index": 0.4879,
+            "combined_smoothness_index": 0.3063,
+            "direction": "lower_is_better",
+            "status": "EXTRACTED"
+          }
+        },
+        "limitations": [
+          "Angles are derived from 2D image-normalized landmarks.",
+          "Camera angle and perspective can affect the values.",
+          "V1.2 smoothness uses pelvis-center offset and image-normalized speed.",
+          "MF005 does not identify sport-specific footwork technique."
+        ]
+      }
+    },
+    {
+      "event_id": 4,
+      "direction": "LEFT_FRONT",
+      "classification_confidence": 0.8369,
+      "direction_angle_degrees": 139.89402061796886,
+      "direction_vector_length": 0.14679171957718143,
+      "boundary_ambiguous": false,
+      "completion_reason": "STRICT_CENTER",
+      "move_started_at_ms": 8038,
+      "reach_at_ms": 8199,
+      "returned_at_ms": 8815,
+      "completed_at_ms": 8815,
+      "clip_start_ms": 7688,
+      "clip_end_ms": 9165,
+      "move_time_seconds": 0.161,
+      "recovery_time_seconds": 0.616,
+      "total_time_seconds": 0.777,
+      "maximum_center_offset": 0.125336,
+      "move_started_frame": 300,
+      "reach_frame": 306,
+      "returned_frame": 329,
+      "completed_frame": 329,
+      "completed": true,
+      "returned_to_center": true,
+      "motion_features": {
+        "feature_version": "motion-feature-v1.2",
+        "event_id": 4,
+        "status": "EXTRACTED",
+        "sample_count": 30,
+        "valid_sample_count": 30,
+        "valid_sample_ratio": 1.0,
+        "phase_samples": {
+          "move": 14,
+          "recovery": 16
+        },
+        "time_range_ms": {
+          "start": 8038,
+          "end": 8815
+        },
+        "pose_quality": {
+          "minimum_visibility": 0.9997,
+          "average_visibility": 0.9998,
+          "minimum_required_visibility": 0.5
+        },
+        "features": {
+          "MF001_shoulder_tilt": {
+            "sample_count": 30,
+            "mean_degrees": 17.0032,
+            "mean_absolute_degrees": 17.5284,
+            "max_absolute_degrees": 87.9068,
+            "standard_deviation_degrees": 17.6077
+          },
+          "MF002_hip_tilt": {
+            "sample_count": 30,
+            "mean_degrees": 6.9809,
+            "mean_absolute_degrees": 13.8117,
+            "max_absolute_degrees": 60.0641,
+            "standard_deviation_degrees": 18.9519
+          },
+          "MF003_torso_lean": {
+            "sample_count": 30,
+            "mean_degrees": 2.7007,
+            "mean_absolute_degrees": 3.4294,
+            "max_absolute_degrees": 6.2813,
+            "standard_deviation_degrees": 2.9186
+          },
+          "MF005_motion_smoothness": {
+            "sample_count": 30,
+            "offset_sample_count": 30,
+            "velocity_sample_count": 30,
+            "path_roughness_index": 0.1651,
+            "velocity_variation_index": 0.4744,
+            "combined_smoothness_index": 0.3198,
+            "direction": "lower_is_better",
+            "status": "EXTRACTED"
+          }
+        },
+        "limitations": [
+          "Angles are derived from 2D image-normalized landmarks.",
+          "Camera angle and perspective can affect the values.",
+          "V1.2 smoothness uses pelvis-center offset and image-normalized speed.",
+          "MF005 does not identify sport-specific footwork technique."
+        ]
+      }
+    },
+    {
+      "event_id": 5,
+      "direction": "RIGHT_BACK",
+      "classification_confidence": 0.9781,
+      "direction_angle_degrees": -45.6579959272848,
+      "direction_vector_length": 0.18769015527733393,
+      "boundary_ambiguous": false,
+      "completion_reason": "STRICT_CENTER",
+      "move_started_at_ms": 9244,
+      "reach_at_ms": 9619,
+      "returned_at_ms": 10610,
+      "completed_at_ms": 10610,
+      "clip_start_ms": 8894,
+      "clip_end_ms": 10960,
+      "move_time_seconds": 0.375,
+      "recovery_time_seconds": 0.991,
+      "total_time_seconds": 1.366,
+      "maximum_center_offset": 0.151181,
+      "move_started_frame": 345,
+      "reach_frame": 359,
+      "returned_frame": 396,
+      "completed_frame": 396,
+      "completed": true,
+      "returned_to_center": true,
+      "motion_features": {
+        "feature_version": "motion-feature-v1.2",
+        "event_id": 5,
+        "status": "EXTRACTED",
+        "sample_count": 52,
+        "valid_sample_count": 52,
+        "valid_sample_ratio": 1.0,
+        "phase_samples": {
+          "move": 26,
+          "recovery": 26
+        },
+        "time_range_ms": {
+          "start": 9244,
+          "end": 10610
+        },
+        "pose_quality": {
+          "minimum_visibility": 0.9971,
+          "average_visibility": 0.9991,
+          "minimum_required_visibility": 0.5
+        },
+        "features": {
+          "MF001_shoulder_tilt": {
+            "sample_count": 52,
+            "mean_degrees": 5.919,
+            "mean_absolute_degrees": 13.6673,
+            "max_absolute_degrees": 87.1333,
+            "standard_deviation_degrees": 19.1345
+          },
+          "MF002_hip_tilt": {
+            "sample_count": 52,
+            "mean_degrees": 3.8544,
+            "mean_absolute_degrees": 9.4401,
+            "max_absolute_degrees": 20.6824,
+            "standard_deviation_degrees": 10.1112
+          },
+          "MF003_torso_lean": {
+            "sample_count": 52,
+            "mean_degrees": 2.831,
+            "mean_absolute_degrees": 3.5052,
+            "max_absolute_degrees": 9.0133,
+            "standard_deviation_degrees": 2.9427
+          },
+          "MF005_motion_smoothness": {
+            "sample_count": 52,
+            "offset_sample_count": 52,
+            "velocity_sample_count": 52,
+            "path_roughness_index": 0.1817,
+            "velocity_variation_index": 0.6695,
+            "combined_smoothness_index": 0.4256,
+            "direction": "lower_is_better",
+            "status": "EXTRACTED"
+          }
+        },
+        "limitations": [
+          "Angles are derived from 2D image-normalized landmarks.",
+          "Camera angle and perspective can affect the values.",
+          "V1.2 smoothness uses pelvis-center offset and image-normalized speed.",
+          "MF005 does not identify sport-specific footwork technique."
+        ]
+      }
+    },
+    {
+      "event_id": 6,
+      "direction": "LEFT",
+      "classification_confidence": 0.4969,
+      "direction_angle_degrees": -164.90677702087714,
+      "direction_vector_length": 0.16964094462629012,
+      "boundary_ambiguous": false,
+      "completion_reason": "STRICT_CENTER",
+      "move_started_at_ms": 11146,
+      "reach_at_ms": 11950,
+      "returned_at_ms": 13450,
+      "completed_at_ms": 13450,
+      "clip_start_ms": 10796,
+      "clip_end_ms": 13800,
+      "move_time_seconds": 0.804,
+      "recovery_time_seconds": 1.5,
+      "total_time_seconds": 2.304,
+      "maximum_center_offset": 0.166253,
+      "move_started_frame": 416,
+      "reach_frame": 446,
+      "returned_frame": 502,
+      "completed_frame": 502,
+      "completed": true,
+      "returned_to_center": true,
+      "motion_features": {
+        "feature_version": "motion-feature-v1.2",
+        "event_id": 6,
+        "status": "EXTRACTED",
+        "sample_count": 87,
+        "valid_sample_count": 87,
+        "valid_sample_ratio": 1.0,
+        "phase_samples": {
+          "move": 46,
+          "recovery": 41
+        },
+        "time_range_ms": {
+          "start": 11146,
+          "end": 13450
+        },
+        "pose_quality": {
+          "minimum_visibility": 0.9985,
+          "average_visibility": 0.9995,
+          "minimum_required_visibility": 0.5
+        },
+        "features": {
+          "MF001_shoulder_tilt": {
+            "sample_count": 87,
+            "mean_degrees": 5.0607,
+            "mean_absolute_degrees": 11.1835,
+            "max_absolute_degrees": 40.424,
+            "standard_deviation_degrees": 13.8689
+          },
+          "MF002_hip_tilt": {
+            "sample_count": 87,
+            "mean_degrees": 2.7387,
+            "mean_absolute_degrees": 11.1189,
+            "max_absolute_degrees": 52.0216,
+            "standard_deviation_degrees": 14.3576
+          },
+          "MF003_torso_lean": {
+            "sample_count": 87,
+            "mean_degrees": 3.9844,
+            "mean_absolute_degrees": 4.2118,
+            "max_absolute_degrees": 13.9419,
+            "standard_deviation_degrees": 3.5278
+          },
+          "MF005_motion_smoothness": {
+            "sample_count": 87,
+            "offset_sample_count": 87,
+            "velocity_sample_count": 87,
+            "path_roughness_index": 0.194,
+            "velocity_variation_index": 0.7231,
+            "combined_smoothness_index": 0.4585,
+            "direction": "lower_is_better",
+            "status": "EXTRACTED"
+          }
+        },
+        "limitations": [
+          "Angles are derived from 2D image-normalized landmarks.",
+          "Camera angle and perspective can affect the values.",
+          "V1.2 smoothness uses pelvis-center offset and image-normalized speed.",
+          "MF005 does not identify sport-specific footwork technique."
+        ]
+      }
+    },
+    {
+      "event_id": 7,
+      "direction": "FRONT",
+      "classification_confidence": 0.9987,
+      "direction_angle_degrees": 90.03901749602387,
+      "direction_vector_length": 0.2583154424308501,
+      "boundary_ambiguous": false,
+      "completion_reason": "STRICT_CENTER",
+      "move_started_at_ms": 14040,
+      "reach_at_ms": 14227,
+      "returned_at_ms": 14817,
+      "completed_at_ms": 14817,
+      "clip_start_ms": 13690,
+      "clip_end_ms": 15167,
+      "move_time_seconds": 0.187,
+      "recovery_time_seconds": 0.59,
+      "total_time_seconds": 0.777,
+      "maximum_center_offset": 0.148254,
+      "move_started_frame": 524,
+      "reach_frame": 531,
+      "returned_frame": 553,
+      "completed_frame": 553,
+      "completed": true,
+      "returned_to_center": true,
+      "motion_features": {
+        "feature_version": "motion-feature-v1.2",
+        "event_id": 7,
+        "status": "EXTRACTED",
+        "sample_count": 30,
+        "valid_sample_count": 30,
+        "valid_sample_ratio": 1.0,
+        "phase_samples": {
+          "move": 14,
+          "recovery": 16
+        },
+        "time_range_ms": {
+          "start": 14040,
+          "end": 14817
+        },
+        "pose_quality": {
+          "minimum_visibility": 0.9997,
+          "average_visibility": 0.9998,
+          "minimum_required_visibility": 0.5
+        },
+        "features": {
+          "MF001_shoulder_tilt": {
+            "sample_count": 30,
+            "mean_degrees": -9.6906,
+            "mean_absolute_degrees": 10.2543,
+            "max_absolute_degrees": 31.8063,
+            "standard_deviation_degrees": 10.4902
+          },
+          "MF002_hip_tilt": {
+            "sample_count": 30,
+            "mean_degrees": 2.3054,
+            "mean_absolute_degrees": 6.655,
+            "max_absolute_degrees": 12.2908,
+            "standard_deviation_degrees": 7.1987
+          },
+          "MF003_torso_lean": {
+            "sample_count": 30,
+            "mean_degrees": 1.3914,
+            "mean_absolute_degrees": 1.4496,
+            "max_absolute_degrees": 2.936,
+            "standard_deviation_degrees": 1.1033
+          },
+          "MF005_motion_smoothness": {
+            "sample_count": 30,
+            "offset_sample_count": 30,
+            "velocity_sample_count": 30,
+            "path_roughness_index": 0.2666,
+            "velocity_variation_index": 0.6948,
+            "combined_smoothness_index": 0.4807,
+            "direction": "lower_is_better",
+            "status": "EXTRACTED"
+          }
+        },
+        "limitations": [
+          "Angles are derived from 2D image-normalized landmarks.",
+          "Camera angle and perspective can affect the values.",
+          "V1.2 smoothness uses pelvis-center offset and image-normalized speed.",
+          "MF005 does not identify sport-specific footwork technique."
+        ]
+      }
+    },
+    {
+      "event_id": 8,
+      "direction": "BACK",
+      "classification_confidence": 0.7604,
+      "direction_angle_degrees": -97.18929223966714,
+      "direction_vector_length": 0.15349428241954388,
+      "boundary_ambiguous": false,
+      "completion_reason": "STRICT_CENTER",
+      "move_started_at_ms": 16585,
+      "reach_at_ms": 16692,
+      "returned_at_ms": 17094,
+      "completed_at_ms": 17094,
+      "clip_start_ms": 16235,
+      "clip_end_ms": 17444,
+      "move_time_seconds": 0.107,
+      "recovery_time_seconds": 0.402,
+      "total_time_seconds": 0.509,
+      "maximum_center_offset": 0.088939,
+      "move_started_frame": 619,
+      "reach_frame": 623,
+      "returned_frame": 638,
+      "completed_frame": 638,
+      "completed": true,
+      "returned_to_center": true,
+      "motion_features": {
+        "feature_version": "motion-feature-v1.2",
+        "event_id": 8,
+        "status": "EXTRACTED",
+        "sample_count": 20,
+        "valid_sample_count": 20,
+        "valid_sample_ratio": 1.0,
+        "phase_samples": {
+          "move": 12,
+          "recovery": 8
+        },
+        "time_range_ms": {
+          "start": 16585,
+          "end": 17094
+        },
+        "pose_quality": {
+          "minimum_visibility": 0.999,
+          "average_visibility": 0.9995,
+          "minimum_required_visibility": 0.5
+        },
+        "features": {
+          "MF001_shoulder_tilt": {
+            "sample_count": 20,
+            "mean_degrees": 18.6793,
+            "mean_absolute_degrees": 25.9289,
+            "max_absolute_degrees": 68.3273,
+            "standard_deviation_degrees": 24.8428
+          },
+          "MF002_hip_tilt": {
+            "sample_count": 20,
+            "mean_degrees": 9.2186,
+            "mean_absolute_degrees": 14.3207,
+            "max_absolute_degrees": 44.8441,
+            "standard_deviation_degrees": 17.9373
+          },
+          "MF003_torso_lean": {
+            "sample_count": 20,
+            "mean_degrees": 9.7488,
+            "mean_absolute_degrees": 9.7488,
+            "max_absolute_degrees": 18.9425,
+            "standard_deviation_degrees": 4.7391
+          },
+          "MF005_motion_smoothness": {
+            "sample_count": 20,
+            "offset_sample_count": 20,
+            "velocity_sample_count": 20,
+            "path_roughness_index": 0.3159,
+            "velocity_variation_index": 0.9881,
+            "combined_smoothness_index": 0.652,
+            "direction": "lower_is_better",
+            "status": "EXTRACTED"
+          }
+        },
+        "limitations": [
+          "Angles are derived from 2D image-normalized landmarks.",
+          "Camera angle and perspective can affect the values.",
+          "V1.2 smoothness uses pelvis-center offset and image-normalized speed.",
+          "MF005 does not identify sport-specific footwork technique."
+        ]
+      }
+    }
+  ],
+  "expert_review_ready": true,
+  "gemini_input_ready": true
+}
