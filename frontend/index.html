@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#075d3b">
   <title>AI Motion｜羽球動作分析</title>
-  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/home.css?v=20260809-2">
 </head>
 <body>
   <div class="court-lines" aria-hidden="true"></div>
@@ -16,20 +16,25 @@
       <span><strong>AI MOTION</strong><small>BADMINTON LAB</small></span>
     </a>
     <span class="version-tag">REFERENCE WEB V1</span>
-  </header>
+</header>
 
   <main>
     <section class="hero">
       <p class="eyebrow">PIXEL COURT / MOTION ANALYSIS</p>
       <h1>把每一次揮拍，<br><span>變成看得懂的進步。</span></h1>
       <p class="hero-copy">選擇動作並上傳 3–30 秒影片，AI Motion 將分析姿勢、特徵與動作品質。</p>
-      <div class="hero-badge" aria-label="分析流程">POSE → FEATURE → RULE → COACH</div>
+      <div class="hero-actions">
+        <div class="hero-badge" aria-label="分析流程">POSE → FEATURE → RULE → COACH</div>
+        <a class="summary-link" href="summary.html?user_id=1">
+          查看能力總覽 →
+        </a>
+      </div>
     </section>
 
     <section class="panel" aria-labelledby="motion-heading">
       <div class="step-heading">
         <span>01</span>
-        <div><p>SELECT MOTION</p><h2 id="motion-heading">選擇分析動作</h2></div>
+        <div><p>MOTION & VIDEO</p><h2 id="motion-heading">選擇動作與影片</h2></div>
       </div>
 
       <div class="motion-grid" role="radiogroup" aria-label="動作類型">
@@ -43,15 +48,14 @@
           <span class="pixel-icon">⌁</span><strong>高遠球</strong><small>CLEAR</small><em>03</em>
         </button>
       </div>
-    </section>
+      <div class="input-subheading">
+    <div>
+      <p>VIDEO INPUT</p>
+      <h3 id="input-heading">加入測驗影片</h3>
+    </div>
+  </div>
 
-    <section class="panel" aria-labelledby="input-heading">
-      <div class="step-heading">
-        <span>02</span>
-        <div><p>VIDEO INPUT</p><h2 id="input-heading">加入測驗影片</h2></div>
-      </div>
-
-      <div class="input-grid">
+  <div class="input-grid">
         <div class="upload-zone" id="uploadZone">
           <input id="videoInput" type="file" accept="video/mp4,video/quicktime,.mp4,.mov" hidden>
           <div class="upload-glyph">↑</div>
@@ -89,7 +93,7 @@
 
     <section class="panel status-panel" id="statusPanel" hidden aria-live="polite">
       <div class="step-heading">
-        <span>03</span>
+        <span>02</span>
         <div><p>ANALYSIS STATUS</p><h2>系統分析中</h2></div>
       </div>
       <div class="pipeline" id="pipeline">

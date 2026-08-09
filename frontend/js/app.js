@@ -133,7 +133,25 @@
       });
 
       setPipeline("report", "分析完成，正在開啟報告…");
-      window.setTimeout(() => { window.location.href = reportUrl(assessmentId); }, 500);
+
+      const completedReportUrl = new URL(
+        reportUrl(assessmentId),
+        window.location.href
+      );
+
+      if (pageParameters.get("source") === "summary") {
+        completedReportUrl.searchParams.set("from", "summary");
+        completedReportUrl.searchParams.set(
+          "user_id",
+          pageParameters.get("user_id") || "1"
+        );
+      }
+
+      window.setTimeout(() => {
+        window.location.href =
+          completedReportUrl.pathname +
+          completedReportUrl.search;
+      }, 500);
     } catch (errorObject) {
       console.error(errorObject);
       showToast(errorObject.message || "分析失敗，請確認 Backend 是否已啟動", 7000);
@@ -144,7 +162,31 @@
     }
   }
 
-  motionCards.forEach((card) => card.addEventListener("click", () => selectMotion(card)));
+  motionCards.forEach((card) => {
+  card.addEventListener("click", () => selectMotion(card));
+});
+
+const pageParameters = new URLSearchParams(
+  window.location.search
+);
+const requestedMotion = pageParameters.get("motion");
+const requestedMotionCard = motionCards.find(
+  (card) => card.dataset.motion === requestedMotion
+);
+
+if (requestedMotionCard) {
+  selectMotion(requestedMotionCard);
+
+  window.requestAnimationFrame(() => {
+    const inputSection =
+      document.getElementById("input-heading");
+
+    inputSection?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
+}
   chooseFileButton.addEventListener("click", () => videoInput.click());
   videoInput.addEventListener("change", () => setFile(videoInput.files[0]));
   removeFileButton.addEventListener("click", clearFile);

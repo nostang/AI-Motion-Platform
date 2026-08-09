@@ -191,3 +191,209 @@ body.camera-open { overflow: hidden; }
   grid-column: 2;
   color: #567063;
 }
+
+
+/* Homepage Combined Motion Input V2 */
+
+.hero-actions {
+  margin-top: 22px;
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.hero-actions .hero-badge {
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.summary-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 15px;
+  color: var(--lime);
+  background: var(--court-deep);
+  border: 2px solid var(--lime);
+  box-shadow: 4px 4px 0 var(--court-deep);
+  font: 800 11px/1 ui-monospace, monospace;
+  letter-spacing: .07em;
+  text-decoration: none;
+}
+
+.summary-link:hover,
+.summary-link:focus-visible {
+  color: var(--ink);
+  background: var(--lime);
+  border-color: var(--ink);
+  outline: none;
+}
+
+.motion-grid {
+  margin-bottom: 28px;
+}
+
+.motion-card {
+  min-height: 116px;
+  padding: 17px 19px;
+}
+
+.motion-card strong {
+  margin-top: 8px;
+  font-size: 18px;
+}
+
+.motion-card small {
+  margin-top: 4px;
+}
+
+.motion-card .pixel-icon {
+  width: 34px;
+  height: 34px;
+  font-size: 17px;
+}
+
+.input-subheading {
+  margin: 2px 0 18px;
+  padding-top: 23px;
+  border-top: 4px solid var(--court);
+}
+
+.input-subheading p {
+  margin: 0 0 5px;
+  color: #4c6e5e;
+  font: 700 11px/1 ui-monospace, monospace;
+  letter-spacing: .14em;
+}
+
+.input-subheading h3 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.upload-zone,
+.camera-card {
+  min-height: 215px;
+  padding: 24px;
+}
+
+.upload-glyph,
+.camera-glyph {
+  width: 46px;
+  height: 46px;
+  font-size: 22px;
+}
+
+.upload-zone h3,
+.camera-card h3 {
+  margin-top: 15px;
+}
+
+@media (max-width: 740px) {
+  main,
+  .site-header {
+    width: min(100% - 24px, 1040px);
+  }
+
+  .hero {
+    padding: 38px 0 34px;
+  }
+
+  .hero h1 {
+    font-size: clamp(34px, 9.5vw, 47px);
+    line-height: 1.08;
+  }
+
+  .hero-copy {
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .hero-actions .hero-badge,
+  .summary-link {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .motion-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin-bottom: 22px;
+  }
+
+  .motion-card {
+    min-width: 0;
+    min-height: 82px;
+    padding: 11px 8px;
+    text-align: center;
+  }
+
+  .motion-card .pixel-icon {
+    width: 28px;
+    height: 28px;
+    margin: 0 auto;
+    font-size: 14px;
+  }
+
+  .motion-card strong {
+    margin-top: 8px;
+    font-size: 15px;
+  }
+
+  .motion-card small {
+    display: none;
+  }
+
+  .motion-card em {
+    right: 7px;
+    top: 6px;
+    font-size: 8px;
+  }
+
+  .input-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .upload-zone,
+  .camera-card {
+    min-height: 155px;
+    padding: 18px 14px;
+  }
+
+  .upload-glyph,
+  .camera-glyph {
+    width: 38px;
+    height: 38px;
+    font-size: 19px;
+  }
+
+  .upload-zone h3,
+  .camera-card h3 {
+    margin: 11px 0 2px;
+    font-size: 17px;
+  }
+
+  .upload-zone p,
+  .camera-card p {
+    margin: 3px 0 11px;
+    font-size: 12px;
+  }
+
+  .upload-zone small,
+  .camera-card small {
+    margin-top: 9px;
+    font-size: 10px;
+  }
+
+  .analyze-button {
+    padding: 15px;
+  }
+}

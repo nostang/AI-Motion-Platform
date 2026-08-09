@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Motion｜能力總覽</title>
+  <link rel="stylesheet" href="css/summary.css">
+</head>
+<body>
+  <div class="court-lines" aria-hidden="true"></div>
+  <header class="site-header shell">
+    <a class="brand" href="index.html" aria-label="回到 AI Motion 首頁">
+      <span class="brand-mark">AM</span>
+      <span><strong>AI MOTION</strong><small>BADMINTON LAB</small></span>
+    </a>
+    <span class="page-tag">COMPETENCY SUMMARY</span>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">PIXEL COURT / PLAYER PROGRESS</p>
+      <h1>能力總覽</h1>
+      <p class="hero-copy">整合步法、發球與高遠球，查看本次能力輪廓與前一次測驗差異。</p>
+    </section>
+
+    <div id="loadingState" class="state-panel">正在讀取球員能力資料…</div>
+    <div id="errorState" class="state-panel state-error" hidden>
+      <strong>暫時無法載入能力總覽</strong>
+      <span id="errorMessage"></span>
+      <button id="retryButton" type="button">重新讀取</button>
+    </div>
+
+    <div id="summaryContent" hidden>
+      <section class="panel radar-panel">
+        <div class="section-heading">
+          <span class="step">01</span>
+          <div><small>COMPETENCY AXES</small><h2>綜合能力雷達</h2></div>
+        </div>
+        <div class="radar-layout">
+          <div class="chart-wrap">
+            <canvas id="competencyRadar" role="img" aria-label="本次與前次能力雷達比較圖"></canvas>
+          </div>
+          <div class="radar-copy">
+            <div class="legend">
+              <span><i class="legend-current"></i>本次測驗</span>
+              <span id="previousLegend"><i class="legend-previous"></i>前次測驗</span>
+            </div>
+            <p id="comparisonNote" class="comparison-note"></p>
+            <div id="axisChanges" class="axis-changes"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading">
+          <span class="step">02</span>
+          <div><small>MOTION RESULTS</small><h2>三項動作表現</h2></div>
+        </div>
+        <div id="motionCards" class="motion-grid"></div>
+      </section>
+
+      <section class="panel coach-panel">
+        <div class="section-heading">
+          <span class="step">03</span>
+          <div><small>AI COACH</small><h2>本次摘要</h2></div>
+        </div>
+        <p id="aiHeadline" class="coach-headline"></p>
+        <p id="progressSummary" class="progress-summary"></p>
+    <p class="player-context-line" id="racketContext" hidden>
+      <span>EXPERIMENTAL</span>
+      <strong id="racketHand"></strong>
+      <small id="racketConfidence"></small>
+    </p>
+
+        <div class="coach-columns">
+          <div><h3>訓練焦點</h3><div id="focusTags" class="tags"></div></div>
+          <div><h3>建議</h3><ul id="recommendations"></ul></div>
+        </div>
+      </section>
+
+      <div class="bottom-actions">
+        <a class="primary-action" href="index.html">← 返回重新測驗</a>
+        <span id="userReference">PLAYER / 1</span>
+      </div>
+    </div>
+  </main>
+
+  <footer class="shell"><span>AI MOTION PLATFORM</span><span>PIXEL COURT / 2026</span></footer>
+  <script src="js/config.js"></script>
+  <script src="js/summary.js"></script>
+</body>
+</html>

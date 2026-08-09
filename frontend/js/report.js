@@ -349,6 +349,17 @@ function renderDimensions(report) {
     }
   }
 
-  elements.backButton.addEventListener("click", () => { window.location.href = "index.html"; });
+  const returnParameters = new URLSearchParams(
+    window.location.search
+  );
+  const returnSource = returnParameters.get("from");
+  const returnUserId =
+    Number(returnParameters.get("user_id")) || 1;
+
+  elements.backButton.textContent = "再測一次 ↻";
+
+  elements.backButton.addEventListener("click", () => {
+    window.location.href = "index.html";
+  });
   await loadReport();
 });
