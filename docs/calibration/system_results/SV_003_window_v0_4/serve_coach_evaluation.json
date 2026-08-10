@@ -1,0 +1,40 @@
+{
+  "schema_version": "0.1",
+  "coach_engine_version": "serve-coach-v0.1",
+  "generated_at": "2026-08-09T12:47:54.271754+00:00",
+  "assessment_id": "sa_ab81a2943c20428d",
+  "assessment_type": "serve",
+  "serve_type": "forehand",
+  "test_completed": true,
+  "overall_status": "PASS",
+  "overall_message": "整體正手發球教學動作完整，可維持目前節奏並持續練習。",
+  "feedback": [
+    {
+      "metric": "preparation_stability",
+      "level": "EXCELLENT",
+      "message": "準備姿勢穩定度表現穩定，可維持目前節奏。"
+    },
+    {
+      "metric": "swing_completeness",
+      "level": "GOOD",
+      "message": "揮拍動作完整性表現穩定，可維持目前節奏。"
+    },
+    {
+      "metric": "body_coordination",
+      "level": "FAIR",
+      "message": "身體協調與軀幹變化尚可，建議放慢動作確認完整路徑。"
+    },
+    {
+      "metric": "motion_smoothness",
+      "level": "GOOD",
+      "message": "動作流暢度表現穩定，可維持目前節奏。"
+    }
+  ],
+  "gemini_input_ready": true,
+  "limitations": [
+    "This version evaluates a visible forehand serve teaching motion using one-camera 2D MediaPipe landmarks.",
+    "The result evaluates visible body-motion quality, not shuttle outcome or official service legality.",
+    "Backhand serve technique, grip, finger action, racket face, shuttle trajectory, contact point, and service height are not evaluated.",
+    "Thresholds and level scores are provisional and require multi-video and coach calibration."
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "schema_version": "0.2",
+  "assessment_id": "sa_ab81a2943c20428d",
+  "assessment_type": "serve",
+  "serve_type": "forehand",
+  "test_mode": "FOREHAND_SERVE_TEACHING",
+  "engine_version": "forehand-serve-mvp-v0.3",
+  "config_version": "serve-calibration-v0.2",
+  "rubric_version": "serve-rubric-v1.0",
+  "calibration_status": "PROVISIONAL",
+  "generated_at": "2026-08-09T12:47:54.271460+00:00",
+  "video_id": "SV_003",
+  "source_video": "/path/to/AI-Motion-Platform/dataset/serve/videos/SV_003.mov",
+  "analysis_status": "completed",
+  "test_completed": true,
+  "evaluation_status": "EVALUATED",
+  "pose_detection": {
+    "total_frames": 580,
+    "detected_frames": 580,
+    "detection_rate": 1.0
+  },
+  "event": {
+    "event_id": 1,
+    "start_frame": 0,
+    "end_frame": 579,
+    "start_ms": 0,
+    "end_ms": 15438,
+    "duration_seconds": 15.438,
+    "completed": true
+  },
+  "features": {
+    "status": "EXTRACTED",
+    "feature_version": "serve-feature-v0.4",
+    "sample_count": 580,
+    "active_side_estimate": "right",
+    "dominant_hand": {
+      "status": "ESTIMATED",
+      "feature_version": "dominant-hand-v0.1",
+      "sample_count": 332,
+      "estimated": "right",
+      "confidence": 0.7444,
+      "evidence": {
+        "path_length": "right",
+        "mean_speed": "right",
+        "max_speed": "right",
+        "active_frames": "right"
+      },
+      "measurements": {
+        "left": {
+          "path_length": 2.295411,
+          "mean_speed": 0.238107,
+          "max_speed": 4.015173,
+          "active_frames": 17
+        },
+        "right": {
+          "path_length": 3.925372,
+          "mean_speed": 0.39126,
+          "max_speed": 4.932919,
+          "active_frames": 31
+        },
+        "active_speed_threshold": 0.986584
+      },
+      "limitations": [
+        "Uses one-camera 2D MediaPipe wrist landmarks.",
+        "Estimates the active hand in this video, which may differ from the user's long-term dominant hand.",
+        "Mirrored video, occlusion, two-handed drills, or non-dominant-hand practice may reduce reliability.",
+        "Racket detection is not used in this version."
+      ]
+    },
+    "analysis_window": {
+      "status": "DETECTED",
+      "start_sample": 0,
+      "end_sample": 65,
+      "sample_count": 66,
+      "duration_ms": 1733,
+      "completeness_status": "COMPLETE",
+      "minimum_required_ms": 1500,
+      "start_ms": 0,
+      "end_ms": 1733,
+      "candidate_count": 23,
+      "cut_count": 4
+    },
+    "preparation_stability_index": 0.001277,
+    "swing_path_length": 0.942446,
+    "wrist_extension_range": 0.161389,
+    "torso_change_degrees": 4.3171,
+    "wrist_speed_variation": 0.703244,
+    "limitations": [
+      "Uses one-camera 2D MediaPipe landmarks.",
+      "Selects one dominant continuous wrist-motion window.",
+      "Uniform playback-speed changes do not alter the normalized speed-variation ratio.",
+      "Edited cuts and replay boundaries are estimated heuristically.",
+      "Active racket arm is estimated from total wrist motion and does not use racket detection.",
+      "Does not yet verify forehand versus backhand serve type.",
+      "Does not evaluate grip, finger action, racket face, shuttle trajectory, contact point, or service legality."
+    ]
+  },
+  "metrics": {
+    "preparation_stability": {
+      "score": 25,
+      "max_score": 25,
+      "level": "EXCELLENT",
+      "measurement_levels": {
+        "preparation_stability_index": "EXCELLENT"
+      }
+    },
+    "swing_completeness": {
+      "score": 20,
+      "max_score": 25,
+      "level": "GOOD",
+      "measurement_levels": {
+        "swing_path_length": "GOOD",
+        "wrist_extension_range": "GOOD"
+      }
+    },
+    "body_coordination": {
+      "score": 14,
+      "max_score": 25,
+      "level": "FAIR",
+      "measurement_levels": {
+        "torso_change_degrees": "FAIR"
+      }
+    },
+    "motion_smoothness": {
+      "score": 20,
+      "max_score": 25,
+      "level": "GOOD",
+      "measurement_levels": {
+        "wrist_speed_variation": "GOOD"
+      }
+    }
+  },
+  "overall_score": 79,
+  "system_confidence": 1.0,
+  "limitations": [
+    "This version evaluates a visible forehand serve teaching motion using one-camera 2D MediaPipe landmarks.",
+    "The result evaluates visible body-motion quality, not shuttle outcome or official service legality.",
+    "Backhand serve technique, grip, finger action, racket face, shuttle trajectory, contact point, and service height are not evaluated.",
+    "Thresholds and level scores are provisional and require multi-video and coach calibration."
+  ]
+}

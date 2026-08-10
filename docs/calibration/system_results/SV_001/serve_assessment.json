@@ -1,0 +1,126 @@
+{
+  "schema_version": "0.2",
+  "assessment_id": "sa_7de749924cef4eef",
+  "assessment_type": "serve",
+  "serve_type": "forehand",
+  "test_mode": "FOREHAND_SERVE_TEACHING",
+  "engine_version": "forehand-serve-mvp-v0.3",
+  "config_version": "serve-calibration-v0.2",
+  "rubric_version": "serve-rubric-v1.0",
+  "calibration_status": "PROVISIONAL",
+  "generated_at": "2026-08-09T11:45:49.306205+00:00",
+  "video_id": "SV_001",
+  "source_video": "/path/to/AI-Motion-Platform/dataset/serve/videos/SV_001.mov",
+  "analysis_status": "completed",
+  "test_completed": true,
+  "evaluation_status": "EVALUATED",
+  "pose_detection": {
+    "total_frames": 362,
+    "detected_frames": 361,
+    "detection_rate": 0.9972
+  },
+  "event": {
+    "event_id": 1,
+    "start_frame": 0,
+    "end_frame": 361,
+    "start_ms": 0,
+    "end_ms": 11207,
+    "duration_seconds": 11.207,
+    "completed": true
+  },
+  "features": {
+    "status": "EXTRACTED",
+    "feature_version": "serve-feature-v0.2",
+    "sample_count": 361,
+    "active_side_estimate": "left",
+    "dominant_hand": {
+      "status": "ESTIMATED",
+      "feature_version": "dominant-hand-v0.1",
+      "sample_count": 337,
+      "estimated": "left",
+      "confidence": 0.6253,
+      "evidence": {
+        "path_length": "left",
+        "mean_speed": "left",
+        "max_speed": "right",
+        "active_frames": "left"
+      },
+      "measurements": {
+        "left": {
+          "path_length": 1.406805,
+          "mean_speed": 0.117926,
+          "max_speed": 1.794931,
+          "active_frames": 22
+        },
+        "right": {
+          "path_length": 0.821632,
+          "mean_speed": 0.073152,
+          "max_speed": 2.084828,
+          "active_frames": 4
+        },
+        "active_speed_threshold": 0.416966
+      },
+      "limitations": [
+        "Uses one-camera 2D MediaPipe wrist landmarks.",
+        "Estimates the active hand in this video, which may differ from the user's long-term dominant hand.",
+        "Mirrored video, occlusion, two-handed drills, or non-dominant-hand practice may reduce reliability.",
+        "Racket detection is not used in this version."
+      ]
+    },
+    "preparation_stability_index": 0.019233,
+    "swing_path_length": 1.96173,
+    "wrist_extension_range": 0.110217,
+    "torso_change_degrees": 93.3846,
+    "wrist_speed_variation": 2.06144,
+    "limitations": [
+      "Uses one-camera 2D MediaPipe landmarks.",
+      "Designed for a visible forehand serve teaching motion.",
+      "Active racket arm is estimated from wrist movement only.",
+      "Dominant hand is estimated from wrist-motion evidence and does not use racket detection.",
+      "Does not evaluate backhand serve technique, grip, finger action, racket, shuttle, impact point, or service legality."
+    ]
+  },
+  "metrics": {
+    "preparation_stability": {
+      "score": 20,
+      "max_score": 25,
+      "level": "GOOD",
+      "measurement_levels": {
+        "preparation_stability_index": "GOOD"
+      }
+    },
+    "swing_completeness": {
+      "score": 20,
+      "max_score": 25,
+      "level": "EXCELLENT",
+      "measurement_levels": {
+        "swing_path_length": "EXCELLENT",
+        "wrist_extension_range": "FAIR"
+      }
+    },
+    "body_coordination": {
+      "score": 25,
+      "max_score": 25,
+      "level": "EXCELLENT",
+      "measurement_levels": {
+        "torso_change_degrees": "EXCELLENT"
+      }
+    },
+    "motion_smoothness": {
+      "score": 7,
+      "max_score": 25,
+      "level": "POOR",
+      "measurement_levels": {
+        "wrist_speed_variation": "POOR"
+      }
+    }
+  },
+  "overall_score": 72,
+  "system_confidence": 0.9972,
+  "limitations": [
+    "This version evaluates a visible forehand serve teaching motion using one-camera 2D MediaPipe landmarks.",
+    "The result evaluates visible body-motion quality, not shuttle outcome or official service legality.",
+    "Backhand serve technique, grip, finger action, racket face, shuttle trajectory, contact point, and service height are not evaluated.",
+    "Thresholds and level scores are provisional and require multi-video and coach calibration."
+  ]
+}

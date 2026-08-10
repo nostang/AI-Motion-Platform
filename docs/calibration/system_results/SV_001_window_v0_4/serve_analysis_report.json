@@ -1,0 +1,178 @@
+{
+  "report_version": "serve-report-v0.1",
+  "generated_at": "2026-08-09T12:47:04.888053+00:00",
+  "assessment_id": "sa_f45ab7f1919a4570",
+  "assessment_type": "serve",
+  "serve_type": "forehand",
+  "video_id": "SV_001",
+  "summary": {
+    "completed": true,
+    "evaluation_status": "EVALUATED",
+    "overall_score": 81,
+    "system_confidence": 0.9972,
+    "coach_status": "PASS"
+  },
+  "score_breakdown": {
+    "preparation_stability": {
+      "score": 25,
+      "max_score": 25,
+      "level": "EXCELLENT",
+      "measurement_levels": {
+        "preparation_stability_index": "EXCELLENT"
+      }
+    },
+    "swing_completeness": {
+      "score": 17,
+      "max_score": 25,
+      "level": "GOOD",
+      "measurement_levels": {
+        "swing_path_length": "GOOD",
+        "wrist_extension_range": "FAIR"
+      }
+    },
+    "body_coordination": {
+      "score": 25,
+      "max_score": 25,
+      "level": "EXCELLENT",
+      "measurement_levels": {
+        "torso_change_degrees": "EXCELLENT"
+      }
+    },
+    "motion_smoothness": {
+      "score": 14,
+      "max_score": 25,
+      "level": "FAIR",
+      "measurement_levels": {
+        "wrist_speed_variation": "FAIR"
+      }
+    }
+  },
+  "highlights": {
+    "strengths": [
+      "preparation_stability",
+      "body_coordination"
+    ],
+    "improvement_priorities": [
+      "swing_completeness",
+      "motion_smoothness"
+    ]
+  },
+  "coach": {
+    "overall_message": "整體正手發球教學動作完整，可維持目前節奏並持續練習。",
+    "feedback": [
+      {
+        "metric": "preparation_stability",
+        "level": "EXCELLENT",
+        "message": "準備姿勢穩定度表現穩定，可維持目前節奏。"
+      },
+      {
+        "metric": "swing_completeness",
+        "level": "GOOD",
+        "message": "揮拍動作完整性表現穩定，可維持目前節奏。"
+      },
+      {
+        "metric": "body_coordination",
+        "level": "EXCELLENT",
+        "message": "身體協調與軀幹變化表現穩定，可維持目前節奏。"
+      },
+      {
+        "metric": "motion_smoothness",
+        "level": "FAIR",
+        "message": "動作流暢度尚可，建議放慢動作確認完整路徑。"
+      }
+    ]
+  },
+  "radar_chart": {
+    "labels": [
+      "Preparation Stability",
+      "Swing Completeness",
+      "Body Coordination",
+      "Motion Smoothness"
+    ],
+    "scores": [
+      25,
+      17,
+      25,
+      14
+    ],
+    "max_score": 25
+  },
+  "features": {
+    "status": "EXTRACTED",
+    "feature_version": "serve-feature-v0.4",
+    "sample_count": 361,
+    "active_side_estimate": "left",
+    "dominant_hand": {
+      "status": "ESTIMATED",
+      "feature_version": "dominant-hand-v0.1",
+      "sample_count": 337,
+      "estimated": "left",
+      "confidence": 0.6253,
+      "evidence": {
+        "path_length": "left",
+        "mean_speed": "left",
+        "max_speed": "right",
+        "active_frames": "left"
+      },
+      "measurements": {
+        "left": {
+          "path_length": 1.406805,
+          "mean_speed": 0.117926,
+          "max_speed": 1.794931,
+          "active_frames": 22
+        },
+        "right": {
+          "path_length": 0.821632,
+          "mean_speed": 0.073152,
+          "max_speed": 2.084828,
+          "active_frames": 4
+        },
+        "active_speed_threshold": 0.416966
+      },
+      "limitations": [
+        "Uses one-camera 2D MediaPipe wrist landmarks.",
+        "Estimates the active hand in this video, which may differ from the user's long-term dominant hand.",
+        "Mirrored video, occlusion, two-handed drills, or non-dominant-hand practice may reduce reliability.",
+        "Racket detection is not used in this version."
+      ]
+    },
+    "analysis_window": {
+      "status": "DETECTED",
+      "start_sample": 96,
+      "end_sample": 174,
+      "sample_count": 79,
+      "duration_ms": 2452,
+      "completeness_status": "COMPLETE",
+      "minimum_required_ms": 1500,
+      "start_ms": 2980,
+      "end_ms": 5432,
+      "candidate_count": 8,
+      "cut_count": 0
+    },
+    "preparation_stability_index": 0.008817,
+    "swing_path_length": 1.066935,
+    "wrist_extension_range": 0.109136,
+    "torso_change_degrees": 91.1914,
+    "wrist_speed_variation": 0.881558,
+    "limitations": [
+      "Uses one-camera 2D MediaPipe landmarks.",
+      "Selects one dominant continuous wrist-motion window.",
+      "Uniform playback-speed changes do not alter the normalized speed-variation ratio.",
+      "Edited cuts and replay boundaries are estimated heuristically.",
+      "Active racket arm is estimated from total wrist motion and does not use racket detection.",
+      "Does not yet verify forehand versus backhand serve type.",
+      "Does not evaluate grip, finger action, racket face, shuttle trajectory, contact point, or service legality."
+    ]
+  },
+  "limitations": [
+    "This version evaluates a visible forehand serve teaching motion using one-camera 2D MediaPipe landmarks.",
+    "The result evaluates visible body-motion quality, not shuttle outcome or official service legality.",
+    "Backhand serve technique, grip, finger action, racket face, shuttle trajectory, contact point, and service height are not evaluated.",
+    "Thresholds and level scores are provisional and require multi-video and coach calibration."
+  ],
+  "meta": {
+    "engine_version": "forehand-serve-mvp-v0.3",
+    "config_version": "serve-calibration-v0.2",
+    "calibration_status": "PROVISIONAL"
+  }
+}
