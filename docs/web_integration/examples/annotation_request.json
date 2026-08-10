@@ -1,0 +1,10 @@
+{
+  "start_ms": 5832,
+  "end_ms": 16563,
+  "status": "COMPLETE",
+  "motion_type": "serve",
+  "action_type": "FOREHAND_SERVE",
+  "racket_side": "right",
+  "calibration_eligibility": "CONDITIONAL",
+  "notes": "慢動作"
+}

@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "data": {
+    "assessment_id": "ma_a76a255f00964514",
+    "status": "uploaded",
+    "current_stage": "annotation_queued",
+    "annotation_applied": true,
+    "status_url": "/api/v1/motion-assessments/ma_a76a255f00964514",
+    "report_url": "/api/v1/motion-assessments/ma_a76a255f00964514/report"
+  },
+  "error": null
+}

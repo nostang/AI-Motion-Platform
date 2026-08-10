@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "engine_version": "forehand-serve-mvp-v0.4",
+    "human_annotation_applied": true,
+    "analysis_window": {
+      "start_ms": 0,
+      "end_ms": 9072,
+      "duration_ms": 9072,
+      "source": "HUMAN"
+    }
+  },
+  "features": {
+    "feature_version": "serve-feature-v0.5",
+    "active_side_estimate": "right",
+    "dominant_hand": {
+      "status": "HUMAN_CONFIRMED",
+      "estimated": "right",
+      "confidence": 1.0,
+      "source": "HUMAN_ANNOTATION",
+      "automatic_estimate": {
+        "estimated": "left",
+        "confidence": 0.8367
+      }
+    }
+  },
+  "limitations": []
+}

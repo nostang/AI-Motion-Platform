@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "data": {
+    "assessment_id": "ma_a76a255f00964514",
+    "status": "uploaded",
+    "progress": 0,
+    "current_stage": "uploaded",
+    "analysis_deferred": true,
+    "status_url": "/api/v1/motion-assessments/ma_a76a255f00964514"
+  },
+  "error": null
+}

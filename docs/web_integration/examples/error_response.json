@@ -1,0 +1,11 @@
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "ANNOTATION_REQUIRED",
+    "message": "請先選取並儲存完整動作區間。",
+    "details": {
+      "assessment_id": "ma_a76a255f00964514"
+    }
+  }
+}

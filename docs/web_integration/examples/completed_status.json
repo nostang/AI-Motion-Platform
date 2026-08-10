@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "data": {
+    "assessment_id": "ma_a76a255f00964514",
+    "assessment_type": "serve",
+    "status": "completed",
+    "progress": 100,
+    "current_stage": "completed",
+    "created_at": "2026-08-10T13:08:40.378249+08:00",
+    "updated_at": "2026-08-10T13:15:22.636059+08:00",
+    "completed_at": "2026-08-10T13:15:22.636067+08:00",
+    "failure": null,
+    "report_url": "/api/v1/motion-assessments/ma_a76a255f00964514/report"
+  },
+  "error": null
+}
