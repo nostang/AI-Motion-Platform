@@ -28,6 +28,8 @@ def run_serve_demo(
     *, video_id: str, video_path: Path, model_path: Path,
     window_name: str = "AI Motion - Serve Demo", display: bool = True,
     output_dir: Path | None = None,
+    start_ms: int | None = None,
+    end_ms: int | None = None,
 ) -> dict[str, Any]:
     output_dir = Path(output_dir) if output_dir else Path(__file__).resolve().parent.parent / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -40,7 +42,39 @@ def run_serve_demo(
     if not cap.isOpened():
         raise RuntimeError(f"OpenCV 無法開啟影片：{video_path}")
     fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+
+    analysis_start_ms = max(0, int(start_ms or 0))
+    analysis_end_ms = (
+        int(end_ms)
+        if end_ms is not None
+        else None
+    )
+
+    if (
+        analysis_end_ms is not None
+        and analysis_end_ms <= analysis_start_ms
+    ):
+        cap.release()
+        raise ValueError(
+            "人工標注的 end_ms 必須大於 start_ms。"
+        )
+
+    source_start_frame = int(
+        analysis_start_ms * fps / 1000
+    )
+    source_end_frame = (
+        int(analysis_end_ms * fps / 1000)
+        if analysis_end_ms is not None
+        else None
+    )
+
+    cap.set(
+        cv2.CAP_PROP_POS_FRAMES,
+        source_start_frame,
+    )
+
     frame_index = 0
+    source_frame_index = source_start_frame
     detected_frames = 0
     first_detected_frame: int | None = None
     last_detected_frame: int | None = None
@@ -49,6 +83,13 @@ def run_serve_demo(
     try:
         with create_pose_landmarker(model_path) as landmarker:
             while True:
+                if (
+                    source_end_frame is not None
+                    and source_frame_index
+                    > source_end_frame
+                ):
+                    break
+
                 ok, frame = cap.read()
                 if not ok:
                     break
@@ -81,6 +122,7 @@ def run_serve_demo(
                     if cv2.waitKey(max(1, int(1000 / fps))) & 0xFF in (ord("q"), 27):
                         break
                 frame_index += 1
+                source_frame_index += 1
     finally:
         cap.release()
         if display:

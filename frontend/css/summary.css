@@ -288,3 +288,38 @@ footer { display: flex; justify-content: space-between; padding: 30px 0 42px; co
     grid-template-columns: 1fr;
   }
 }
+
+.motion-level.level-excellent {
+  color: #09271c;
+  background: #d8ff52;
+}
+
+.motion-level.level-wonderful {
+  color: #09271c;
+  background: #55e6b1;
+}
+
+.motion-level.level-great {
+  color: #ffffff;
+  background: #138a62;
+}
+
+.motion-level.level-good {
+  color: #ffffff;
+  background: #075b42;
+}
+
+.motion-level.level-nice {
+  color: #332400;
+  background: #f4c542;
+}
+
+.motion-level.level-fair {
+  color: #ffffff;
+  background: #dc654d;
+}
+
+.motion-level.level-empty {
+  color: #43534c;
+  background: #bdc9c3;
+}

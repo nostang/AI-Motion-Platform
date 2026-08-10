@@ -359,15 +359,82 @@
   function renderMotions(motions) {
     elements.motions.innerHTML = "";
     (Array.isArray(motions) ? motions : []).forEach((motion) => {
-      const score = number(motion.score, 0); const progress = motion.progress || {}; const direction = progress.direction;
-      const card = document.createElement("article"); card.className = "motion-card";
-      const header = document.createElement("header"); const title = document.createElement("h3"); title.textContent = motion.label || motionLabels[motion.motion_type] || motion.motion_type;
-      const level = document.createElement("span"); level.className = "motion-level"; level.textContent = motion.level || "--"; header.append(title, level);
-      const scoreNode = document.createElement("div"); scoreNode.className = "motion-score"; scoreNode.textContent = scoreText(score); const max = document.createElement("small"); max.textContent = " / 100"; scoreNode.appendChild(max);
-      const track = document.createElement("div"); track.className = "motion-track"; const fill = document.createElement("div"); fill.className = "motion-fill"; fill.style.width = `${Math.max(0, Math.min(100, score))}%`; track.appendChild(fill);
-      const progressNode = document.createElement("p"); progressNode.className = "motion-progress";
-      progressNode.textContent = progress.status === "READY" ? `較前次 ${directionLabels[direction] || direction} ${progress.change > 0 ? "+" : ""}${scoreText(progress.change)}` : progress.status === "FIRST_RECORD" ? "第一次正式紀錄" : "尚無可比較紀錄";
-      const link = document.createElement("a");
+      const score = number(motion.score);
+const progress = motion.progress || {};
+const direction = progress.direction;
+const change = number(progress.change);
+const hasCurrentScore = score !== null;
+const hasComparison = (
+  progress.status === "READY"
+  && change !== null
+  && direction
+  && direction !== "NOT_INTERPRETED"
+);
+
+const normalizedLevel = (
+  motion.level || ""
+).toUpperCase();
+
+const displayLevel = hasCurrentScore
+  ? (normalizedLevel || "--")
+  : "--";
+
+const levelClass = normalizedLevel
+  ? `level-${normalizedLevel.toLowerCase()}`
+  : "level-empty";
+
+const card = document.createElement("article");
+card.className = "motion-card";
+
+const header = document.createElement("header");
+const title = document.createElement("h3");
+title.textContent = (
+  motion.label
+  || motionLabels[motion.motion_type]
+  || motion.motion_type
+);
+
+const level = document.createElement("span");
+level.className =
+  `motion-level ${levelClass}`;
+level.textContent = displayLevel;
+header.append(title, level);
+
+const scoreNode = document.createElement("div");
+scoreNode.className = "motion-score";
+scoreNode.textContent = scoreText(score);
+
+const max = document.createElement("small");
+max.textContent = " / 100";
+scoreNode.appendChild(max);
+
+const track = document.createElement("div");
+track.className = "motion-track";
+
+const fill = document.createElement("div");
+fill.className = "motion-fill";
+fill.style.width = hasCurrentScore
+  ? `${Math.max(0, Math.min(100, score))}%`
+  : "0%";
+track.appendChild(fill);
+
+const progressNode = document.createElement("p");
+progressNode.className = "motion-progress";
+
+if (hasComparison) {
+  progressNode.textContent = (
+    `較前次 ${directionLabels[direction] || direction} `
+    + `${change > 0 ? "+" : ""}${scoreText(change)}`
+  );
+} else if (hasCurrentScore) {
+  progressNode.textContent =
+    "首次測驗，尚無前次資料";
+} else {
+  progressNode.textContent =
+    "尚未完成本次測驗";
+}
+
+const link = document.createElement("a");
       link.href =
         `report.html?id=${encodeURIComponent(motion.assessment_id || "")}` +
         `&from=summary&user_id=${encodeURIComponent(userId)}`;

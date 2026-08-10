@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#075d3b">
+  <title>AI Motion｜動作標注</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/review.css">
+</head>
+<body>
+  <div class="court-lines" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="index.html">
+      <span class="brand-mark">AM</span>
+      <span>
+        <strong>AI MOTION</strong>
+        <small>BADMINTON LAB</small>
+      </span>
+    </a>
+    <span class="version-tag">MOTION REVIEW</span>
+  </header>
+
+  <main class="review-shell">
+    <section class="review-hero">
+      <p class="eyebrow">CALIBRATION / HUMAN ANNOTATION</p>
+      <div class="hero-row">
+        <div>
+          <h1>動作標注</h1>
+          <p>拖曳時間軸定位畫面，再設定完整動作的開始與結束。</p>
+        </div>
+        <span class="motion-chip" id="motionChip">LOADING</span>
+      </div>
+    </section>
+
+    <section class="review-card video-card">
+      <div class="card-heading">
+        <span>01</span>
+        <div>
+          <p>ACTION TIMELINE</p>
+          <h2>影片與完整動作區段</h2>
+        </div>
+      </div>
+
+      <p class="annotation-guide">
+        <strong>操作方式：</strong>
+        拖曳時間軸左右兩側的把手，直接選取一次完整動作。
+      </p>
+
+      <div class="video-stage">
+        <video id="reviewVideo" playsinline preload="metadata"></video>
+
+        <div class="video-timeline">
+          <button id="playPause" type="button" aria-label="播放或暫停">▶</button>
+
+          <div class="trim-shell" id="trimTrack">
+            <div class="trim-selection" id="trimSelection"></div>
+            <div class="timeline-playhead" id="timelinePlayhead"></div>
+
+            <input
+              id="startHandle"
+              class="trim-range trim-range-start"
+              type="range"
+              min="0"
+              max="1"
+              step="0.001"
+              value="0"
+              aria-label="拖曳設定開始時間"
+            >
+
+            <input
+              id="endHandle"
+              class="trim-range trim-range-end"
+              type="range"
+              min="0"
+              max="1"
+              step="0.001"
+              value="1"
+              aria-label="拖曳設定結束時間"
+            >
+
+            <span class="trim-label trim-label-start" id="startMarker">
+              開始
+            </span>
+            <span class="trim-label trim-label-end" id="endMarker">
+              結束
+            </span>
+          </div>
+
+          <strong id="currentTime">00:00.000</strong>
+          <span>/</span>
+          <span id="totalTime">00:00.000</span>
+        </div>
+      </div>
+
+      <div class="playback-tools precision-tools">
+        <span>
+          精細調整：
+          <strong id="boundaryTarget">開始</strong>
+        </span>
+        <button id="previousFrame" type="button">− 1 FRAME</button>
+        <button id="nextFrame" type="button">+ 1 FRAME</button>
+      </div>
+
+      <input id="startRange" type="hidden" value="0">
+      <input id="endRange" type="hidden" value="1">
+
+      <div class="window-stats compact-window-stats">
+        <div>
+          <small>開始</small>
+          <strong id="startValue">--</strong>
+        </div>
+        <div>
+          <small>結束</small>
+          <strong id="endValue">--</strong>
+        </div>
+        <div>
+          <small>區段長度</small>
+          <strong id="durationValue">--</strong>
+        </div>
+      </div>
+
+      <div class="auto-window" id="autoWindow" hidden></div>
+
+      <div class="window-actions">
+        <button id="jumpStart" type="button">跳到開始</button>
+        <button id="previewWindow" class="primary-action" type="button">
+          ▶ 預覽選取區段
+        </button>
+        <button id="jumpEnd" type="button">跳到結束</button>
+      </div>
+
+      <form id="annotationForm">
+        <details class="annotation-details" id="annotationDetails">
+          <summary>進階標注資訊（選填）</summary>
+
+          <p class="annotation-help">
+            用於記錄實際動作與持拍手，協助檢查系統是否判斷正確。
+          </p>
+
+          <div class="form-grid">
+            <label>
+              <span>實際動作</span>
+              <select id="actionType">
+                <option value="">尚未指定</option>
+                <option value="FOREHAND_SERVE">正手發球</option>
+                <option value="BACKHAND_SERVE">反手發球</option>
+                <option value="CLEAR">高遠球</option>
+                <option value="FOOTWORK">米字步</option>
+              </select>
+            </label>
+
+            <label>
+              <span>持拍手</span>
+              <select id="racketSide">
+                <option value="">尚未指定</option>
+                <option value="right">右手</option>
+                <option value="left">左手</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="notes-field">
+            <span>備註</span>
+            <textarea
+              id="notes"
+              rows="3"
+              placeholder="例如：教學影片、有慢動作或多角度剪輯。"
+            ></textarea>
+          </label>
+        </details>
+
+        <div class="save-row">
+          <p id="saveStatus">尚未儲存</p>
+          <button id="saveAnnotation" class="save-button" type="submit">
+            確認完整動作區間
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <p class="assessment-id" id="assessmentLabel"></p>
+  </main>
+
+  <div class="error-banner" id="errorBanner" role="alert" hidden></div>
+
+  <footer>
+    <span>AI MOTION PLATFORM</span>
+    <span>PIXEL COURT / 2026</span>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/review.js"></script>
+</body>
+</html>

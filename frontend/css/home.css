@@ -397,3 +397,83 @@ body.camera-open { overflow: hidden; }
     padding: 15px;
   }
 }
+
+/* Human Action Window V1 */
+
+.annotation-state {
+  margin-top: 16px;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--court);
+  background: #deeee5;
+  border: 2px solid #719381;
+  border-left: 8px solid var(--lime);
+}
+
+.annotation-state[hidden] {
+  display: none;
+}
+
+.annotation-state span {
+  font-weight: 900;
+}
+
+.annotation-state strong {
+  font: 800 12px ui-monospace, monospace;
+}
+
+.analysis-actions {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(220px, .72fr) minmax(300px, 1.28fr);
+  gap: 14px;
+}
+
+.adjust-window-button,
+.analysis-actions .analyze-button {
+  width: 100%;
+  margin-top: 0;
+  min-height: 72px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 950;
+}
+
+.adjust-window-button {
+  color: var(--court);
+  background: #e6f0eb;
+  border: 3px solid var(--court);
+}
+
+.adjust-window-button:hover:not(:disabled),
+.adjust-window-button:focus-visible {
+  color: var(--lime);
+  background: var(--court);
+  outline: none;
+}
+
+.adjust-window-button small {
+  font-weight: 800;
+}
+
+.adjust-window-button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(1);
+  opacity: .42;
+}
+
+@media (max-width: 680px) {
+  .analysis-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .annotation-state {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

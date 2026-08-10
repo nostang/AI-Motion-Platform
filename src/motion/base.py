@@ -18,6 +18,9 @@ class MotionContext:
     window_name: str
     display: bool = True
     output_dir: Path | None = None
+    start_ms: int | None = None
+    end_ms: int | None = None
+    annotation_source: str | None = None
 
 
 class BaseMotionAnalyzer(ABC):

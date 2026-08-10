@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from math import atan2, degrees, hypot
-from statistics import mean, pstdev
+from statistics import mean, median, pstdev
 from typing import Any, Sequence
 
 from src.features.dominant_hand import DominantHandTracker
@@ -61,13 +61,28 @@ class ServeFeatureTracker:
                 "hip_center_x": hip_center[0],
                 "hip_center_y": hip_center[1],
                 "torso_lean_degrees": torso_lean,
+                "left_wrist_x": left_wrist[0],
+                "left_wrist_y": left_wrist[1],
+                "right_wrist_x": right_wrist[0],
+                "right_wrist_y": right_wrist[1],
+                "left_wrist_shoulder_distance": _distance(
+                    left_wrist,
+                    left_shoulder,
+                ),
+                "right_wrist_shoulder_distance": _distance(
+                    right_wrist,
+                    right_shoulder,
+                ),
+                # 保留舊欄位，避免舊資料使用者立即中斷。
                 "active_wrist_x": active_wrist[0],
                 "active_wrist_y": active_wrist[1],
                 "wrist_shoulder_distance": _distance(
                     active_wrist,
                     active_shoulder,
                 ),
-                "active_side_right": 1.0 if active_side == "right" else 0.0,
+                "active_side_right": (
+                    1.0 if active_side == "right" else 0.0
+                ),
             }
         )
 
@@ -77,96 +92,468 @@ class ServeFeatureTracker:
         if len(self.samples) < 3:
             return {
                 "status": "NOT_EVALUATED",
-                "feature_version": "serve-feature-v0.2",
+                "feature_version": "serve-feature-v0.4",
                 "sample_count": len(self.samples),
                 "reason": "INSUFFICIENT_POSE_SAMPLES",
                 "dominant_hand": dominant_hand,
+                "analysis_window": {
+                    "status": "NOT_DETECTED",
+                    "reason": "INSUFFICIENT_POSE_SAMPLES",
+                },
             }
 
         sample_count = len(self.samples)
-        prep_count = max(3, int(sample_count * 0.2))
-        prep = self.samples[:prep_count]
 
-        hip_x = [sample["hip_center_x"] for sample in prep]
-        hip_y = [sample["hip_center_y"] for sample in prep]
-        prep_stability = pstdev(hip_x) + pstdev(hip_y)
+        def wrist_positions(
+            side: str,
+        ) -> list[tuple[float, float]]:
+            return [
+                (
+                    sample[f"{side}_wrist_x"],
+                    sample[f"{side}_wrist_y"],
+                )
+                for sample in self.samples
+            ]
 
-        wrist_path = [
-            _distance(
-                (first["active_wrist_x"], first["active_wrist_y"]),
-                (second["active_wrist_x"], second["active_wrist_y"]),
-            )
-            for first, second in zip(self.samples, self.samples[1:])
+        def path_steps(
+            positions: list[tuple[float, float]],
+        ) -> list[float]:
+            return [
+                _distance(first, second)
+                for first, second in zip(
+                    positions,
+                    positions[1:],
+                )
+            ]
+
+        left_positions = wrist_positions("left")
+        right_positions = wrist_positions("right")
+        left_steps = path_steps(left_positions)
+        right_steps = path_steps(right_positions)
+
+        # 單次分析固定使用同一側手腕，避免逐幀左右切換
+        # 造成不連續的假速度。
+        left_total = sum(left_steps)
+        right_total = sum(right_steps)
+        active_side = (
+            "right"
+            if right_total >= left_total
+            else "left"
+        )
+
+        positions = (
+            right_positions
+            if active_side == "right"
+            else left_positions
+        )
+        steps = path_steps(positions)
+
+        positive_steps = [
+            value
+            for value in steps
+            if value > 1e-6
         ]
-        swing_path_length = sum(wrist_path)
 
-        max_extension = max(
-            sample["wrist_shoulder_distance"]
-            for sample in self.samples
+        typical_step = (
+            median(positive_steps)
+            if positive_steps
+            else 0.0
         )
-        min_extension = min(
-            sample["wrist_shoulder_distance"]
-            for sample in self.samples
+
+        # 大幅瞬間位移通常來自剪輯、鏡頭切換或重播跳接，
+        # 不應被視為真實揮拍。
+        cut_threshold = max(
+            0.12,
+            typical_step * 4.0,
         )
-        extension_range = max_extension - min_extension
+        cut_flags = [
+            value > cut_threshold
+            for value in steps
+        ]
+
+        usable_steps = [
+            value
+            for value, is_cut in zip(
+                steps,
+                cut_flags,
+            )
+            if not is_cut
+        ]
+
+        peak_step = (
+            max(usable_steps)
+            if usable_steps
+            else 0.0
+        )
+        active_threshold = max(
+            0.0015,
+            peak_step * 0.12,
+        )
+
+        # 尋找連續活動區段；容許最多三個短暫低速 Step，
+        # 但剪輯跳接會強制切斷區段。
+        segments: list[tuple[int, int]] = []
+        segment_start: int | None = None
+        last_active: int | None = None
+        gap_count = 0
+
+        def close_segment() -> None:
+            nonlocal segment_start
+            nonlocal last_active
+            nonlocal gap_count
+
+            if (
+                segment_start is not None
+                and last_active is not None
+            ):
+                segments.append(
+                    (segment_start, last_active)
+                )
+
+            segment_start = None
+            last_active = None
+            gap_count = 0
+
+        for index, (step, is_cut) in enumerate(
+            zip(steps, cut_flags)
+        ):
+            if is_cut:
+                close_segment()
+                continue
+
+            if step >= active_threshold:
+                if segment_start is None:
+                    segment_start = index
+
+                last_active = index
+                gap_count = 0
+                continue
+
+            if segment_start is not None:
+                gap_count += 1
+
+                if gap_count > 3:
+                    close_segment()
+
+        close_segment()
+
+        if segments:
+            def segment_score(
+                segment: tuple[int, int],
+            ) -> float:
+                start, end = segment
+                return sum(
+                    step
+                    for step, is_cut in zip(
+                        steps[start:end + 1],
+                        cut_flags[start:end + 1],
+                    )
+                    if not is_cut
+                )
+
+            selected_start, selected_end = max(
+                segments,
+                key=segment_score,
+            )
+
+            # Step i 連接 Sample i 與 i+1；
+            # 前後各保留兩個 Sample 作為動作邊界。
+            window_start = max(
+                0,
+                selected_start - 2,
+            )
+            window_end = min(
+                sample_count - 1,
+                selected_end + 3,
+            )
+            window_status = "DETECTED"
+        else:
+            window_start = 0
+            window_end = sample_count - 1
+            window_status = "FALLBACK_FULL_VIDEO"
+
+        # Serve Feature Window V0.4
+        #
+        # 原始活動區段通常只涵蓋手腕高速移動的核心，
+        # 因此必須向前保留準備、向後保留收拍。
+        # 遇到剪輯跳接時不可跨越 Scene 邊界。
+        minimum_window_ms = 1500
+        preparation_padding_ms = 750
+        follow_through_padding_ms = 900
+
+        scene_start = 0
+        scene_end = sample_count - 1
+
+        for index in range(
+            max(0, window_start - 1),
+            -1,
+            -1,
+        ):
+            if cut_flags[index]:
+                scene_start = index + 1
+                break
+
+        for index in range(
+            window_end,
+            len(cut_flags),
+        ):
+            if cut_flags[index]:
+                scene_end = index
+                break
+
+        selected_start_ms = self.samples[
+            window_start
+        ]["timestamp_ms"]
+        selected_end_ms = self.samples[
+            window_end
+        ]["timestamp_ms"]
+
+        desired_start_ms = (
+            selected_start_ms
+            - preparation_padding_ms
+        )
+        desired_end_ms = (
+            selected_end_ms
+            + follow_through_padding_ms
+        )
+
+        while (
+            window_start > scene_start
+            and self.samples[window_start][
+                "timestamp_ms"
+            ] > desired_start_ms
+        ):
+            window_start -= 1
+
+        while (
+            window_end < scene_end
+            and self.samples[window_end][
+                "timestamp_ms"
+            ] < desired_end_ms
+        ):
+            window_end += 1
+
+        # 如果固定 Padding 後仍不足 1.5 秒，
+        # 便在同一個 Scene 內繼續向兩側延伸。
+        while (
+            self.samples[window_end]["timestamp_ms"]
+            - self.samples[window_start]["timestamp_ms"]
+            < minimum_window_ms
+            and (
+                window_start > scene_start
+                or window_end < scene_end
+            )
+        ):
+            if window_start > scene_start:
+                window_start -= 1
+
+            if (
+                self.samples[window_end]["timestamp_ms"]
+                - self.samples[window_start]["timestamp_ms"]
+                >= minimum_window_ms
+            ):
+                break
+
+            if window_end < scene_end:
+                window_end += 1
+
+        window_duration_ms = int(
+            self.samples[window_end]["timestamp_ms"]
+            - self.samples[window_start]["timestamp_ms"]
+        )
+
+        window_completeness = (
+            "COMPLETE"
+            if window_duration_ms >= minimum_window_ms
+            else "INCOMPLETE_WINDOW"
+        )
+
+        window_samples = self.samples[
+            window_start:window_end + 1
+        ]
+        window_positions = positions[
+            window_start:window_end + 1
+        ]
+        window_steps = path_steps(window_positions)
+
+        # 對應至原始 Step Index，排除剪輯跳接。
+        valid_window_steps: list[float] = []
+
+        for local_index, value in enumerate(
+            window_steps
+        ):
+            original_index = (
+                window_start + local_index
+            )
+
+            if (
+                original_index < len(cut_flags)
+                and not cut_flags[original_index]
+            ):
+                valid_window_steps.append(value)
+
+        swing_path_length = sum(valid_window_steps)
+
+        # 準備穩定使用主要揮拍前的最近樣本。
+        prep_available = self.samples[:window_start]
+
+        if len(prep_available) >= 3:
+            prep_count = min(
+                max(3, int(sample_count * 0.2)),
+                len(prep_available),
+            )
+            prep = prep_available[-prep_count:]
+        else:
+            prep = self.samples[
+                :min(3, sample_count)
+            ]
+
+        hip_x = [
+            sample["hip_center_x"]
+            for sample in prep
+        ]
+        hip_y = [
+            sample["hip_center_y"]
+            for sample in prep
+        ]
+        prep_stability = (
+            pstdev(hip_x)
+            + pstdev(hip_y)
+        )
+
+        shoulder_distance_key = (
+            f"{active_side}_wrist_shoulder_distance"
+        )
+        extension_values = [
+            sample[shoulder_distance_key]
+            for sample in window_samples
+        ]
+        extension_range = (
+            max(extension_values)
+            - min(extension_values)
+        )
 
         torso_values = [
             sample["torso_lean_degrees"]
-            for sample in self.samples
+            for sample in window_samples
         ]
-        torso_change = max(torso_values) - min(torso_values)
+        torso_change = (
+            max(torso_values)
+            - min(torso_values)
+        )
 
         speeds: list[float] = []
-        for first, second in zip(self.samples, self.samples[1:]):
+
+        for local_index, (
+            first,
+            second,
+        ) in enumerate(zip(
+            window_samples,
+            window_samples[1:],
+        )):
+            original_index = (
+                window_start + local_index
+            )
+
+            if (
+                original_index < len(cut_flags)
+                and cut_flags[original_index]
+            ):
+                continue
+
             dt = (
                 second["timestamp_ms"]
                 - first["timestamp_ms"]
             ) / 1000.0
+
             if dt <= 0:
                 continue
 
             displacement = _distance(
-                (first["active_wrist_x"], first["active_wrist_y"]),
-                (second["active_wrist_x"], second["active_wrist_y"]),
+                window_positions[local_index],
+                window_positions[local_index + 1],
             )
             speeds.append(displacement / dt)
 
-        mean_speed = mean(speeds) if speeds else 0.0
-        speed_variation = (
-            pstdev(speeds) / mean_speed
-            if speeds and mean_speed > 1e-9
-            else None
-        )
+        # 只在主要動作中的有效移動速度計算變異，
+        # 排除前後靜止幀。CV 對均勻時間縮放保持不變。
+        peak_speed = max(speeds) if speeds else 0.0
+        moving_threshold = peak_speed * 0.08
+        moving_speeds = [
+            speed
+            for speed in speeds
+            if speed >= moving_threshold
+            and speed > 1e-9
+        ]
 
-        active_side = (
-            "right"
-            if mean(
-                sample["active_side_right"]
-                for sample in self.samples
-            ) >= 0.5
-            else "left"
+        mean_speed = (
+            mean(moving_speeds)
+            if moving_speeds
+            else 0.0
+        )
+        speed_variation = (
+            pstdev(moving_speeds) / mean_speed
+            if (
+                moving_speeds
+                and mean_speed > 1e-9
+            )
+            else None
         )
 
         return {
             "status": "EXTRACTED",
-            "feature_version": "serve-feature-v0.2",
+            "feature_version": "serve-feature-v0.4",
             "sample_count": sample_count,
             "active_side_estimate": active_side,
             "dominant_hand": dominant_hand,
-            "preparation_stability_index": round(prep_stability, 6),
-            "swing_path_length": round(swing_path_length, 6),
-            "wrist_extension_range": round(extension_range, 6),
-            "torso_change_degrees": round(torso_change, 4),
+            "analysis_window": {
+                "status": window_status,
+                "start_sample": window_start,
+                "end_sample": window_end,
+                "sample_count": len(window_samples),
+                "duration_ms": window_duration_ms,
+                "completeness_status": window_completeness,
+                "minimum_required_ms": minimum_window_ms,
+                "start_ms": int(
+                    window_samples[0]["timestamp_ms"]
+                ),
+                "end_ms": int(
+                    window_samples[-1]["timestamp_ms"]
+                ),
+                "candidate_count": len(segments),
+                "cut_count": sum(cut_flags),
+            },
+            "preparation_stability_index": round(
+                prep_stability,
+                6,
+            ),
+            "swing_path_length": round(
+                swing_path_length,
+                6,
+            ),
+            "wrist_extension_range": round(
+                extension_range,
+                6,
+            ),
+            "torso_change_degrees": round(
+                torso_change,
+                4,
+            ),
             "wrist_speed_variation": (
                 None
                 if speed_variation is None
-                else round(speed_variation, 6)
+                else round(
+                    speed_variation,
+                    6,
+                )
             ),
             "limitations": [
                 "Uses one-camera 2D MediaPipe landmarks.",
-                "Designed for a visible forehand serve teaching motion.",
-                "Active racket arm is estimated from wrist movement only.",
-                "Dominant hand is estimated from wrist-motion evidence and does not use racket detection.",
-                "Does not evaluate backhand serve technique, grip, finger action, racket, shuttle, impact point, or service legality.",
+                "Selects one dominant continuous wrist-motion window.",
+                "Uniform playback-speed changes do not alter the normalized speed-variation ratio.",
+                "Edited cuts and replay boundaries are estimated heuristically.",
+                "Active racket arm is estimated from total wrist motion and does not use racket detection.",
+                "Does not yet verify forehand versus backhand serve type.",
+                "Does not evaluate grip, finger action, racket face, shuttle trajectory, contact point, or service legality.",
             ],
         }

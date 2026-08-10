@@ -9,6 +9,12 @@
   const chooseFileButton = document.getElementById("chooseFileButton");
   const removeFileButton = document.getElementById("removeFileButton");
   const analyzeButton = document.getElementById("analyzeButton");
+  const adjustWindowButton =
+    document.getElementById("adjustWindowButton");
+  const annotationState =
+    document.getElementById("annotationState");
+  const annotationWindow =
+    document.getElementById("annotationWindow");
   const fileBar = document.getElementById("fileBar");
   const fileName = document.getElementById("fileName");
   const fileMeta = document.getElementById("fileMeta");
@@ -21,6 +27,10 @@
   let selectedMotion = "footwork";
   let selectedFile = null;
   let busy = false;
+  let pendingAssessment = null;
+
+  const PENDING_ASSESSMENT_KEY =
+    "aiMotionPendingAssessment";
 
   const motionNames = {
     footwork: "步法 FOOTWORK",
@@ -76,6 +86,12 @@
     motionGuard.hidden = false;
     updateMotionGuard();
     analyzeButton.disabled = false;
+    adjustWindowButton.disabled = false;
+    annotationState.hidden = true;
+    pendingAssessment = null;
+    sessionStorage.removeItem(
+      PENDING_ASSESSMENT_KEY
+    );
   }
 
   function clearFile() {
@@ -83,7 +99,13 @@
     videoInput.value = "";
     fileBar.hidden = true;
     motionGuard.hidden = true;
+    annotationState.hidden = true;
     analyzeButton.disabled = true;
+    adjustWindowButton.disabled = true;
+    pendingAssessment = null;
+    sessionStorage.removeItem(
+      PENDING_ASSESSMENT_KEY
+    );
   }
 
   function setPipeline(stage, message) {
@@ -109,11 +131,201 @@
     return `${config.REPORT_PAGE}?${params.toString()}`;
   }
 
-  async function startAnalysis() {
-    if (busy || !selectedFile) return;
+  function formatAnnotationTime(ms) {
+    const totalSeconds = ms / 1000;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds - minutes * 60;
+
+    return (
+      `${String(minutes).padStart(2, "0")}:`
+      + `${seconds.toFixed(3).padStart(6, "0")}`
+    );
+  }
+
+  function restorePendingAssessment() {
+    const stored = sessionStorage.getItem(
+      PENDING_ASSESSMENT_KEY
+    );
+
+    if (!stored) return;
+
+    try {
+      const restored = JSON.parse(stored);
+
+      if (
+        !restored?.assessmentId
+        || !restored?.motion
+      ) {
+        throw new Error("待分析資料不完整");
+      }
+
+      pendingAssessment = restored;
+      selectedFile = null;
+      selectedMotion = restored.motion;
+
+      const motionCard = motionCards.find(
+        (card) =>
+          card.dataset.motion === selectedMotion
+      );
+
+      if (motionCard) {
+        selectMotion(motionCard);
+      }
+
+      fileName.textContent =
+        restored.fileName || "已上傳影片";
+      fileMeta.textContent =
+        `${selectedMotion.toUpperCase()}`
+        + " · 原始影片已保留";
+      fileBar.hidden = false;
+      motionGuard.hidden = false;
+      motionGuardLabel.textContent =
+        motionNames[selectedMotion];
+
+      adjustWindowButton.disabled = false;
+
+      if (restored.annotation) {
+        annotationState.hidden = false;
+        annotationWindow.textContent =
+          `${
+            formatAnnotationTime(
+              restored.annotation.startMs
+            )
+          }－${
+            formatAnnotationTime(
+              restored.annotation.endMs
+            )
+          }`;
+
+        analyzeButton.disabled = false;
+      } else {
+        annotationState.hidden = true;
+        analyzeButton.disabled = true;
+      }
+    } catch (error) {
+      console.error(error);
+      sessionStorage.removeItem(
+        PENDING_ASSESSMENT_KEY
+      );
+      pendingAssessment = null;
+    }
+  }
+
+  async function openActionWindow() {
+    if (busy) return;
+
+    if (pendingAssessment?.assessmentId) {
+      const parameters = new URLSearchParams({
+        id: pendingAssessment.assessmentId,
+        return: "home"
+      });
+
+      window.location.href =
+        `review.html?${parameters.toString()}`;
+      return;
+    }
+
+    if (!selectedFile) return;
 
     const error = validateFile(selectedFile);
-    if (error) { showToast(error); return; }
+    if (error) {
+      showToast(error);
+      return;
+    }
+
+    busy = true;
+    analyzeButton.disabled = true;
+    adjustWindowButton.disabled = true;
+    statusPanel.hidden = false;
+    statusPanel.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+    setPipeline(
+      "upload",
+      "正在上傳影片，準備調整完整動作區間…"
+    );
+
+    try {
+      const created = await api.createAssessment(
+        selectedFile,
+        selectedMotion,
+        { deferAnalysis: true }
+      );
+      const assessmentId =
+        api.extractAssessmentId(created);
+
+      if (!assessmentId) {
+        throw new Error(
+          "API 未回傳 assessment_id"
+        );
+      }
+
+      pendingAssessment = {
+        assessmentId,
+        motion: selectedMotion,
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        annotation: null
+      };
+
+      sessionStorage.setItem(
+        PENDING_ASSESSMENT_KEY,
+        JSON.stringify(pendingAssessment)
+      );
+
+      const parameters = new URLSearchParams({
+        id: assessmentId,
+        return: "home"
+      });
+
+      window.location.href =
+        `review.html?${parameters.toString()}`;
+    } catch (errorObject) {
+      console.error(errorObject);
+      showToast(
+        errorObject.message
+          || "影片上傳失敗",
+        7000
+      );
+      statusMessage.textContent =
+        `尚未進入動作區間調整：${
+          errorObject.message || "未知錯誤"
+        }`;
+    } finally {
+      busy = false;
+
+      if (window.location.pathname.endsWith(
+        "index.html"
+      )) {
+        analyzeButton.disabled = !selectedFile;
+        adjustWindowButton.disabled =
+          !selectedFile;
+      }
+    }
+  }
+
+  async function startAnalysis() {
+    const hasAnnotatedAssessment = Boolean(
+      pendingAssessment?.assessmentId
+      && pendingAssessment?.annotation
+    );
+
+    if (
+      busy
+      || (!selectedFile && !hasAnnotatedAssessment)
+    ) {
+      return;
+    }
+
+    if (selectedFile) {
+      const error = validateFile(selectedFile);
+
+      if (error) {
+        showToast(error);
+        return;
+      }
+    }
 
     busy = true;
     analyzeButton.disabled = true;
@@ -122,17 +334,55 @@
     setPipeline("upload", `正在上傳 ${selectedMotion.toUpperCase()} 影片…`);
 
     try {
-      const created = await api.createAssessment(selectedFile, selectedMotion);
-      const assessmentId = api.extractAssessmentId(created);
-      if (!assessmentId) throw new Error("API 未回傳 assessment_id");
+      let assessmentId;
 
-      setPipeline("pose", `Assessment ${assessmentId}：正在進行姿態與動作分析…`);
+      if (hasAnnotatedAssessment) {
+        assessmentId =
+          pendingAssessment.assessmentId;
+
+        setPipeline(
+          "upload",
+          "正在套用已選取的完整動作區間…"
+        );
+
+        await api.analyzeAnnotation(
+          assessmentId
+        );
+      } else {
+        const created =
+          await api.createAssessment(
+            selectedFile,
+            selectedMotion
+          );
+
+        assessmentId =
+          api.extractAssessmentId(created);
+
+        if (!assessmentId) {
+          throw new Error(
+            "API 未回傳 assessment_id"
+          );
+        }
+      }
+
+      setPipeline(
+        "pose",
+        `Assessment ${assessmentId}：`
+        + "正在進行姿態與動作分析…"
+      );
       await api.pollAssessment(assessmentId, (payload) => {
         const stage = inferStage(payload);
         setPipeline(stage, `Assessment ${assessmentId}：${api.normalizeStatus(payload) || "PROCESSING"}`);
       });
 
       setPipeline("report", "分析完成，正在開啟報告…");
+
+      if (hasAnnotatedAssessment) {
+        sessionStorage.removeItem(
+          PENDING_ASSESSMENT_KEY
+        );
+        pendingAssessment = null;
+      }
 
       const completedReportUrl = new URL(
         reportUrl(assessmentId),
@@ -158,7 +408,14 @@
       statusMessage.textContent = `分析未完成：${errorObject.message || "未知錯誤"}`;
     } finally {
       busy = false;
-      analyzeButton.disabled = !selectedFile;
+      analyzeButton.disabled = !(
+        selectedFile
+        || pendingAssessment?.annotation
+      );
+      adjustWindowButton.disabled = !(
+        selectedFile
+        || pendingAssessment?.assessmentId
+      );
     }
   }
 
@@ -190,7 +447,14 @@ if (requestedMotionCard) {
   chooseFileButton.addEventListener("click", () => videoInput.click());
   videoInput.addEventListener("change", () => setFile(videoInput.files[0]));
   removeFileButton.addEventListener("click", clearFile);
-  analyzeButton.addEventListener("click", startAnalysis);
+  adjustWindowButton.addEventListener(
+    "click",
+    openActionWindow
+  );
+  analyzeButton.addEventListener(
+    "click",
+    startAnalysis
+  );
   window.addEventListener("aimotion:camera-recorded", (event) => {
     if (event.detail?.file) setFile(event.detail.file);
   });
@@ -202,4 +466,6 @@ if (requestedMotionCard) {
     event.preventDefault(); uploadZone.classList.remove("is-dragging");
   }));
   uploadZone.addEventListener("drop", (event) => setFile(event.dataTransfer.files[0]));
+
+  restorePendingAssessment();
 })();

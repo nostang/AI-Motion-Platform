@@ -12,18 +12,52 @@
       : await response.text();
 
     if (!response.ok) {
-      const detail = body && typeof body === "object" ? body.detail || body.message : body;
-      throw new Error(detail || `API request failed (${response.status})`);
+      const detail =
+        body && typeof body === "object"
+          ? (
+              body.error?.message
+              || body.detail
+              || body.message
+            )
+          : body;
+
+      throw new Error(
+        detail
+        || `API request failed (${response.status})`
+      );
     }
     return body;
   }
 
-  async function createAssessment(videoFile, assessmentType) {
+  async function createAssessment(
+    videoFile,
+    assessmentType,
+    options = {}
+  ) {
     const formData = new FormData();
     formData.append("video", videoFile, videoFile.name);
     formData.append("user_id", "1");
     formData.append("assessment_type", assessmentType);
-    return request("/motion-assessments", { method: "POST", body: formData });
+    formData.append(
+      "defer_analysis",
+      options.deferAnalysis ? "true" : "false"
+    );
+    return request(
+      "/motion-assessments",
+      {
+        method: "POST",
+        body: formData
+      }
+    );
+  }
+
+  function analyzeAnnotation(assessmentId) {
+    return request(
+      `/motion-assessments/${
+        encodeURIComponent(assessmentId)
+      }/analyze-annotation`,
+      { method: "POST" }
+    );
   }
 
   function getAssessment(assessmentId) {
@@ -69,6 +103,7 @@
 
   window.AIMotionAPI = Object.freeze({
     createAssessment,
+    analyzeAnnotation,
     getAssessment,
     pollAssessment,
     extractAssessmentId,

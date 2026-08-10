@@ -137,9 +137,31 @@
     const minutes = String(Math.floor(elapsedSeconds / 60)).padStart(2, "0");
     const seconds = String(elapsedSeconds % 60).padStart(2, "0");
     recordingText.textContent = `REC ${minutes}:${seconds}`;
-    status.textContent = elapsedSeconds < 3 ? `請持續錄影，至少還要 ${3 - elapsedSeconds} 秒。` : "錄影中，完成動作後按停止。";
-    if (elapsedSeconds >= 3) stopButton.disabled = false;
-    if (elapsedSeconds >= 30 && recorder?.state === "recording") recorder.stop();
+    if (elapsedSeconds < 3) {
+      status.textContent =
+        `請持續錄影，至少還要 ${
+          3 - elapsedSeconds
+        } 秒。`;
+    } else if (elapsedSeconds >= 25) {
+      status.textContent =
+        `錄影將在 ${
+          Math.max(0, 30 - elapsedSeconds)
+        } 秒後自動停止。`;
+    } else {
+      status.textContent =
+        "錄影中，完成動作後可提前停止。";
+    }
+
+    if (elapsedSeconds >= 3) {
+      stopButton.disabled = false;
+    }
+
+    if (
+      elapsedSeconds >= 30
+      && recorder?.state === "recording"
+    ) {
+      recorder.stop();
+    }
   }
 
   async function startRecording() {

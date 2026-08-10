@@ -16,6 +16,8 @@ class FootworkAnalyzer(BaseMotionAnalyzer):
             window_name=context.window_name,
             display=context.display,
             output_dir=context.output_dir,
+            start_ms=context.start_ms,
+            end_ms=context.end_ms,
         )
 
 
@@ -31,6 +33,8 @@ class ServeAnalyzer(BaseMotionAnalyzer):
             window_name=context.window_name,
             display=context.display,
             output_dir=context.output_dir,
+            start_ms=context.start_ms,
+            end_ms=context.end_ms,
         )
 
 
@@ -46,4 +50,6 @@ class ClearAnalyzer(BaseMotionAnalyzer):
             window_name=context.window_name,
             display=context.display,
             output_dir=context.output_dir,
+            start_ms=context.start_ms,
+            end_ms=context.end_ms,
         )

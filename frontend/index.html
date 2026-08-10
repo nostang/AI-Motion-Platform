@@ -22,7 +22,7 @@
     <section class="hero">
       <p class="eyebrow">PIXEL COURT / MOTION ANALYSIS</p>
       <h1>把每一次揮拍，<br><span>變成看得懂的進步。</span></h1>
-      <p class="hero-copy">選擇動作並上傳 3–30 秒影片，AI Motion 將分析姿勢、特徵與動作品質。</p>
+      <p class="hero-copy">選擇動作並加入影片，選取 30 秒內的一次完整動作，AI Motion 將分析姿勢、特徵與動作品質。</p>
       <div class="hero-actions">
         <div class="hero-badge" aria-label="分析流程">POSE → FEATURE → RULE → COACH</div>
         <a class="summary-link" href="summary.html?user_id=1">
@@ -62,7 +62,7 @@
           <h3>上傳影片</h3>
           <p>拖曳影片到這裡，或選擇檔案</p>
           <button class="secondary-button" id="chooseFileButton" type="button">CHOOSE VIDEO</button>
-          <small>MP4 / MOV · 3–30 秒 · 最大 100 MB</small>
+          <small>MP4 / MOV · 原始影片最長 120 秒 · 最大 100 MB</small>
         </div>
 
         <div class="camera-card">
@@ -71,7 +71,7 @@
           <h3>現場錄影</h3>
           <p>使用瀏覽器相機，跟著畫面指引完成拍攝。</p>
           <button class="secondary-button" id="cameraButton" type="button">OPEN CAMERA</button>
-          <small>3–30 秒 · MP4 / H.264</small>
+          <small>3–30 秒 · 30 秒自動停止 · MP4 / H.264</small>
         </div>
       </div>
 
@@ -86,9 +86,36 @@
         <small>請確認影片中的實際動作與選擇項目相同。</small>
       </div>
 
-      <button class="analyze-button" id="analyzeButton" type="button" disabled>
-        <span>START ANALYSIS</span><small>開始動作分析 →</small>
-      </button>
+      <div
+        class="annotation-state"
+        id="annotationState"
+        hidden
+      >
+        <span>✓ 已選取完整動作</span>
+        <strong id="annotationWindow"></strong>
+      </div>
+
+      <div class="analysis-actions">
+        <button
+          class="adjust-window-button"
+          id="adjustWindowButton"
+          type="button"
+          disabled
+        >
+          <span>SELECT RANGE</span>
+          <small>選取動作片段</small>
+        </button>
+
+        <button
+          class="analyze-button"
+          id="analyzeButton"
+          type="button"
+          disabled
+        >
+          <span>START ANALYSIS</span>
+          <small>開始動作分析 →</small>
+        </button>
+      </div>
     </section>
 
     <section class="panel status-panel" id="statusPanel" hidden aria-live="polite">
@@ -135,7 +162,7 @@
         <li>手機或鏡頭固定</li><li>全身與球拍入鏡</li><li>保持光線充足</li>
       </ul>
 
-      <p class="camera-status" id="cameraStatus">按下開始後將倒數 3 秒。</p>
+      <p class="camera-status" id="cameraStatus">按下開始後將倒數 3 秒，錄影最長 30 秒。</p>
 
       <div class="camera-actions">
         <button class="camera-button ghost" id="cameraRetryButton" type="button" hidden>重新錄製</button>

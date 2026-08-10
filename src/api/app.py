@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from datetime import datetime, timezone
+import json
 import os
 from pathlib import Path
 from uuid import uuid4
@@ -14,7 +15,7 @@ from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from src.api.dashboard_service import build_user_dashboard
@@ -48,6 +49,7 @@ SUPPORTED_EXTENSIONS = {".mp4", ".mov"}
 MAX_VIDEO_BYTES = 100 * 1024 * 1024
 MIN_VIDEO_SECONDS = 3.0
 MAX_VIDEO_SECONDS = 30.0
+MAX_DEFERRED_VIDEO_SECONDS = 120.0
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
@@ -98,6 +100,36 @@ class CompetencyProfileRequest(BaseModel):
     footwork_assessment_id: str = Field(min_length=1)
     serve_assessment_id: str = Field(min_length=1)
     clear_assessment_id: str = Field(min_length=1)
+
+
+class MotionAnnotationRequest(BaseModel):
+    start_ms: int = Field(ge=0)
+    end_ms: int = Field(gt=0)
+    status: str = Field(
+        default="COMPLETE",
+        min_length=1,
+        max_length=50,
+    )
+    motion_type: str | None = Field(
+        default=None,
+        max_length=50,
+    )
+    action_type: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+    racket_side: str | None = Field(
+        default=None,
+        max_length=20,
+    )
+    calibration_eligibility: str | None = Field(
+        default=None,
+        max_length=50,
+    )
+    notes: str | None = Field(
+        default=None,
+        max_length=2000,
+    )
 
 
 @app.exception_handler(RequestValidationError)
@@ -252,6 +284,7 @@ async def create_motion_assessment(
     video: UploadFile = File(...),
     client_recorded_at: str | None = Form(None),
     notes: str | None = Form(None),
+    defer_analysis: bool = Form(False),
 ):
     normalized_type = assessment_type.strip().lower()
 
@@ -334,18 +367,36 @@ async def create_motion_assessment(
             "影片無法讀取或檔案已損壞。",
         )
 
-    if duration > MAX_VIDEO_SECONDS:
+    maximum_duration = (
+        MAX_DEFERRED_VIDEO_SECONDS
+        if defer_analysis
+        else MAX_VIDEO_SECONDS
+    )
+
+    if duration > maximum_duration:
         video_path.unlink(missing_ok=True)
 
         return failure(
             400,
             "VIDEO_TOO_LONG",
-            "影片不可超過 30 秒。",
+            (
+                "選取動作片段前，原始影片不可超過 "
+                f"{int(maximum_duration)} 秒。"
+                if defer_analysis
+                else (
+                    "直接分析的影片不可超過 "
+                    f"{int(maximum_duration)} 秒。"
+                )
+            ),
             {
                 "duration_seconds": round(
                     duration,
                     3,
-                )
+                ),
+                "maximum_duration_seconds": (
+                    maximum_duration
+                ),
+                "analysis_deferred": defer_analysis,
             },
         )
 
@@ -378,17 +429,359 @@ async def create_motion_assessment(
         updated_at=now,
     )
 
-    background_tasks.add_task(
-        service.process,
-        assessment_id,
-    )
+    if not defer_analysis:
+        background_tasks.add_task(
+            service.process,
+            assessment_id,
+        )
 
     return envelope(
         {
             "assessment_id": assessment_id,
             "assessment_type": normalized_type,
             "status": "uploaded",
+            "analysis_deferred": defer_analysis,
             "created_at": now,
+            "status_url": (
+                f"{API_PREFIX}/motion-assessments/"
+                f"{assessment_id}"
+            ),
+            "report_url": (
+                f"{API_PREFIX}/motion-assessments/"
+                f"{assessment_id}/report"
+            ),
+        }
+    )
+
+
+def _assessment_source_video(
+    assessment_id: str,
+) -> Path | None:
+    directory = repository.task_dir(
+        assessment_id
+    )
+
+    for suffix in sorted(SUPPORTED_EXTENSIONS):
+        candidate = directory / f"source{suffix}"
+
+        if candidate.is_file():
+            return candidate
+
+    return None
+
+
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/video"
+)
+def get_motion_assessment_video(
+    assessment_id: str,
+):
+    task = repository.get_analysis(
+        assessment_id
+    )
+
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+
+    video_path = _assessment_source_video(
+        assessment_id
+    )
+
+    if video_path is None:
+        return failure(
+            404,
+            "ASSESSMENT_VIDEO_NOT_FOUND",
+            "找不到這次分析的原始影片。",
+            {"assessment_id": assessment_id},
+        )
+
+    media_type = (
+        "video/quicktime"
+        if video_path.suffix.lower() == ".mov"
+        else "video/mp4"
+    )
+
+    return FileResponse(
+        video_path,
+        media_type=media_type,
+    )
+
+
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/annotation"
+)
+def get_motion_assessment_annotation(
+    assessment_id: str,
+):
+    task = repository.get_analysis(
+        assessment_id
+    )
+
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+
+    annotation_path = (
+        repository.task_dir(assessment_id)
+        / "human_annotation.json"
+    )
+
+    if not annotation_path.is_file():
+        return envelope(
+            {
+                "assessment_id": assessment_id,
+                "annotation": None,
+            }
+        )
+
+    try:
+        annotation = json.loads(
+            annotation_path.read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, json.JSONDecodeError):
+        return failure(
+            500,
+            "ANNOTATION_READ_FAILED",
+            "人工標注檔案無法讀取。",
+            {"assessment_id": assessment_id},
+        )
+
+    return envelope(annotation)
+
+
+@app.put(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/annotation"
+)
+def put_motion_assessment_annotation(
+    assessment_id: str,
+    request: MotionAnnotationRequest,
+):
+    task = repository.get_analysis(
+        assessment_id
+    )
+
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+
+    if request.end_ms <= request.start_ms:
+        return failure(
+            400,
+            "INVALID_ANNOTATION_WINDOW",
+            "動作結束時間必須晚於開始時間。",
+            {
+                "start_ms": request.start_ms,
+                "end_ms": request.end_ms,
+            },
+        )
+
+    selected_duration_ms = (
+        request.end_ms - request.start_ms
+    )
+    maximum_window_ms = int(
+        MAX_VIDEO_SECONDS * 1000
+    )
+
+    if selected_duration_ms > maximum_window_ms:
+        return failure(
+            422,
+            "ANNOTATION_WINDOW_TOO_LONG",
+            "選取的動作片段不可超過 30 秒。",
+            {
+                "duration_ms": selected_duration_ms,
+                "maximum_duration_ms": (
+                    maximum_window_ms
+                ),
+            },
+        )
+
+    video_path = _assessment_source_video(
+        assessment_id
+    )
+
+    if video_path is None:
+        return failure(
+            404,
+            "ASSESSMENT_VIDEO_NOT_FOUND",
+            "找不到這次分析的原始影片。",
+            {"assessment_id": assessment_id},
+        )
+
+    duration_ms = round(
+        _video_duration_seconds(video_path)
+        * 1000
+    )
+
+    if request.end_ms > duration_ms + 100:
+        return failure(
+            400,
+            "ANNOTATION_OUT_OF_RANGE",
+            "標注結束時間超過影片長度。",
+            {
+                "end_ms": request.end_ms,
+                "video_duration_ms": duration_ms,
+            },
+        )
+
+    now = datetime.now(
+        timezone.utc
+    ).isoformat()
+
+    annotation = {
+        "schema_version": "1.0",
+        "assessment_id": assessment_id,
+        "motion_type": (
+            request.motion_type
+            or task.get("assessment_type")
+        ),
+        "window": {
+            "start_ms": request.start_ms,
+            "end_ms": request.end_ms,
+            "duration_ms": (
+                request.end_ms
+                - request.start_ms
+            ),
+            "source": "HUMAN",
+            "status": request.status.upper(),
+        },
+        "action_type": request.action_type,
+        "racket_side": request.racket_side,
+        "calibration_eligibility": (
+            request.calibration_eligibility
+        ),
+        "notes": request.notes,
+        "updated_at": now,
+    }
+
+    directory = repository.task_dir(
+        assessment_id
+    )
+    annotation_path = (
+        directory / "human_annotation.json"
+    )
+    temporary_path = (
+        directory / "human_annotation.json.tmp"
+    )
+
+    try:
+        temporary_path.write_text(
+            json.dumps(
+                annotation,
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        temporary_path.replace(annotation_path)
+    except OSError:
+        temporary_path.unlink(
+            missing_ok=True
+        )
+
+        return failure(
+            500,
+            "ANNOTATION_SAVE_FAILED",
+            "人工標注無法儲存。",
+            {"assessment_id": assessment_id},
+        )
+
+    return envelope(annotation)
+
+
+@app.post(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/analyze-annotation",
+    status_code=202,
+)
+def analyze_motion_assessment_annotation(
+    assessment_id: str,
+    background_tasks: BackgroundTasks,
+):
+    task = repository.get_analysis(
+        assessment_id
+    )
+
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+
+    if task.get("status") == "processing":
+        return failure(
+            409,
+            "ASSESSMENT_ALREADY_PROCESSING",
+            "這次分析目前仍在處理中。",
+            {"assessment_id": assessment_id},
+        )
+
+    annotation_path = (
+        repository.task_dir(assessment_id)
+        / "human_annotation.json"
+    )
+
+    if not annotation_path.exists():
+        return failure(
+            409,
+            "ANNOTATION_REQUIRED",
+            "請先選取並儲存完整動作區間。",
+            {"assessment_id": assessment_id},
+        )
+
+    video_path = _assessment_source_video(
+        assessment_id
+    )
+
+    if video_path is None:
+        return failure(
+            404,
+            "ASSESSMENT_VIDEO_NOT_FOUND",
+            "原始影片已不存在，無法依人工標注重新分析。",
+            {"assessment_id": assessment_id},
+        )
+
+    repository.update_status(
+        assessment_id,
+        processing_status="uploaded",
+        progress=0,
+        current_stage="annotation_queued",
+        updated_at=utc_now(),
+        completed_at=None,
+        error_message=None,
+    )
+
+    background_tasks.add_task(
+        service.process,
+        assessment_id,
+        True,
+    )
+
+    return envelope(
+        {
+            "assessment_id": assessment_id,
+            "status": "uploaded",
+            "current_stage": "annotation_queued",
+            "annotation_applied": True,
             "status_url": (
                 f"{API_PREFIX}/motion-assessments/"
                 f"{assessment_id}"
@@ -1043,4 +1436,3 @@ def get_user_progress(
         )
 
     return envelope(result)
-

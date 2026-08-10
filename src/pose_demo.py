@@ -115,6 +115,8 @@ def run_pose_demo(
     *,
     display: bool = True,
     output_dir: Path | None = None,
+    start_ms: int | None = None,
+    end_ms: int | None = None,
 ) -> dict:
     """
     執行完整 Pose Demo。
@@ -153,7 +155,38 @@ def run_pose_demo(
     if fps <= 0:
         fps = 30.0
 
+    analysis_start_ms = max(0, int(start_ms or 0))
+    analysis_end_ms = (
+        int(end_ms)
+        if end_ms is not None
+        else None
+    )
+
+    if (
+        analysis_end_ms is not None
+        and analysis_end_ms <= analysis_start_ms
+    ):
+        cap.release()
+        raise ValueError(
+            "人工標注的 end_ms 必須大於 start_ms。"
+        )
+
+    source_start_frame = int(
+        analysis_start_ms * fps / 1000
+    )
+    source_end_frame = (
+        int(analysis_end_ms * fps / 1000)
+        if analysis_end_ms is not None
+        else None
+    )
+
+    cap.set(
+        cv2.CAP_PROP_POS_FRAMES,
+        source_start_frame,
+    )
+
     frame_index = 0
+    source_frame_index = source_start_frame
     detected_frame_count = 0
 
     previous_hip_center_normalized = None
@@ -208,6 +241,13 @@ def run_pose_demo(
     try:
         with create_pose_landmarker(model_path) as landmarker:
             while True:
+                if (
+                    source_end_frame is not None
+                    and source_frame_index
+                    > source_end_frame
+                ):
+                    break
+
                 success, frame = cap.read()
                 if not success:
                     break
@@ -552,6 +592,7 @@ def run_pose_demo(
                         break
 
                 frame_index += 1
+                source_frame_index += 1
 
     finally:
         cap.release()

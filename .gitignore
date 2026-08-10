@@ -47,3 +47,10 @@ videos/
 .env
 .env.*
 !.env.example
+
+# ========================================
+# Local Calibration Review Videos
+# ========================================
+
+docs/calibration/serve_window_review/
+docs/calibration/serve_window_review_v0_4/
