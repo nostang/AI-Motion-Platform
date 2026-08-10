@@ -296,11 +296,70 @@ function renderDimensions(report) {
   }
 
   function renderEvidence(report, motion) {
-    const hand = report?.features?.dominant_hand || report?.features?.racket_hand || report?.dominant_hand || report?.racket_hand;
-    const estimatedHand = typeof hand === "string" ? hand : hand?.estimated;
-    const handConfidence = typeof hand === "object" ? hand?.confidence : null;
-    elements.hand.textContent = estimatedHand ? `${estimatedHand === "right" ? "右手" : estimatedHand === "left" ? "左手" : estimatedHand}${Number.isFinite(Number(handConfidence)) ? ` · ${Math.round(Number(handConfidence) * 100)}%` : ""}` : "--";
-    elements.engine.textContent = valueOrDash(report?.meta?.engine_version);
+  const hand =
+    report?.features?.dominant_hand
+    || report?.features?.racket_hand
+    || report?.dominant_hand
+    || report?.racket_hand;
+
+  const estimatedHand =
+    typeof hand === "string"
+      ? hand
+      : hand?.estimated || hand?.side;
+
+  const handConfidence =
+    typeof hand === "object"
+      ? hand?.confidence
+      : null;
+
+  const handStatus =
+    typeof hand === "object"
+      ? hand?.status
+      : null;
+
+  const handSource =
+    typeof hand === "object"
+      ? hand?.source
+      : null;
+
+  const handLabel =
+    estimatedHand === "right"
+      ? "右手"
+      : estimatedHand === "left"
+        ? "左手"
+        : (
+          estimatedHand
+          && estimatedHand !== "unknown"
+            ? estimatedHand
+            : null
+        );
+
+  if (!handLabel) {
+    elements.hand.textContent =
+      "尚無法判定";
+  } else if (
+    handStatus === "HUMAN_CONFIRMED"
+    || handSource === "HUMAN_ANNOTATION"
+  ) {
+    elements.hand.textContent =
+      `${handLabel} · 人工確認`;
+  } else if (
+    Number.isFinite(
+      Number(handConfidence)
+    )
+  ) {
+    elements.hand.textContent =
+      `${handLabel} · 信心 ${
+        Math.round(
+          Number(handConfidence) * 100
+        )
+      }%`;
+  } else {
+    elements.hand.textContent =
+      handLabel;
+  }
+
+  elements.engine.textContent = valueOrDash(report?.meta?.engine_version);
     elements.calibration.textContent = valueOrDash(report?.meta?.calibration_status);
     elements.motionType.textContent = (motionLabels[motion] || { zh: "羽球動作" }).zh;
 

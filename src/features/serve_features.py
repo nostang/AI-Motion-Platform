@@ -26,10 +26,24 @@ def _midpoint(a: tuple[float, float], b: tuple[float, float]) -> tuple[float, fl
 class ServeFeatureTracker:
     """逐幀收集發球 MVP 所需特徵。"""
 
+    racket_side: str | None = None
     samples: list[dict[str, float]] = field(default_factory=list)
     dominant_hand_tracker: DominantHandTracker = field(
         default_factory=DominantHandTracker
     )
+
+    def __post_init__(self) -> None:
+        if self.racket_side is None:
+            return
+
+        normalized = self.racket_side.strip().lower()
+
+        if normalized not in {"left", "right"}:
+            raise ValueError(
+                "racket_side 必須是 left 或 right。"
+            )
+
+        self.racket_side = normalized
 
     def observe(self, landmarks: Sequence[Any], timestamp_ms: int) -> None:
         self.dominant_hand_tracker.observe(landmarks, timestamp_ms)
@@ -49,7 +63,15 @@ class ServeFeatureTracker:
 
         left_wrist_radius = _distance(left_wrist, left_shoulder)
         right_wrist_radius = _distance(right_wrist, right_shoulder)
-        active_side = "right" if right_wrist_radius >= left_wrist_radius else "left"
+        active_side = (
+            self.racket_side
+            or (
+                "right"
+                if right_wrist_radius
+                >= left_wrist_radius
+                else "left"
+            )
+        )
         active_wrist = right_wrist if active_side == "right" else left_wrist
         active_shoulder = right_shoulder if active_side == "right" else left_shoulder
 
@@ -87,12 +109,31 @@ class ServeFeatureTracker:
         )
 
     def build(self) -> dict[str, Any]:
-        dominant_hand = self.dominant_hand_tracker.build()
+        automatic_hand = (
+            self.dominant_hand_tracker.build()
+        )
+
+        dominant_hand = automatic_hand
+
+        if self.racket_side is not None:
+            dominant_hand = {
+                "status": "HUMAN_CONFIRMED",
+                "feature_version": (
+                    "dominant-hand-v0.1"
+                ),
+                "sample_count": len(
+                    self.dominant_hand_tracker.samples
+                ),
+                "estimated": self.racket_side,
+                "confidence": 1.0,
+                "source": "HUMAN_ANNOTATION",
+                "automatic_estimate": automatic_hand,
+            }
 
         if len(self.samples) < 3:
             return {
                 "status": "NOT_EVALUATED",
-                "feature_version": "serve-feature-v0.4",
+                "feature_version": "serve-feature-v0.5",
                 "sample_count": len(self.samples),
                 "reason": "INSUFFICIENT_POSE_SAMPLES",
                 "dominant_hand": dominant_hand,
@@ -136,9 +177,12 @@ class ServeFeatureTracker:
         left_total = sum(left_steps)
         right_total = sum(right_steps)
         active_side = (
-            "right"
-            if right_total >= left_total
-            else "left"
+            self.racket_side
+            or (
+                "right"
+                if right_total >= left_total
+                else "left"
+            )
         )
 
         positions = (
@@ -502,7 +546,7 @@ class ServeFeatureTracker:
 
         return {
             "status": "EXTRACTED",
-            "feature_version": "serve-feature-v0.4",
+            "feature_version": "serve-feature-v0.5",
             "sample_count": sample_count,
             "active_side_estimate": active_side,
             "dominant_hand": dominant_hand,

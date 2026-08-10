@@ -158,7 +158,7 @@ class ServeAssessmentBuilder:
             "assessment_type": "serve",
             "serve_type": "forehand",
             "test_mode": "FOREHAND_SERVE_TEACHING",
-            "engine_version": "forehand-serve-mvp-v0.3",
+            "engine_version": "forehand-serve-mvp-v0.4",
             "config_version": self.calibration["config_version"],
             "rubric_version": self.calibration["rubric_version"],
             "calibration_status": self.calibration.get("status"),

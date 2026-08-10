@@ -30,6 +30,7 @@ def run_serve_demo(
     output_dir: Path | None = None,
     start_ms: int | None = None,
     end_ms: int | None = None,
+    racket_side: str | None = None,
 ) -> dict[str, Any]:
     output_dir = Path(output_dir) if output_dir else Path(__file__).resolve().parent.parent / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -78,7 +79,9 @@ def run_serve_demo(
     detected_frames = 0
     first_detected_frame: int | None = None
     last_detected_frame: int | None = None
-    tracker = ServeFeatureTracker()
+    tracker = ServeFeatureTracker(
+        racket_side=racket_side,
+    )
 
     try:
         with create_pose_landmarker(model_path) as landmarker:

@@ -42,6 +42,7 @@ class MotionAssessmentService:
             start_ms: int | None = None
             end_ms: int | None = None
             annotation_source: str | None = None
+            racket_side: str | None = None
 
             if use_annotation:
                 annotation_path = (
@@ -73,6 +74,24 @@ class MotionAssessmentService:
                     window.get("source") or "HUMAN"
                 )
 
+                raw_racket_side = annotation.get(
+                    "racket_side"
+                )
+
+                if raw_racket_side:
+                    racket_side = str(
+                        raw_racket_side
+                    ).strip().lower()
+
+                    if racket_side not in {
+                        "left",
+                        "right",
+                    }:
+                        raise ValueError(
+                            "人工標注的 racket_side "
+                            "必須是 left 或 right。"
+                        )
+
             analyzer = get_motion_analyzer(assessment_type)
             context = MotionContext(
                 video_id=f"API_{assessment_type.upper()}_{assessment_id}",
@@ -87,6 +106,7 @@ class MotionAssessmentService:
                 start_ms=start_ms,
                 end_ms=end_ms,
                 annotation_source=annotation_source,
+                racket_side=racket_side,
             )
 
             result = analyzer.run(context)

@@ -21,6 +21,7 @@ class MotionContext:
     start_ms: int | None = None
     end_ms: int | None = None
     annotation_source: str | None = None
+    racket_side: str | None = None
 
 
 class BaseMotionAnalyzer(ABC):

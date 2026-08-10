@@ -182,5 +182,86 @@ class ServeFeatureTests(unittest.TestCase):
         )
 
 
+    def test_automatic_side_is_used_without_annotation(
+        self,
+    ) -> None:
+        tracker = ServeFeatureTracker()
+
+        for index, (left_x, left_y) in enumerate(
+            serve_motion()
+        ):
+            tracker.observe(
+                landmarks(
+                    0.60,
+                    0.48,
+                    left_wrist_x=left_x,
+                    left_wrist_y=left_y,
+                ),
+                index * 100,
+            )
+
+        result = tracker.build()
+
+        self.assertEqual(
+            result["active_side_estimate"],
+            "left",
+        )
+        self.assertEqual(
+            result["dominant_hand"]["estimated"],
+            "left",
+        )
+        self.assertEqual(
+            result["dominant_hand"]["status"],
+            "ESTIMATED",
+        )
+
+    def test_human_racket_side_overrides_automatic_side(
+        self,
+    ) -> None:
+        tracker = ServeFeatureTracker(
+            racket_side="right",
+        )
+
+        for index, (left_x, left_y) in enumerate(
+            serve_motion()
+        ):
+            tracker.observe(
+                landmarks(
+                    0.60,
+                    0.48,
+                    left_wrist_x=left_x,
+                    left_wrist_y=left_y,
+                ),
+                index * 100,
+            )
+
+        result = tracker.build()
+        hand = result["dominant_hand"]
+
+        self.assertEqual(
+            result["active_side_estimate"],
+            "right",
+        )
+        self.assertEqual(
+            hand["estimated"],
+            "right",
+        )
+        self.assertEqual(
+            hand["status"],
+            "HUMAN_CONFIRMED",
+        )
+        self.assertEqual(
+            hand["source"],
+            "HUMAN_ANNOTATION",
+        )
+        self.assertEqual(
+            hand["confidence"],
+            1.0,
+        )
+        self.assertEqual(
+            hand["automatic_estimate"]["estimated"],
+            "left",
+        )
+
 if __name__ == "__main__":
     unittest.main()

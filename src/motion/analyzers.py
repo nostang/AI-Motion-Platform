@@ -35,6 +35,7 @@ class ServeAnalyzer(BaseMotionAnalyzer):
             output_dir=context.output_dir,
             start_ms=context.start_ms,
             end_ms=context.end_ms,
+            racket_side=context.racket_side,
         )
 
 
