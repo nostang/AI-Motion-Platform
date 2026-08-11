@@ -1,0 +1,99 @@
+.engineer-toggle { border-color: #c8ff3d; background: #102a21; color: #c8ff3d; }
+.engineer-mode { min-width: 0; margin-top: 34px; padding: 28px; border: 4px solid #102a21; background: #071711; color: #e9fff4; box-shadow: 9px 9px 0 #c8ff3d; }
+.engineer-mode[hidden] { display: none; }
+.engineer-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; border-bottom: 1px solid #43685a; padding-bottom: 18px; }
+.engineer-heading p, .engineer-heading h2 { margin: 0; }
+.engineer-heading p { color: #8db4a4; font: 800 12px ui-monospace, monospace; letter-spacing: .14em; }
+.engineer-heading h2 { margin-top: 6px; font-size: 34px; }
+.engineer-heading-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.engineer-heading-actions span, .engineer-heading-actions button { padding: 8px 10px; border: 1px solid #c8ff3d; color: #c8ff3d; font: 800 11px ui-monospace, monospace; }
+.engineer-heading-actions button { cursor: pointer; background: #102a21; }
+.engineer-heading-actions button:hover, .engineer-heading-actions button:focus-visible { background: #c8ff3d; color: #071711; }
+.engineer-heading-actions button[hidden] { display: none; }
+.engineer-intro { color: #a8c8bb; }
+.engineer-state { padding: 18px; border: 1px dashed #6c8f81; color: #a8c8bb; }
+.engineer-state[data-status="error"] { border-color: #ff8e6e; color: #ffb5a0; }
+.engineer-sections { display: grid; gap: 20px; margin-top: 22px; }
+.engineer-section { min-width: 0; border: 1px solid #43685a; background: #0c2119; }
+.engineer-section > header { display: flex; justify-content: space-between; gap: 16px; padding: 14px 16px; border-bottom: 1px solid #43685a; background: #123126; }
+.engineer-section h3 { margin: 0; color: #c8ff3d; font: 900 16px ui-monospace, monospace; }
+.engineer-section header span { color: #8db4a4; font: 700 11px ui-monospace, monospace; }
+.engineer-body { min-width: 0; padding: 16px; }
+.engineer-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0; background: #29493d; }
+.engineer-overview > div { min-width: 0; padding: 14px; background: #0c2119; }
+.engineer-overview dt { color: #8db4a4; font: 700 11px ui-monospace, monospace; }
+.engineer-overview dd { margin: 7px 0 0; overflow-wrap: anywhere; color: #f1fff8; font: 700 13px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
+.engineer-table-scroll { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; }
+.engineer-wide-table { width: 100%; min-width: 920px; border-collapse: collapse; font: 12px/1.5 ui-monospace, monospace; }
+.engineer-wide-table th, .engineer-wide-table td { padding: 10px; border: 1px solid #29493d; text-align: left; vertical-align: top; }
+.engineer-wide-table th { position: sticky; top: 0; background: #123126; color: #8db4a4; }
+.engineer-wide-table td { color: #f1fff8; overflow-wrap: anywhere; }
+.engineer-detail-table { min-width: 760px; }
+.engineer-event-table th, .engineer-event-table td { white-space: nowrap; overflow-wrap: normal; }
+.engineer-event-table th:first-child, .engineer-event-table td:first-child { width: 54px; }
+.engineer-event-table th:nth-child(2), .engineer-event-table td:nth-child(2) { width: 120px; }
+.engineer-event-table th:nth-child(6), .engineer-event-table td:nth-child(6) { width: 150px; }
+.engineer-lines { display: grid; gap: 7px; }
+.engineer-lines > div + div { padding-top: 7px; border-top: 1px dashed #29493d; }
+.engineer-wide-table td[data-level="excellent"] { color: #c8ff3d; }
+.engineer-wide-table td[data-level="good"] { color: #77e5b0; }
+.engineer-wide-table td[data-level="fair"], .engineer-wide-table td[data-level="needs_review"] { color: #ffc56f; }
+.engineer-wide-table td[data-level="poor"] { color: #ff8e6e; }
+.engineer-wide-table td[data-included="false"] { color: #ffc56f; }
+.engineer-total { margin: 14px 0 0; text-align: right; color: #c8ff3d; font: 900 16px ui-monospace, monospace; }
+.engineer-raw { border: 1px solid #43685a; background: #0c2119; }
+.engineer-raw summary { cursor: pointer; padding: 14px 16px; color: #8db4a4; font: 800 13px ui-monospace, monospace; }
+.engineer-raw pre { max-height: 620px; margin: 0; padding: 16px; overflow: auto; border-top: 1px solid #29493d; color: #c9dfd6; font: 11px/1.55 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 800px) {
+  .engineer-mode { padding: 18px 12px; box-shadow: 5px 5px 0 #c8ff3d; }
+  .engineer-heading { flex-direction: column; }
+  .engineer-heading-actions { width: 100%; align-items: stretch; justify-content: flex-start; flex-direction: column-reverse; }
+  .engineer-heading-actions span, .engineer-heading-actions button { box-sizing: border-box; width: 100%; text-align: center; }
+  .engineer-overview { grid-template-columns: 1fr; }
+  .engineer-section > header { align-items: flex-start; flex-direction: column; }
+  .engineer-section header span { overflow-wrap: anywhere; }
+  .engineer-body { padding: 12px; }
+  .engineer-table-scroll { overflow: visible; }
+  .engineer-wide-table,
+  .engineer-wide-table thead,
+  .engineer-wide-table tbody,
+  .engineer-wide-table tr,
+  .engineer-wide-table th,
+  .engineer-wide-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .engineer-wide-table { min-width: 0; border: 0; }
+  .engineer-wide-table thead { display: none; }
+  .engineer-wide-table tr {
+    margin-bottom: 12px;
+    border: 1px solid #43685a;
+    background: #0a1c15;
+  }
+  .engineer-wide-table tr:last-child { margin-bottom: 0; }
+  .engineer-wide-table td,
+  .engineer-event-table td {
+    display: grid;
+    grid-template-columns: minmax(78px, 30%) minmax(0, 1fr);
+    gap: 10px;
+    width: auto;
+    padding: 10px 12px;
+    border: 0;
+    border-bottom: 1px solid #29493d;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .engineer-wide-table td:last-child { border-bottom: 0; }
+  .engineer-wide-table td::before {
+    content: attr(data-label);
+    color: #8db4a4;
+    font-weight: 800;
+  }
+  .engineer-event-table td:first-child,
+  .engineer-event-table td:nth-child(2),
+  .engineer-event-table td:nth-child(6) { width: auto; }
+  .engineer-lines { min-width: 0; }
+  .engineer-total { text-align: left; }
+  .engineer-raw pre { max-height: 420px; padding: 12px; font-size: 10px; }
+}

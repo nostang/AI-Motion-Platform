@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#075d3b">
   <title>AI Motion｜動作分析報告</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/engineer-mode.css">
 </head>
 <body>
   <div class="court-lines" aria-hidden="true"></div>
@@ -74,9 +75,32 @@
       </details>
     </section>
 
+    <section class="engineer-mode" id="engineerMode" hidden>
+      <div class="engineer-heading">
+        <div>
+          <p>INTERNAL DEVELOPMENT INTERFACE</p>
+          <h2>工程模式</h2>
+        </div>
+        <div class="engineer-heading-actions">
+          <button id="engineerExportCsv" type="button" hidden>
+            EXPORT CSV
+          </button>
+          <span>DEBUG / NOT PUBLIC CONTRACT</span>
+        </div>
+      </div>
+      <p class="engineer-intro">
+        本區只呈現 Backend 已保存的分析證據與門檻，不在瀏覽器重算 Feature 或分數。
+      </p>
+      <div id="engineerState" class="engineer-state">正在讀取工程證據…</div>
+      <div id="engineerSections" class="engineer-sections"></div>
+    </section>
+
     <div class="report-actions">
       <a id="summaryButton" class="summary-button" href="summary.html?user_id=1">查看能力總覽 →</a>
       <button id="backButton" type="button">← 返回重新測驗</button>
+      <button id="engineerToggle" class="engineer-toggle" type="button" aria-expanded="false">
+        工程模式
+      </button>
       <span id="assessmentLabel"></span>
     </div>
   </main>
@@ -87,5 +111,6 @@
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/report.js"></script>
+  <script src="js/engineer-mode.js"></script>
 </body>
 </html>

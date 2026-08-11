@@ -392,6 +392,55 @@ class MotionAnnotationApiTests(unittest.TestCase):
             "VIDEO_TOO_LONG",
         )
 
+    def test_internal_engineer_debug_is_separate_from_openapi(
+        self,
+    ) -> None:
+        self.create_task(status="uploaded")
+        self.assertEqual(self.put_annotation().status_code, 200)
+        output = self.repository.task_dir("ma_test") / "output"
+        output.mkdir()
+        (output / "serve_assessment.json").write_text(
+            json.dumps({
+                "assessment_type": "serve",
+                "engine_version": "test",
+                "pose_detection": {
+                    "total_frames": 100,
+                    "detected_frames": 90,
+                    "detection_rate": 0.9,
+                },
+                "event": {"start_ms": 0, "end_ms": 4000},
+                "features": {
+                    "feature_version": "test",
+                    "active_side_estimate": "right",
+                    "dominant_hand": {
+                        "estimated": "right",
+                        "automatic_estimate": {"estimated": "left"},
+                    },
+                    "analysis_window": {"start_ms": 1200, "end_ms": 2600},
+                    "swing_path_length": 1.1,
+                },
+                "metrics": {"swing_completeness": {"score": 20}},
+                "overall_score": 70,
+            }),
+            encoding="utf-8",
+        )
+        self.repository.tasks["ma_test"]["status"] = "completed"
+
+        response = self.client.get(
+            "/api/v1/internal/motion-assessments/ma_test/engineer-debug"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()["data"]
+        self.assertEqual(data["visibility"], "INTERNAL")
+        self.assertEqual(data["active_side"]["effective_source"], "MANUAL")
+        self.assertEqual(data["internal_motion_window"]["window"]["start_ms"], 1200)
+
+        openapi = self.client.get("/openapi.json").json()
+        self.assertNotIn(
+            "/api/v1/internal/motion-assessments/{assessment_id}/engineer-debug",
+            openapi["paths"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

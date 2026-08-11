@@ -629,6 +629,10 @@
     try {
       await ensureStream();
       await runCountdown();
+      // The guide is for framing before capture. Once REC starts,
+      // remove it so it cannot obscure the athlete's real motion.
+      stopGuideAnimation();
+      captureGuide.hidden = true;
       chunks = [];
       recorder = new MediaRecorder(stream, { mimeType });
       recorder.addEventListener(
@@ -655,6 +659,8 @@
       timer = setInterval(updateTimer, 1000);
     } catch (error) {
       console.error(error);
+      captureGuide.hidden = false;
+      setCaptureGuide(selectedMotion());
       status.textContent =
         `無法開始錄影：${error.message}`;
       startButton.hidden = false;

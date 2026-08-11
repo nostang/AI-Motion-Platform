@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from src.api.dashboard_service import build_user_dashboard
+from src.api.engineer_debug import build_engineer_debug
 from src.api.postgres_repository import PostgresVideoAnalysisRepository
 from src.api.service import MotionAssessmentService
 from src.coach.ai_coach_engine import AICoachEngine
@@ -88,6 +89,10 @@ app.add_middleware(
     allow_origins=[
         "http://127.0.0.1:8080",
         "http://localhost:8080",
+        (
+            "https://match-searching-collecting-"
+            "sunday.trycloudflare.com"
+        ),
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -899,6 +904,56 @@ def get_motion_assessment_report(
     )
 
     return envelope(report)
+
+
+@app.get(
+    f"{API_PREFIX}/internal/motion-assessments/"
+    "{assessment_id}/engineer-debug",
+    include_in_schema=False,
+)
+def get_motion_assessment_engineer_debug(
+    assessment_id: str,
+):
+    """Return internal evidence; intentionally excluded from public OpenAPI."""
+    task = repository.get_analysis(assessment_id)
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+    if task["status"] != "completed":
+        return failure(
+            409,
+            "ENGINEER_DEBUG_NOT_READY",
+            "分析尚未完成，工程證據仍不可用。",
+            {"assessment_id": assessment_id, "status": task["status"]},
+        )
+    motion_type = task.get("assessment_type")
+    if motion_type not in {"footwork", "serve", "clear"}:
+        return failure(
+            422,
+            "ENGINEER_DEBUG_UNSUPPORTED_MOTION",
+            "此動作尚未支援工程模式。",
+            {"assessment_type": motion_type},
+        )
+    try:
+        debug = build_engineer_debug(
+            assessment_id=assessment_id,
+            motion_type=motion_type,
+            task=task,
+            task_dir=repository.task_dir(assessment_id),
+            config_root=PROJECT_ROOT / "src/config_data",
+        )
+    except FileNotFoundError:
+        return failure(
+            500,
+            "ENGINEER_EVIDENCE_NOT_FOUND",
+            "分析完成但找不到 Assessment evidence。",
+            {"assessment_id": assessment_id, "assessment_type": motion_type},
+        )
+    return envelope(debug)
 
 
 @app.get(

@@ -101,6 +101,14 @@
     );
   }
 
+  async function getEngineerDebug(assessmentId) {
+    return request(
+      `/internal/motion-assessments/${
+        encodeURIComponent(assessmentId)
+      }/engineer-debug`
+    );
+  }
+
   window.AIMotionAPI = Object.freeze({
     createAssessment,
     analyzeAnnotation,
@@ -109,5 +117,8 @@
     extractAssessmentId,
     normalizeStatus
   });
-  window.motionAPI = Object.freeze({ getReport });
+  window.motionAPI = Object.freeze({
+    getReport,
+    getEngineerDebug
+  });
 })();
