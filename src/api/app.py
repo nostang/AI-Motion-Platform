@@ -22,6 +22,7 @@ from src.api.dashboard_service import build_user_dashboard
 from src.api.engineer_debug import build_engineer_debug
 from src.api.postgres_repository import PostgresVideoAnalysisRepository
 from src.api.service import MotionAssessmentService
+from src.api.storage_upload import StorageUploadService
 from src.coach.ai_coach_engine import AICoachEngine
 from src.training.training_planner import AITrainingPlanner
 from src.progress.progress_engine import ProgressEngine
@@ -98,6 +99,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class VideoUploadUrlRequest(BaseModel):
+    filename: str = Field(min_length=1, max_length=255)
+    content_type: str = Field(min_length=1, max_length=100)
+
+
+class StorageMotionAssessmentRequest(BaseModel):
+    object_name: str = Field(min_length=1, max_length=500)
+    assessment_type: str = Field(min_length=1, max_length=50)
+    user_id: int = Field(gt=0)
 
 
 class CompetencyProfileRequest(BaseModel):
@@ -276,6 +288,253 @@ def _public_report(
     public_report["assessment_id"] = assessment_id
 
     return public_report, None
+
+
+@app.post(
+    f"{API_PREFIX}/video-upload-urls",
+)
+def create_video_upload_url(
+    request: VideoUploadUrlRequest,
+):
+    """Create a short-lived V4 PUT URL for the temporary video bucket."""
+    try:
+        ticket = StorageUploadService().create_upload_ticket(
+            filename=request.filename,
+            content_type=request.content_type,
+        )
+    except ValueError as exc:
+        if str(exc) == "UNSUPPORTED_CONTENT_TYPE":
+            return failure(
+                400,
+                "INVALID_VIDEO_CONTENT_TYPE",
+                "僅支援 video/mp4 與 video/quicktime。",
+            )
+        raise
+
+    return {
+        "object_name": ticket.object_name,
+        "upload_url": ticket.upload_url,
+        "method": ticket.method,
+        "expires_in_seconds": ticket.expires_in_seconds,
+        "content_type": ticket.content_type,
+    }
+
+
+def _fail_storage_assessment(
+    assessment_id: str,
+    message: str,
+) -> None:
+    repository.update_status(
+        assessment_id,
+        processing_status="failed",
+        progress=100,
+        current_stage="storage_import",
+        updated_at=utc_now(),
+        completed_at=utc_now(),
+        error_message=message,
+    )
+
+
+def _process_storage_assessment(
+    assessment_id: str,
+    object_name: str,
+    local_video_path: str,
+) -> None:
+    """Materialize a private Storage object, run the existing pipeline, then clean up."""
+    storage_service = StorageUploadService()
+    video_path = Path(local_video_path)
+
+    try:
+        repository.update_status(
+            assessment_id,
+            processing_status="processing",
+            progress=5,
+            current_stage="storage_download",
+            updated_at=utc_now(),
+        )
+
+        storage_service.download_video(
+            object_name,
+            video_path,
+        )
+
+        duration = _video_duration_seconds(video_path)
+
+        if duration <= 0:
+            _fail_storage_assessment(
+                assessment_id,
+                "影片無法讀取或檔案已損壞。",
+            )
+            return
+
+        if duration > MAX_VIDEO_SECONDS:
+            _fail_storage_assessment(
+                assessment_id,
+                (
+                    "Storage 直接分析影片不可超過 "
+                    f"{int(MAX_VIDEO_SECONDS)} 秒。"
+                ),
+            )
+            return
+
+        if duration < MIN_VIDEO_SECONDS:
+            _fail_storage_assessment(
+                assessment_id,
+                "影片長度至少需要 3 秒。",
+            )
+            return
+
+        service.process(assessment_id)
+
+        result = repository.get_analysis(
+            assessment_id
+        )
+
+        if (
+            result is not None
+            and str(result.get("status", "")).lower()
+            == "completed"
+        ):
+            # Storage upload objects are temporary transport objects.
+            # Delete only after a successful analysis. Failed jobs remain
+            # available until the bucket's 1-day lifecycle safety net.
+            storage_service.delete_video(object_name)
+            video_path.unlink(missing_ok=True)
+
+    except Exception as exc:
+        _fail_storage_assessment(
+            assessment_id,
+            str(exc),
+        )
+
+
+@app.post(
+    f"{API_PREFIX}/motion-assessments/from-storage",
+    status_code=202,
+)
+def create_motion_assessment_from_storage(
+    request: StorageMotionAssessmentRequest,
+    background_tasks: BackgroundTasks,
+):
+    """Create a direct-analysis task from an object previously uploaded to Storage."""
+    normalized_type = request.assessment_type.strip().lower()
+
+    if not repository.user_exists(request.user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": request.user_id},
+        )
+
+    if normalized_type not in SUPPORTED_ASSESSMENT_TYPES:
+        return failure(
+            400,
+            "INVALID_ASSESSMENT_TYPE",
+            "不支援指定的 assessment_type。",
+            {
+                "received": request.assessment_type,
+                "supported": sorted(
+                    SUPPORTED_ASSESSMENT_TYPES
+                ),
+            },
+        )
+
+    storage_service = StorageUploadService()
+
+    try:
+        stored_video = storage_service.get_video_object(
+            request.object_name
+        )
+    except ValueError as exc:
+        code = str(exc)
+        return failure(
+            400,
+            (
+                "INVALID_STORAGE_OBJECT"
+                if code == "INVALID_STORAGE_OBJECT"
+                else "INVALID_VIDEO_CONTENT_TYPE"
+            ),
+            (
+                "Storage object 必須位於 uploads/ 且為 .mp4/.mov。"
+                if code == "INVALID_STORAGE_OBJECT"
+                else "僅支援 video/mp4 與 video/quicktime。"
+            ),
+        )
+    except FileNotFoundError:
+        return failure(
+            404,
+            "STORAGE_VIDEO_NOT_FOUND",
+            "找不到已上傳的暫存影片。",
+            {"object_name": request.object_name},
+        )
+
+    if stored_video.size <= 0:
+        return failure(
+            400,
+            "INVALID_VIDEO_FORMAT",
+            "上傳的影片是空檔案。",
+        )
+
+    if stored_video.size > MAX_VIDEO_BYTES:
+        return failure(
+            413,
+            "VIDEO_TOO_LARGE",
+            "影片檔案不可超過 100 MB。",
+            {
+                "size_bytes": stored_video.size,
+                "maximum_bytes": MAX_VIDEO_BYTES,
+            },
+        )
+
+    assessment_id = f"ma_{uuid4().hex[:16]}"
+    directory = repository.task_dir(assessment_id)
+    directory.mkdir(parents=True, exist_ok=True)
+
+    local_video_path = directory / (
+        f"source{stored_video.suffix}"
+    )
+    now = utc_now()
+
+    # Keep the existing DB schema and service contract unchanged.
+    # The pipeline still receives a local path after the Storage object
+    # is materialized by the background worker.
+    repository.create_analysis(
+        user_id=request.user_id,
+        external_analysis_id=assessment_id,
+        video_url=str(local_video_path),
+        analysis_type=normalized_type,
+        processing_status="uploaded",
+        progress=0,
+        current_stage="storage_ready",
+        created_at=now,
+        updated_at=now,
+    )
+
+    background_tasks.add_task(
+        _process_storage_assessment,
+        assessment_id,
+        stored_video.object_name,
+        str(local_video_path),
+    )
+
+    return envelope(
+        {
+            "assessment_id": assessment_id,
+            "assessment_type": normalized_type,
+            "status": "uploaded",
+            "upload_source": "cloud_storage",
+            "created_at": now,
+            "status_url": (
+                f"{API_PREFIX}/motion-assessments/"
+                f"{assessment_id}"
+            ),
+            "report_url": (
+                f"{API_PREFIX}/motion-assessments/"
+                f"{assessment_id}/report"
+            ),
+        }
+    )
 
 
 @app.post(
