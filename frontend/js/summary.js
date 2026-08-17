@@ -2,7 +2,7 @@
   "use strict";
 
   const config = window.AI_MOTION_CONFIG || {};
-  const apiBase = String(config.API_BASE_URL || "http://127.0.0.1:8000/api/v1").replace(/\/$/, "");
+  const apiBase = String(config.API_BASE_URL || "/api/v1").replace(/\/$/, "");
   const params = new URLSearchParams(window.location.search);
   const userId = Number(params.get("user_id")) || 1;
   const $ = (id) => document.getElementById(id);
@@ -442,7 +442,7 @@ const link = document.createElement("a");
       const retestLink = document.createElement("a");
       retestLink.className = "retest-link";
       retestLink.href =
-        `index.html?motion=${encodeURIComponent(motion.motion_type)}` +
+        `/?motion=${encodeURIComponent(motion.motion_type)}` +
         `&source=summary&user_id=${encodeURIComponent(userId)}`;
       retestLink.textContent = "再測一次 ↻";
 

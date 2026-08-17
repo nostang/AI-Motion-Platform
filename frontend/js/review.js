@@ -543,7 +543,7 @@
               });
 
             window.location.href =
-              `index.html?${
+              `/?${
                 parameters.toString()
               }`;
           }, 450);

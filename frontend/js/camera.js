@@ -5,7 +5,6 @@
   const openButton = document.getElementById("cameraButton");
   const closeButton = document.getElementById("cameraCloseButton");
   const startButton = document.getElementById("cameraStartButton");
-  const stopButton = document.getElementById("cameraStopButton");
   const retryButton = document.getElementById("cameraRetryButton");
   const useButton = document.getElementById("cameraUseButton");
   const livePreview = document.getElementById("cameraPreview");
@@ -19,6 +18,7 @@
   const recordingText = recordingBadge.querySelector("span");
   const status = document.getElementById("cameraStatus");
   const motionLabel = document.getElementById("cameraMotionLabel");
+  const cameraStage = document.getElementById("cameraStage");
 
   const qualityElements = {
     fullBody: document.getElementById("qualityFullBody"),
@@ -490,14 +490,29 @@
     recordedPreview.load();
   }
 
+  function setRecordControl(state) {
+    const icon = startButton.querySelector(".record-control-icon");
+    const label = startButton.querySelector(".record-control-label");
+    const recording = state === "recording";
+
+    startButton.dataset.recordState = state;
+    startButton.classList.toggle("stop", recording);
+    startButton.classList.toggle("primary", !recording);
+    startButton.setAttribute("aria-label", recording ? "停止錄影" : "開始錄影");
+    icon?.classList.toggle("record-control-dot", !recording);
+    icon?.classList.toggle("record-control-stop", recording);
+    if (label) label.textContent = recording ? "停止錄影" : "開始錄影";
+    startButton.hidden = false;
+    startButton.disabled = false;
+  }
+
   function resetUi() {
     clearInterval(timer);
     timer = null;
     elapsedSeconds = 0;
     countdown.hidden = true;
     recordingBadge.hidden = true;
-    stopButton.hidden = true;
-    stopButton.disabled = true;
+    setRecordControl("ready");
     retryButton.hidden = true;
     useButton.hidden = true;
     startButton.hidden = false;
@@ -505,8 +520,9 @@
     recordedPreview.hidden = true;
     captureGuide.hidden = false;
     resetQuality();
+    cameraStage.dataset.mode = "ready";
     status.textContent =
-      "按下開始後將倒數 3 秒，錄影最長 30 秒。";
+      "按下錄影鍵後倒數 3 秒，最長 30 秒。";
   }
 
   async function openCamera() {
@@ -567,6 +583,7 @@
 
   async function runCountdown() {
     startButton.hidden = true;
+    cameraStage.dataset.mode = "countdown";
     status.textContent =
       `即將錄製：${labels[selectedMotion()]}`;
     countdown.hidden = false;
@@ -612,7 +629,7 @@
     }
 
     if (elapsedSeconds >= 3) {
-      stopButton.disabled = false;
+      startButton.disabled = false;
     }
 
     if (
@@ -652,8 +669,9 @@
       elapsedSeconds = 0;
       recordingText.textContent = "REC 00:00";
       recordingBadge.hidden = false;
-      stopButton.hidden = false;
-      stopButton.disabled = true;
+      cameraStage.dataset.mode = "recording";
+      setRecordControl("recording");
+      startButton.disabled = true;
       status.textContent =
         "錄影中，請完整做出所選動作。";
       timer = setInterval(updateTimer, 1000);
@@ -671,7 +689,7 @@
     clearInterval(timer);
     timer = null;
     recordingBadge.hidden = true;
-    stopButton.hidden = true;
+    startButton.hidden = true;
 
     if (closing || elapsedSeconds < 3) {
       return;
@@ -685,6 +703,7 @@
     );
     recordedUrl = URL.createObjectURL(recordedBlob);
     recordedPreview.src = recordedUrl;
+    cameraStage.dataset.mode = "review";
     recordedPreview.hidden = false;
     livePreview.hidden = true;
     captureGuide.hidden = true;
@@ -739,11 +758,12 @@
 
   openButton.addEventListener("click", openCamera);
   closeButton.addEventListener("click", closeCamera);
-  startButton.addEventListener("click", startRecording);
-  stopButton.addEventListener("click", () => {
+  startButton.addEventListener("click", () => {
     if (recorder?.state === "recording") {
       recorder.stop();
+      return;
     }
+    startRecording();
   });
   retryButton.addEventListener("click", retryRecording);
   useButton.addEventListener("click", useRecording);

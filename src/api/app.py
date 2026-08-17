@@ -16,6 +16,7 @@ from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.api.dashboard_service import build_user_dashboard
@@ -23,6 +24,10 @@ from src.api.engineer_debug import build_engineer_debug
 from src.api.postgres_repository import PostgresVideoAnalysisRepository
 from src.api.service import MotionAssessmentService
 from src.api.storage_upload import StorageUploadService
+from src.api.video_normalization import (
+    VideoNormalizationError,
+    normalize_for_analysis,
+)
 from src.coach.ai_coach_engine import AICoachEngine
 from src.training.training_planner import AITrainingPlanner
 from src.progress.progress_engine import ProgressEngine
@@ -46,6 +51,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 
 API_PREFIX = "/api/v1"
+FRONTEND_DIR = PROJECT_ROOT / "frontend"
 SUPPORTED_ASSESSMENT_TYPES = frozenset(registered_motion_types())
 SUPPORTED_EXTENSIONS = {".mp4", ".mov"}
 MAX_VIDEO_BYTES = 100 * 1024 * 1024
@@ -88,6 +94,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
         "http://127.0.0.1:8080",
         "http://localhost:8080",
         (
@@ -384,6 +392,33 @@ def _process_storage_assessment(
             )
             return
 
+        normalized_path = video_path.with_name(
+            "source_normalized.mp4"
+        )
+
+        try:
+            normalize_for_analysis(
+                video_path,
+                normalized_path,
+            )
+        except VideoNormalizationError as exc:
+            _fail_storage_assessment(
+                assessment_id,
+                str(exc),
+            )
+            return
+
+        analysis_video_path = video_path.with_name("source.mp4")
+        normalized_path.replace(analysis_video_path)
+
+        if video_path != analysis_video_path:
+            video_path.unlink(missing_ok=True)
+
+        repository.update_video_reference(
+            assessment_id,
+            str(analysis_video_path),
+        )
+
         service.process(assessment_id)
 
         result = repository.get_analysis(
@@ -679,12 +714,38 @@ async def create_motion_assessment(
             },
         )
 
+    if not defer_analysis:
+        normalized_path = directory / "source_normalized.mp4"
+
+        try:
+            normalize_for_analysis(
+                video_path,
+                normalized_path,
+            )
+        except VideoNormalizationError as exc:
+            video_path.unlink(missing_ok=True)
+            normalized_path.unlink(missing_ok=True)
+
+            return failure(
+                422,
+                "VIDEO_NORMALIZATION_FAILED",
+                str(exc),
+            )
+
+        analysis_video_path = directory / "source.mp4"
+        normalized_path.replace(analysis_video_path)
+
+        if video_path != analysis_video_path:
+            video_path.unlink(missing_ok=True)
+    else:
+        analysis_video_path = video_path
+
     now = utc_now()
 
     repository.create_analysis(
         user_id=user_id,
         external_analysis_id=assessment_id,
-        video_url=str(video_path),
+        video_url=str(analysis_video_path),
         analysis_type=normalized_type,
         processing_status="uploaded",
         progress=0,
@@ -1750,3 +1811,42 @@ def get_user_progress(
         )
 
     return envelope(result)
+
+
+app.mount(
+    "/css",
+    StaticFiles(directory=FRONTEND_DIR / "css"),
+    name="frontend-css",
+)
+
+app.mount(
+    "/js",
+    StaticFiles(directory=FRONTEND_DIR / "js"),
+    name="frontend-js",
+)
+
+app.mount(
+    "/assets",
+    StaticFiles(directory=FRONTEND_DIR / "assets"),
+    name="frontend-assets",
+)
+
+
+@app.get("/", include_in_schema=False)
+def frontend_index():
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+@app.get("/report.html", include_in_schema=False)
+def frontend_report():
+    return FileResponse(FRONTEND_DIR / "report.html")
+
+
+@app.get("/summary.html", include_in_schema=False)
+def frontend_summary():
+    return FileResponse(FRONTEND_DIR / "summary.html")
+
+
+@app.get("/review.html", include_in_schema=False)
+def frontend_review():
+    return FileResponse(FRONTEND_DIR / "review.html")

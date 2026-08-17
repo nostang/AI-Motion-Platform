@@ -418,7 +418,7 @@ function renderDimensions(report) {
   elements.backButton.textContent = "再測一次 ↻";
 
   elements.backButton.addEventListener("click", () => {
-    window.location.href = "index.html";
+    window.location.href = "/";
   });
   await loadReport();
 });
