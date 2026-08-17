@@ -606,6 +606,20 @@
     });
   }
 
+  async function selectSegment(file, options = {}) {
+    const maxSeconds = Number(
+      options.maxDurationSeconds || DEFAULT_MAX_SECONDS
+    );
+
+    const info = options.info || await inspect(file);
+
+    return openTrimDialog(
+      file,
+      info,
+      maxSeconds
+    );
+  }
+
   async function prepare(file, options = {}) {
     const maxSeconds = Number(
       options.maxDurationSeconds || DEFAULT_MAX_SECONDS
@@ -637,10 +651,12 @@
     );
 
     const trimmedFile =
-      await openTrimDialog(
+      await selectSegment(
         file,
-        info,
-        maxSeconds
+        {
+          maxDurationSeconds: maxSeconds,
+          info
+        }
       );
 
     if (trimmedFile) {
@@ -661,6 +677,7 @@
 
   window.AI_MOTION_VIDEO_PREPROCESS = {
     inspect,
-    prepare
+    prepare,
+    selectSegment
   };
 })();

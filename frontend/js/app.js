@@ -140,53 +140,13 @@
     return null;
   }
 
-  async function setFile(file) {
-    const error = validateFile(file);
-    if (error) {
-      showToast(error);
-      return;
-    }
-
-    let preparedFile = file;
-
-    try {
-      if (!window.AI_MOTION_VIDEO_PREPROCESS) {
-        throw new Error(
-          "影片前置檢查模組尚未載入"
-        );
-      }
-
-      preparedFile =
-        await window.AI_MOTION_VIDEO_PREPROCESS.prepare(
-          file,
-          { maxDurationSeconds: 30 }
-        );
-
-      if (!preparedFile) {
-        showToast("已取消影片裁剪");
-        return;
-      }
-    } catch (preprocessError) {
-      console.error(
-        "[VIDEO_PREPROCESS]",
-        preprocessError
-      );
-
-      showToast(
-        preprocessError.message
-        || "影片前置檢查失敗",
-        7000
-      );
-
-      return;
-    }
-
+  async function acceptPreparedFile(preparedFile) {
     const preparedError =
       validateFile(preparedFile);
 
     if (preparedError) {
       showToast(preparedError);
-      return;
+      return false;
     }
 
     let preparedInfo = null;
@@ -250,6 +210,52 @@
     sessionStorage.removeItem(
       PENDING_ASSESSMENT_KEY
     );
+
+    return true;
+  }
+
+  async function setFile(file) {
+    const error = validateFile(file);
+    if (error) {
+      showToast(error);
+      return;
+    }
+
+    let preparedFile = file;
+
+    try {
+      if (!window.AI_MOTION_VIDEO_PREPROCESS) {
+        throw new Error(
+          "影片前置檢查模組尚未載入"
+        );
+      }
+
+      preparedFile =
+        await window.AI_MOTION_VIDEO_PREPROCESS.prepare(
+          file,
+          { maxDurationSeconds: 30 }
+        );
+
+      if (!preparedFile) {
+        showToast("已取消影片裁剪");
+        return;
+      }
+    } catch (preprocessError) {
+      console.error(
+        "[VIDEO_PREPROCESS]",
+        preprocessError
+      );
+
+      showToast(
+        preprocessError.message
+        || "影片前置檢查失敗",
+        7000
+      );
+
+      return;
+    }
+
+    await acceptPreparedFile(preparedFile);
   }
 
   function clearFile() {
@@ -391,75 +397,45 @@
       return;
     }
 
+    if (!window.AI_MOTION_VIDEO_PREPROCESS?.selectSegment) {
+      showToast("影片片段選取模組尚未載入");
+      return;
+    }
+
     busy = true;
     analyzeButton.disabled = true;
     adjustWindowButton.disabled = true;
-    statusPanel.hidden = false;
-    statusPanel.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
-    setPipeline(
-      "upload",
-      "正在上傳影片，準備調整完整動作區間…"
-    );
 
     try {
-      const created = await api.createAssessment(
-        selectedFile,
-        selectedMotion,
-        { deferAnalysis: true }
-      );
-      const assessmentId =
-        api.extractAssessmentId(created);
-
-      if (!assessmentId) {
-        throw new Error(
-          "API 未回傳 assessment_id"
+      const adjustedFile =
+        await window.AI_MOTION_VIDEO_PREPROCESS.selectSegment(
+          selectedFile,
+          { maxDurationSeconds: 30 }
         );
+
+      if (!adjustedFile) {
+        showToast("已取消調整分析片段");
+        return;
       }
 
-      pendingAssessment = {
-        assessmentId,
-        motion: selectedMotion,
-        fileName: selectedFile.name,
-        fileSize: selectedFile.size,
-        annotation: null
-      };
+      await acceptPreparedFile(adjustedFile);
 
-      sessionStorage.setItem(
-        PENDING_ASSESSMENT_KEY,
-        JSON.stringify(pendingAssessment)
+      showToast("分析片段已更新");
+    } catch (errorObject) {
+      console.error(
+        "[VIDEO_PREPROCESS]",
+        errorObject
       );
 
-      const parameters = new URLSearchParams({
-        id: assessmentId,
-        return: "home"
-      });
-
-      window.location.href =
-        `review.html?${parameters.toString()}`;
-    } catch (errorObject) {
-      console.error(errorObject);
       showToast(
         errorObject.message
-          || "影片上傳失敗",
+          || "調整分析片段失敗",
         7000
       );
-      statusMessage.textContent =
-        `尚未進入動作區間調整：${
-          errorObject.message || "未知錯誤"
-        }`;
     } finally {
       busy = false;
-
-      if (
-        window.location.pathname === "/"
-        || window.location.pathname.endsWith("/index.html")
-      ) {
-        adjustWindowButton.disabled =
-          !selectedFile;
-      }
+      analyzeButton.disabled = !selectedFile;
+      adjustWindowButton.disabled = !selectedFile;
     }
   }
 
