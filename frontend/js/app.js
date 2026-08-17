@@ -20,6 +20,16 @@
   const fileMeta = document.getElementById("fileMeta");
   const statusPanel = document.getElementById("statusPanel");
   const statusMessage = document.getElementById("statusMessage");
+  const uploadProgressBar =
+    document.getElementById("uploadProgressBar");
+  const uploadProgressLabel =
+    document.getElementById("uploadProgressLabel");
+  const analysisProgressBar =
+    document.getElementById("analysisProgressBar");
+  const analysisProgressLabel =
+    document.getElementById("analysisProgressLabel");
+  const analysisProgressDetail =
+    document.getElementById("analysisProgressDetail");
   const toast = document.getElementById("toast");
   const motionGuard = document.getElementById("motionGuard");
   const motionGuardLabel = document.getElementById("motionGuardLabel");
@@ -61,6 +71,60 @@
       : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   }
 
+  function clampProgress(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return 0;
+    return Math.max(0, Math.min(100, Math.round(number)));
+  }
+
+  function setProgressBar(bar, label, value, pendingLabel = "等待中") {
+    const percent = clampProgress(value);
+    bar.style.width = `${percent}%`;
+    label.textContent =
+      percent > 0 ? `${percent}%` : pendingLabel;
+  }
+
+  function resetAnalysisProgress() {
+    setProgressBar(
+      uploadProgressBar,
+      uploadProgressLabel,
+      0
+    );
+    setProgressBar(
+      analysisProgressBar,
+      analysisProgressLabel,
+      0
+    );
+    analysisProgressDetail.textContent =
+      "影片上傳完成後開始分析。";
+  }
+
+  function assessmentProgress(payload) {
+    return Number(
+      payload?.progress
+      ?? payload?.data?.progress
+      ?? 0
+    );
+  }
+
+  function assessmentStage(payload) {
+    return String(
+      payload?.current_stage
+      ?? payload?.data?.current_stage
+      ?? ""
+    ).trim();
+  }
+
+  function formatElapsed(milliseconds) {
+    const totalSeconds = Math.max(
+      0,
+      Math.floor(milliseconds / 1000)
+    );
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
   function showToast(message, duration = 4200) {
     toast.textContent = message;
     toast.hidden = false;
@@ -76,12 +140,105 @@
     return null;
   }
 
-  function setFile(file) {
+  async function setFile(file) {
     const error = validateFile(file);
-    if (error) { showToast(error); return; }
-    selectedFile = file;
-    fileName.textContent = file.name;
-    fileMeta.textContent = `${formatBytes(file.size)} · ${selectedMotion.toUpperCase()}`;
+    if (error) {
+      showToast(error);
+      return;
+    }
+
+    let preparedFile = file;
+
+    try {
+      if (!window.AI_MOTION_VIDEO_PREPROCESS) {
+        throw new Error(
+          "影片前置檢查模組尚未載入"
+        );
+      }
+
+      preparedFile =
+        await window.AI_MOTION_VIDEO_PREPROCESS.prepare(
+          file,
+          { maxDurationSeconds: 30 }
+        );
+
+      if (!preparedFile) {
+        showToast("已取消影片裁剪");
+        return;
+      }
+    } catch (preprocessError) {
+      console.error(
+        "[VIDEO_PREPROCESS]",
+        preprocessError
+      );
+
+      showToast(
+        preprocessError.message
+        || "影片前置檢查失敗",
+        7000
+      );
+
+      return;
+    }
+
+    const preparedError =
+      validateFile(preparedFile);
+
+    if (preparedError) {
+      showToast(preparedError);
+      return;
+    }
+
+    let preparedInfo = null;
+
+    try {
+      preparedInfo =
+        await window.AI_MOTION_VIDEO_PREPROCESS.inspect(
+          preparedFile
+        );
+    } catch (metadataError) {
+      console.warn(
+        "[VIDEO_PREPROCESS] final metadata unavailable",
+        metadataError
+      );
+    }
+
+    selectedFile = preparedFile;
+    fileName.textContent =
+      preparedFile.name;
+
+    const metadataText =
+      preparedInfo
+        ? (
+            `${preparedInfo.duration.toFixed(2)}s · `
+            + `${preparedInfo.width}×${preparedInfo.height} · `
+          )
+        : "";
+
+    fileMeta.textContent =
+      `${formatBytes(preparedFile.size)} · `
+      + metadataText
+      + `${selectedMotion.toUpperCase()} · `
+      + "LOCAL PRE-CHECK PASS";
+
+    console.log(
+      "[VIDEO_PREPROCESS] accepted:",
+      {
+        name: preparedFile.name,
+        sizeMB: Number(
+          (
+            preparedFile.size
+            / 1024
+            / 1024
+          ).toFixed(2)
+        ),
+        duration: preparedInfo?.duration ?? null,
+        width: preparedInfo?.width ?? null,
+        height: preparedInfo?.height ?? null,
+        motion: selectedMotion
+      }
+    );
+
     fileBar.hidden = false;
     motionGuard.hidden = false;
     updateMotionGuard();
@@ -89,6 +246,7 @@
     adjustWindowButton.disabled = false;
     annotationState.hidden = true;
     pendingAssessment = null;
+
     sessionStorage.removeItem(
       PENDING_ASSESSMENT_KEY
     );
@@ -295,10 +453,10 @@
     } finally {
       busy = false;
 
-      if (window.location.pathname.endsWith(
-        "index.html"
-      )) {
-        analyzeButton.disabled = !selectedFile;
+      if (
+        window.location.pathname === "/"
+        || window.location.pathname.endsWith("/index.html")
+      ) {
         adjustWindowButton.disabled =
           !selectedFile;
       }
@@ -329,6 +487,7 @@
 
     busy = true;
     analyzeButton.disabled = true;
+    resetAnalysisProgress();
     statusPanel.hidden = false;
     statusPanel.scrollIntoView({ behavior: "smooth", block: "center" });
     setPipeline("upload", `正在上傳 ${selectedMotion.toUpperCase()} 影片…`);
@@ -349,11 +508,31 @@
           assessmentId
         );
       } else {
+        setPipeline(
+          "upload",
+          "正在直傳 Cloud Storage，影片不經 Cloud Run request body…"
+        );
+
         const created =
-          await api.createAssessment(
+          await api.createAssessmentFromStorage(
             selectedFile,
-            selectedMotion
+            selectedMotion,
+            (percent) => {
+              setProgressBar(
+                uploadProgressBar,
+                uploadProgressLabel,
+                percent
+              );
+              statusMessage.textContent =
+                `正在直傳 Cloud Storage… ${percent}%`;
+            }
           );
+
+        setProgressBar(
+          uploadProgressBar,
+          uploadProgressLabel,
+          100
+        );
 
         assessmentId =
           api.extractAssessmentId(created);
@@ -370,10 +549,50 @@
         `Assessment ${assessmentId}：`
         + "正在進行姿態與動作分析…"
       );
+
+      const analysisStartedAt = Date.now();
+
       await api.pollAssessment(assessmentId, (payload) => {
         const stage = inferStage(payload);
-        setPipeline(stage, `Assessment ${assessmentId}：${api.normalizeStatus(payload) || "PROCESSING"}`);
+        const backendProgress =
+          assessmentProgress(payload);
+        const backendStage =
+          assessmentStage(payload);
+        const elapsed =
+          Date.now() - analysisStartedAt;
+
+        setProgressBar(
+          analysisProgressBar,
+          analysisProgressLabel,
+          backendProgress
+        );
+
+        const longRunning =
+          elapsed >= config.LONG_ANALYSIS_NOTICE_MS;
+
+        analysisProgressDetail.textContent =
+          `${backendStage || "processing"}`
+          + ` · 已分析 ${formatElapsed(elapsed)}`
+          + (
+            longRunning
+              ? " · 影片較長，系統仍持續分析中"
+              : ""
+          );
+
+        setPipeline(
+          stage,
+          `Assessment ${assessmentId}：`
+          + `${api.normalizeStatus(payload) || "PROCESSING"}`
+        );
       });
+
+      setProgressBar(
+        analysisProgressBar,
+        analysisProgressLabel,
+        100
+      );
+      analysisProgressDetail.textContent =
+        "分析完成，正在產生報告。";
 
       setPipeline("report", "分析完成，正在開啟報告…");
 

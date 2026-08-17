@@ -51,6 +51,129 @@
     );
   }
 
+
+  async function createUploadTicket(videoFile) {
+    const rawType = videoFile.type || "";
+
+    const contentType =
+      rawType.startsWith("video/mp4")
+        ? "video/mp4"
+        : rawType.startsWith("video/quicktime")
+          ? "video/quicktime"
+          : (
+              videoFile.name.toLowerCase().endsWith(".mov")
+                ? "video/quicktime"
+                : "video/mp4"
+            );
+
+    console.log(
+      "[UPLOAD_MIME]",
+      {
+        filename: videoFile.name,
+        rawType,
+        normalizedType: contentType
+      }
+    );
+
+    return request(
+      "/video-upload-urls",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          filename: videoFile.name,
+          content_type: contentType
+        })
+      }
+    );
+  }
+
+  function uploadToSignedUrl(
+    videoFile,
+    uploadUrl,
+    contentType,
+    onProgress
+  ) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.open("PUT", uploadUrl);
+      xhr.setRequestHeader(
+        "Content-Type",
+        contentType
+      );
+
+      xhr.upload.addEventListener(
+        "progress",
+        (event) => {
+          if (!event.lengthComputable) return;
+          const percent = Math.round(
+            (event.loaded / event.total) * 100
+          );
+          onProgress?.(percent);
+        }
+      );
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onProgress?.(100);
+          resolve();
+          return;
+        }
+
+        reject(
+          new Error(
+            `Cloud Storage 上傳失敗 (${xhr.status})`
+          )
+        );
+      });
+
+      xhr.addEventListener("error", () => {
+        reject(
+          new Error("Cloud Storage 上傳連線失敗")
+        );
+      });
+
+      xhr.send(videoFile);
+    });
+  }
+
+  async function createAssessmentFromStorage(
+    videoFile,
+    assessmentType,
+    onUploadProgress
+  ) {
+    const ticket = await createUploadTicket(videoFile);
+
+    if (!ticket?.upload_url || !ticket?.object_name) {
+      throw new Error("API 未回傳 Storage upload ticket");
+    }
+
+    await uploadToSignedUrl(
+      videoFile,
+      ticket.upload_url,
+      ticket.content_type,
+      onUploadProgress
+    );
+
+    return request(
+      "/motion-assessments/from-storage",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          object_name: ticket.object_name,
+          assessment_type: assessmentType,
+          user_id: 1
+        })
+      }
+    );
+  }
+
   function analyzeAnnotation(assessmentId) {
     return request(
       `/motion-assessments/${
@@ -111,6 +234,7 @@
 
   window.AIMotionAPI = Object.freeze({
     createAssessment,
+    createAssessmentFromStorage,
     analyzeAnnotation,
     getAssessment,
     pollAssessment,

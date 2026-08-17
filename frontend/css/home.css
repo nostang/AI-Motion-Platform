@@ -493,3 +493,585 @@ body.camera-open { overflow: hidden; }
     flex-direction: column;
   }
 }
+
+/* Camera UX Optimization V1 — camera-first controls */
+.camera-dialog {
+  position: relative;
+}
+
+.camera-stage {
+  isolation: isolate;
+}
+
+.camera-stage video {
+  display: block;
+  object-fit: contain;
+}
+
+.camera-top-overlay,
+.camera-bottom-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 7;
+  pointer-events: none;
+}
+
+.camera-top-overlay {
+  top: 0;
+  padding: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  background: linear-gradient(to bottom, rgba(0, 20, 12, .74), rgba(0, 20, 12, 0));
+}
+
+.camera-bottom-overlay {
+  bottom: 0;
+  padding: 54px 14px 14px;
+  background: linear-gradient(to top, rgba(0, 20, 12, .82), rgba(0, 20, 12, 0));
+}
+
+.camera-motion-chip {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 6px 8px;
+  color: var(--white);
+  background: rgba(2, 27, 17, .66);
+  border: 1px solid rgba(255, 255, 255, .34);
+  backdrop-filter: blur(4px);
+}
+
+.camera-motion-chip span {
+  display: block;
+  margin-bottom: 2px;
+  font: 800 8px ui-monospace, monospace;
+  letter-spacing: .08em;
+  opacity: .74;
+}
+
+.camera-motion-chip strong {
+  display: block;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.camera-top-overlay .capture-quality {
+  margin: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.camera-top-overlay .quality-item {
+  min-height: 0;
+  width: auto;
+  padding: 6px 7px;
+  display: flex;
+  gap: 5px;
+  color: rgba(255,255,255,.82);
+  background: rgba(2, 27, 17, .60);
+  border: 1px solid rgba(255,255,255,.24);
+  backdrop-filter: blur(4px);
+}
+
+.camera-top-overlay .quality-item i {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border: 1px solid rgba(255,255,255,.8);
+}
+
+.camera-top-overlay .quality-item span {
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.camera-top-overlay .quality-item strong {
+  display: none;
+}
+
+.camera-top-overlay .quality-item.is-pass {
+  color: var(--white);
+  background: rgba(31, 101, 67, .76);
+  border-color: rgba(216,255,82,.8);
+}
+
+.camera-top-overlay .quality-item.is-fail {
+  color: var(--white);
+  background: rgba(112, 45, 28, .78);
+  border-color: rgba(255,183,151,.76);
+}
+
+.camera-top-overlay .quality-item.is-unavailable {
+  color: rgba(255,255,255,.68);
+  background: rgba(44, 55, 49, .72);
+}
+
+.camera-status {
+  min-height: 0;
+  margin: 0 0 8px;
+  color: rgba(255,255,255,.88);
+  text-shadow: 0 1px 2px rgba(0,0,0,.6);
+  font-size: 11px;
+}
+
+.camera-actions {
+  pointer-events: auto;
+}
+
+.camera-button.record-control {
+  min-width: 112px;
+  min-height: 52px;
+  padding: 7px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--white);
+  background: rgba(2,27,17,.66);
+  border-color: rgba(255,255,255,.88);
+  box-shadow: none;
+  backdrop-filter: blur(4px);
+}
+
+.record-control-dot {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #ff4e4e;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.9);
+}
+
+.record-control-stop {
+  width: 23px;
+  height: 23px;
+  border-radius: 3px;
+  background: #ff4e4e;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.9);
+}
+
+.record-control-label {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.camera-stage[data-mode="recording"] .camera-top-overlay .capture-quality,
+.camera-stage[data-mode="review"] .camera-top-overlay,
+.camera-stage[data-mode="review"] .recording-badge {
+  display: none;
+}
+
+.camera-stage[data-mode="recording"] .camera-motion-chip {
+  opacity: .72;
+}
+
+.camera-stage[data-mode="review"] .camera-bottom-overlay {
+  padding-top: 68px;
+}
+
+.capture-quality-note {
+  margin: 9px 0 0;
+}
+
+@media (max-width: 620px) {
+  .camera-modal {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .camera-dialog {
+    width: 100%;
+    min-height: 100dvh;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    background: #06140e;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .camera-header {
+    position: absolute;
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    z-index: 12;
+    pointer-events: none;
+  }
+
+  .camera-header > div {
+    display: none;
+  }
+
+  .camera-header button {
+    width: 36px;
+    height: 36px;
+    color: var(--white);
+    background: rgba(2,27,17,.66);
+    border: 1px solid rgba(255,255,255,.58);
+    border-radius: 50%;
+    pointer-events: auto;
+  }
+
+  .camera-stage {
+    width: 100vw;
+    height: 100dvh;
+    aspect-ratio: auto;
+    border: 0;
+  }
+
+  .camera-top-overlay {
+    padding: max(10px, env(safe-area-inset-top)) max(52px, calc(env(safe-area-inset-right) + 44px)) 10px max(10px, env(safe-area-inset-left));
+  }
+
+  .camera-motion-chip {
+    max-width: 36vw;
+  }
+
+  .camera-top-overlay .capture-quality {
+    flex-wrap: wrap;
+    max-width: 58vw;
+  }
+
+  .camera-bottom-overlay {
+    padding: 62px max(12px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .capture-quality-note {
+    display: none;
+  }
+
+  .court-guide span,
+  .pose-guide span {
+    bottom: 16%;
+    max-width: 78%;
+    font-size: 10px;
+  }
+
+  .record-control-label {
+    display: none;
+  }
+
+  .camera-button.record-control {
+    min-width: 56px;
+    min-height: 56px;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .camera-button.ghost,
+  .camera-button.primary:not(.record-control) {
+    color: var(--white);
+    background: rgba(2,27,17,.66);
+    border-color: rgba(255,255,255,.8);
+    box-shadow: none;
+    backdrop-filter: blur(4px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 620px) {
+  .camera-modal {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .camera-dialog {
+    width: 100vw;
+    height: 100dvh;
+    padding: 0;
+    background: #06140e;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .camera-header {
+    position: absolute;
+    top: max(8px, env(safe-area-inset-top));
+    right: max(8px, env(safe-area-inset-right));
+    z-index: 12;
+    pointer-events: none;
+  }
+
+  .camera-header > div {
+    display: none;
+  }
+
+  .camera-header button {
+    width: 34px;
+    height: 34px;
+    color: var(--white);
+    background: rgba(2,27,17,.66);
+    border: 1px solid rgba(255,255,255,.58);
+    border-radius: 50%;
+    pointer-events: auto;
+  }
+
+  .camera-stage {
+    width: 100vw;
+    height: 100dvh;
+    aspect-ratio: auto;
+    border: 0;
+  }
+
+  .camera-top-overlay {
+    padding: max(8px, env(safe-area-inset-top)) max(50px, calc(env(safe-area-inset-right) + 42px)) 8px max(10px, env(safe-area-inset-left));
+  }
+
+  .camera-motion-chip {
+    max-width: 27vw;
+  }
+
+  .camera-top-overlay .capture-quality {
+    flex-wrap: nowrap;
+  }
+
+  .camera-bottom-overlay {
+    padding: 48px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .capture-quality-note {
+    display: none;
+  }
+
+  .court-guide span,
+  .pose-guide span {
+    bottom: 14%;
+  }
+
+  .record-control-label {
+    display: none;
+  }
+
+  .camera-button.record-control {
+    min-width: 54px;
+    min-height: 54px;
+    width: 54px;
+    height: 54px;
+    padding: 0;
+    border-radius: 50%;
+  }
+
+  .recording-badge {
+    top: auto;
+    left: max(10px, env(safe-area-inset-left));
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}
+
+/* V1 state polish */
+.camera-stage[data-mode="recording"] .camera-motion-chip {
+  display: none;
+}
+
+.camera-stage[data-mode="recording"] .camera-top-overlay .capture-quality {
+  display: flex;
+  margin-left: auto;
+}
+
+.camera-stage[data-mode="review"] .camera-bottom-overlay {
+  bottom: 38px;
+}
+
+@media (max-width: 620px), (orientation: landscape) and (max-height: 620px) {
+  .camera-stage[data-mode="review"] .camera-bottom-overlay {
+    bottom: 42px;
+  }
+}
+
+
+/* Upload V2 Phase 4A.2 — truthful progress UX */
+.analysis-progress {
+  margin-top: 22px;
+  display: grid;
+  gap: 16px;
+}
+
+.progress-block {
+  padding: 13px 14px;
+  background: #e6f0eb;
+  border: 2px solid #719381;
+}
+
+.progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.progress-meta span {
+  color: #486256;
+  font: 800 11px ui-monospace, monospace;
+  letter-spacing: .06em;
+}
+
+.progress-meta strong {
+  color: var(--court);
+  font: 950 14px ui-monospace, monospace;
+}
+
+.progress-track {
+  height: 13px;
+  overflow: hidden;
+  background: #c6d5cd;
+  border: 2px solid var(--ink);
+}
+
+.progress-track i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--lime);
+  transition: width .28s ease;
+}
+
+.progress-detail {
+  display: block;
+  margin-top: 8px;
+  color: #567063;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@media (max-width: 740px) {
+  .analysis-progress {
+    gap: 12px;
+  }
+
+  .progress-block {
+    padding: 11px 12px;
+  }
+}
+
+/* MOBILE PREPROCESS V1 */
+.video-preprocess-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(4, 12, 8, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.video-preprocess-modal[hidden] {
+  display: none;
+}
+
+.video-preprocess-dialog {
+  width: min(680px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  border: 1px solid rgba(123, 255, 171, 0.28);
+  border-radius: 22px;
+  padding: 20px;
+  background: #0d1712;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
+}
+
+.video-preprocess-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.video-preprocess-head p {
+  margin: 0 0 4px;
+  opacity: 0.62;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+
+.video-preprocess-head h3 {
+  margin: 0;
+}
+
+.video-preprocess-head button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font-size: 26px;
+}
+
+.video-preprocess-copy {
+  margin: 14px 0;
+  opacity: 0.78;
+}
+
+.video-preprocess-dialog video {
+  width: 100%;
+  max-height: 46vh;
+  border-radius: 14px;
+  background: #000;
+}
+
+.video-preprocess-meta,
+.video-preprocess-status {
+  margin-top: 12px;
+  font-size: 14px;
+  opacity: 0.82;
+  white-space: pre-wrap;
+}
+
+.video-preprocess-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.video-preprocess-range label {
+  display: grid;
+  gap: 7px;
+}
+
+.video-preprocess-range span {
+  font-size: 13px;
+  opacity: 0.72;
+}
+
+.video-preprocess-range input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 12px;
+  background: rgba(255,255,255,.05);
+  color: inherit;
+  font: inherit;
+}
+
+.video-preprocess-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.video-preprocess-actions button {
+  min-height: 46px;
+}
+
+@media (max-width: 560px) {
+  .video-preprocess-dialog {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .video-preprocess-range,
+  .video-preprocess-actions {
+    grid-template-columns: 1fr;
+  }
+}

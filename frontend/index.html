@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#075d3b">
   <title>AI Motion｜羽球動作分析</title>
-  <link rel="stylesheet" href="css/home.css?v=20260809-2">
+  <link rel="stylesheet" href="css/home.css?v=upload-v2-phase4a2">
 </head>
 <body>
   <div class="court-lines" aria-hidden="true"></div>
 
   <header class="site-header">
-    <a class="brand" href="index.html" aria-label="AI Motion 首頁">
+    <a class="brand" href="/" aria-label="AI Motion 首頁">
       <span class="brand-mark">AM</span>
       <span><strong>AI MOTION</strong><small>BADMINTON LAB</small></span>
     </a>
@@ -130,6 +130,29 @@
         <div data-stage="assessment"><i></i><span>ASSESSMENT</span></div>
         <div data-stage="report"><i></i><span>REPORT</span></div>
       </div>
+      <div class="analysis-progress" id="analysisProgress">
+        <div class="progress-block">
+          <div class="progress-meta">
+            <span>影片上傳</span>
+            <strong id="uploadProgressLabel">等待中</strong>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <i id="uploadProgressBar"></i>
+          </div>
+        </div>
+        <div class="progress-block">
+          <div class="progress-meta">
+            <span>AI 分析</span>
+            <strong id="analysisProgressLabel">等待中</strong>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <i id="analysisProgressBar"></i>
+          </div>
+          <small class="progress-detail" id="analysisProgressDetail">
+            影片上傳完成後開始分析。
+          </small>
+        </div>
+      </div>
       <p class="status-message" id="statusMessage">正在上傳影片…</p>
     </section>
   </main>
@@ -141,15 +164,29 @@
         <button id="cameraCloseButton" type="button" aria-label="關閉相機">×</button>
       </div>
 
-      <div class="camera-motion-confirm">
-        <span>目前測驗</span>
-        <strong id="cameraMotionLabel">步法 FOOTWORK</strong>
-        <small>請確認實際拍攝的動作與選擇項目相同。</small>
-      </div>
-
-      <div class="camera-stage" id="cameraStage">
+      <div class="camera-stage" id="cameraStage" data-mode="ready">
         <video id="cameraPreview" autoplay muted playsinline></video>
         <video id="recordedPreview" controls playsinline hidden></video>
+
+        <div class="camera-top-overlay">
+          <div class="camera-motion-chip">
+            <span>目前測驗</span>
+            <strong id="cameraMotionLabel">步法 FOOTWORK</strong>
+          </div>
+
+          <div class="capture-quality" id="captureQuality" aria-live="polite">
+            <div class="quality-item is-pending" id="qualityFullBody">
+              <i aria-hidden="true"></i><span>全身入鏡</span><strong>檢查中</strong>
+            </div>
+            <div class="quality-item is-pending" id="qualityDistance">
+              <i aria-hidden="true"></i><span>距離適中</span><strong>檢查中</strong>
+            </div>
+            <div class="quality-item is-pending" id="qualityLight">
+              <i aria-hidden="true"></i><span>光線充足</span><strong>檢查中</strong>
+            </div>
+          </div>
+        </div>
+
         <div class="capture-guide guide-footwork" id="captureGuide" aria-hidden="true">
           <div class="court-guide" id="courtGuide">
             <img
@@ -165,50 +202,34 @@
             <span id="poseGuideLabel">站在人體引導位置並保持全身入鏡</span>
           </div>
         </div>
+
         <canvas id="qualityCanvas" width="96" height="54" hidden></canvas>
         <div class="countdown" id="cameraCountdown" hidden>3</div>
         <div class="recording-badge" id="recordingBadge" hidden><i></i><span>REC 00:00</span></div>
-      </div>
 
-      <div class="capture-quality" id="captureQuality" aria-live="polite">
-        <div class="quality-item is-pending" id="qualityFullBody">
-          <i aria-hidden="true"></i><span>全身入鏡</span><strong>檢查中</strong>
-        </div>
-        <div class="quality-item is-pending" id="qualityDistance">
-          <i aria-hidden="true"></i><span>人物距離適中</span><strong>檢查中</strong>
-        </div>
-        <div class="quality-item is-pending" id="qualityLight">
-          <i aria-hidden="true"></i><span>光線充足</span><strong>檢查中</strong>
+        <div class="camera-bottom-overlay">
+          <p class="camera-status" id="cameraStatus">按下開始後將倒數 3 秒，錄影最長 30 秒。</p>
+          <div class="camera-actions">
+            <button class="camera-button ghost" id="cameraRetryButton" type="button" hidden>重新錄製</button>
+            <button class="camera-button primary record-control" id="cameraStartButton" type="button" aria-label="開始錄影" data-record-state="ready"><span class="record-control-icon record-control-dot" aria-hidden="true"></span><span class="record-control-label">開始錄影</span></button>
+            <button class="camera-button primary" id="cameraUseButton" type="button" hidden>使用這段影片</button>
+          </div>
         </div>
       </div>
 
       <p class="capture-quality-note">
-        綠燈表示目前拍攝條件適合分析，不代表動作正確。
+        綠燈表示目前拍攝條件適合分析，不代表動作正確。建議固定手機並使用 1.0x 正常速度。
       </p>
-
-      <ul class="camera-tips">
-        <li>建議將手機固定後再開始錄影</li>
-        <li>保持完整身體與球拍入鏡</li>
-        <li>使用 1.0x 正常速度，不剪接、不重播</li>
-      </ul>
-
-      <p class="camera-status" id="cameraStatus">按下開始後將倒數 3 秒，錄影最長 30 秒。</p>
-
-      <div class="camera-actions">
-        <button class="camera-button ghost" id="cameraRetryButton" type="button" hidden>重新錄製</button>
-        <button class="camera-button primary" id="cameraStartButton" type="button">確認動作並開始</button>
-        <button class="camera-button stop" id="cameraStopButton" type="button" hidden disabled>停止錄影</button>
-        <button class="camera-button primary" id="cameraUseButton" type="button" hidden>使用這段影片</button>
-      </div>
     </div>
   </div>
 
   <div class="toast" id="toast" role="status" hidden></div>
   <footer><span>AI MOTION PLATFORM</span><span>PIXEL COURT / 2026</span></footer>
 
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/camera.js"></script>
+  <script src="js/config.js?v=upload-v2-phase4a2"></script>
+  <script src="js/api.js?v=upload-v2-phase4a2"></script>
+  <script src="js/video-preprocess.js?v=mobile-preprocess-v1"></script>
+  <script src="js/app.js?v=upload-v2-phase4a2"></script>
+  <script src="js/camera.js?v=upload-v2-phase4a2"></script>
 </body>
 </html>
