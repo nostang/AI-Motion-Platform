@@ -1025,6 +1025,116 @@ body.camera-open { overflow: hidden; }
   white-space: pre-wrap;
 }
 
+.video-segment-picker {
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px;
+  background: rgba(255,255,255,.035);
+}
+
+.video-segment-labels,
+.video-segment-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.video-segment-labels strong {
+  color: #7bffab;
+  font-size: 13px;
+}
+
+.video-segment-track {
+  position: relative;
+  height: 46px;
+  margin: 8px 10px 4px;
+}
+
+.video-segment-track::before {
+  content: "";
+  position: absolute;
+  top: 21px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+}
+
+.video-segment-selection {
+  position: absolute;
+  top: 21px;
+  height: 4px;
+  border-radius: 999px;
+  background: #7bffab;
+  pointer-events: none;
+}
+
+.video-segment-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 46px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.video-segment-range::-webkit-slider-thumb {
+  width: 26px;
+  height: 26px;
+  border: 3px solid #0d1712;
+  border-radius: 50%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #7bffab;
+  box-shadow: 0 0 0 2px rgba(123,255,171,.35);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.video-segment-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #0d1712;
+  border-radius: 50%;
+  background: #7bffab;
+  box-shadow: 0 0 0 2px rgba(123,255,171,.35);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.video-segment-range-start {
+  z-index: 3;
+}
+
+.video-segment-range-end {
+  z-index: 4;
+}
+
+.video-segment-summary {
+  margin-top: 4px;
+}
+
+.video-segment-summary span[data-valid="true"] {
+  color: #7bffab;
+}
+
+.video-segment-summary span[data-valid="false"] {
+  color: #ffb4a8;
+}
+
+.video-segment-preview-button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+}
+
 .video-preprocess-range {
   display: grid;
   grid-template-columns: 1fr 1fr;

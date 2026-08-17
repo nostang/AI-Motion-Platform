@@ -16,35 +16,61 @@
         <div class="video-preprocess-head">
           <div>
             <p>LOCAL PRE-CHECK</p>
-            <h3 id="videoPreprocessTitle">裁剪分析片段</h3>
+            <h3 id="videoPreprocessTitle">選擇分析片段</h3>
           </div>
           <button id="videoPreprocessClose" type="button" aria-label="關閉">×</button>
         </div>
 
         <p class="video-preprocess-copy">
-          原始影片超過 30 秒。請先在手機本機選出要分析的片段，影片尚未上傳。
+          影片超過 30 秒，請選擇要讓 AI 分析的動作片段。原始影片不會被修改。
         </p>
 
         <video id="videoPreprocessPreview" controls playsinline muted></video>
 
         <div class="video-preprocess-meta" id="videoPreprocessMeta"></div>
 
+        <div class="video-segment-picker">
+          <div class="video-segment-labels">
+            <span id="videoSegmentTimelineStart">00:00</span>
+            <strong>分析片段</strong>
+            <span id="videoSegmentTimelineEnd">00:00</span>
+          </div>
+
+          <div class="video-segment-track">
+            <div id="videoSegmentSelection" class="video-segment-selection"></div>
+            <input id="videoSegmentStartRange" class="video-segment-range video-segment-range-start"
+              type="range" min="0" step="0.1" value="0" aria-label="分析片段開始時間">
+            <input id="videoSegmentEndRange" class="video-segment-range video-segment-range-end"
+              type="range" min="0" step="0.1" value="30" aria-label="分析片段結束時間">
+          </div>
+
+          <div class="video-segment-summary">
+            <strong id="videoSegmentDuration">分析長度 30.0 秒</strong>
+            <span id="videoSegmentValidity">✓ 符合分析條件</span>
+          </div>
+        </div>
+
         <div class="video-preprocess-range">
           <label>
-            <span>開始秒數</span>
+            <span>開始時間</span>
             <input id="videoPreprocessStart" type="number" min="0" step="0.1" value="0">
           </label>
           <label>
-            <span>結束秒數</span>
+            <span>結束時間</span>
             <input id="videoPreprocessEnd" type="number" min="0" step="0.1" value="30">
           </label>
         </div>
+
+        <button class="video-segment-preview-button secondary-button"
+          id="videoSegmentPreviewButton" type="button">
+          ▶ 預覽分析片段
+        </button>
 
         <div class="video-preprocess-status" id="videoPreprocessStatus"></div>
 
         <div class="video-preprocess-actions">
           <button class="secondary-button" id="videoPreprocessCancel" type="button">取消</button>
-          <button class="primary-button" id="videoPreprocessConfirm" type="button">使用這段影片</button>
+          <button class="primary-button" id="videoPreprocessConfirm" type="button">使用這個片段</button>
         </div>
       </div>
     `;
@@ -272,6 +298,16 @@
     return blob;
   }
 
+  function formatTime(seconds) {
+    const safe = Math.max(0, Number(seconds) || 0);
+    const minutes = Math.floor(safe / 60);
+    const remainder = Math.floor(safe % 60);
+
+    return `${String(minutes).padStart(2, "0")}:${String(
+      remainder
+    ).padStart(2, "0")}`;
+  }
+
   async function openTrimDialog(file, info, maxSeconds) {
     ensureUi();
 
@@ -284,6 +320,14 @@
     const confirm = document.getElementById("videoPreprocessConfirm");
     const cancel = document.getElementById("videoPreprocessCancel");
     const close = document.getElementById("videoPreprocessClose");
+    const startRange = document.getElementById("videoSegmentStartRange");
+    const endRange = document.getElementById("videoSegmentEndRange");
+    const selection = document.getElementById("videoSegmentSelection");
+    const durationLabel = document.getElementById("videoSegmentDuration");
+    const validityLabel = document.getElementById("videoSegmentValidity");
+    const timelineStart = document.getElementById("videoSegmentTimelineStart");
+    const timelineEnd = document.getElementById("videoSegmentTimelineEnd");
+    const previewButton = document.getElementById("videoSegmentPreviewButton");
 
     if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
 
@@ -291,10 +335,90 @@
     preview.src = activeObjectUrl;
     preview.load();
 
-    startInput.value = "0";
-    endInput.value = Math.min(maxSeconds, info.duration).toFixed(1);
+    const initialEnd = Math.min(maxSeconds, info.duration);
+
+    startInput.value = "0.0";
+    endInput.value = initialEnd.toFixed(1);
     startInput.max = info.duration.toFixed(1);
     endInput.max = info.duration.toFixed(1);
+
+    startRange.max = info.duration.toFixed(1);
+    endRange.max = info.duration.toFixed(1);
+    startRange.value = "0";
+    endRange.value = initialEnd.toFixed(1);
+
+    timelineStart.textContent = "00:00";
+    timelineEnd.textContent = formatTime(info.duration);
+
+    const clamp = (value, minimum, maximum) => (
+      Math.min(maximum, Math.max(minimum, value))
+    );
+
+    const updatePicker = (source) => {
+      let start = Number(
+        source === "startInput"
+          ? startInput.value
+          : startRange.value
+      );
+      let end = Number(
+        source === "endInput"
+          ? endInput.value
+          : endRange.value
+      );
+
+      if (!Number.isFinite(start)) start = 0;
+      if (!Number.isFinite(end)) end = initialEnd;
+
+      start = clamp(start, 0, info.duration);
+      end = clamp(end, 0, info.duration);
+
+      if (source === "startRange" || source === "startInput") {
+        if (start >= end) start = Math.max(0, end - 0.1);
+        if (end - start > maxSeconds) {
+          end = Math.min(info.duration, start + maxSeconds);
+        }
+      } else {
+        if (end <= start) end = Math.min(info.duration, start + 0.1);
+        if (end - start > maxSeconds) {
+          start = Math.max(0, end - maxSeconds);
+        }
+      }
+
+      start = Math.round(start * 10) / 10;
+      end = Math.round(end * 10) / 10;
+
+      startInput.value = start.toFixed(1);
+      endInput.value = end.toFixed(1);
+      startRange.value = String(start);
+      endRange.value = String(end);
+
+      const startPercent = info.duration
+        ? (start / info.duration) * 100
+        : 0;
+      const endPercent = info.duration
+        ? (end / info.duration) * 100
+        : 100;
+
+      selection.style.left = `${startPercent}%`;
+      selection.style.width =
+        `${Math.max(0, endPercent - startPercent)}%`;
+
+      const segmentDuration = end - start;
+      durationLabel.textContent =
+        `分析長度 ${segmentDuration.toFixed(1)} 秒`;
+
+      const valid =
+        segmentDuration > 0
+        && segmentDuration <= maxSeconds + 0.05;
+
+      validityLabel.textContent = valid
+        ? "✓ 符合分析條件"
+        : `片段不可超過 ${maxSeconds} 秒`;
+
+      validityLabel.dataset.valid = valid ? "true" : "false";
+    };
+
+    updatePicker("startRange");
 
     meta.textContent =
       `${info.duration.toFixed(2)} 秒 · `
@@ -307,10 +431,31 @@
     return new Promise((resolve) => {
       let settled = false;
 
+      let previewStopHandler = null;
+
+      const stopSegmentPreview = () => {
+        if (previewStopHandler) {
+          preview.removeEventListener(
+            "timeupdate",
+            previewStopHandler
+          );
+          previewStopHandler = null;
+        }
+      };
+
       const cleanup = () => {
         confirm.removeEventListener("click", onConfirm);
         cancel.removeEventListener("click", onCancel);
         close.removeEventListener("click", onCancel);
+        startRange.removeEventListener("input", onStartRange);
+        endRange.removeEventListener("input", onEndRange);
+        startInput.removeEventListener("input", onStartInput);
+        endInput.removeEventListener("input", onEndInput);
+        previewButton.removeEventListener(
+          "click",
+          onPreviewSegment
+        );
+        stopSegmentPreview();
       };
 
       const finish = (value) => {
@@ -323,6 +468,64 @@
       };
 
       const onCancel = () => finish(null);
+
+      const onStartRange = () => {
+        stopSegmentPreview();
+        updatePicker("startRange");
+        preview.currentTime = Number(startRange.value);
+      };
+
+      const onEndRange = () => {
+        stopSegmentPreview();
+        updatePicker("endRange");
+        preview.currentTime = Number(endRange.value);
+      };
+
+      const onStartInput = () => {
+        stopSegmentPreview();
+        startRange.value = startInput.value;
+        updatePicker("startInput");
+      };
+
+      const onEndInput = () => {
+        stopSegmentPreview();
+        endRange.value = endInput.value;
+        updatePicker("endInput");
+      };
+
+      const onPreviewSegment = async () => {
+        const start = Number(startInput.value);
+        const end = Number(endInput.value);
+
+        if (!Number.isFinite(start) || !Number.isFinite(end)) {
+          return;
+        }
+
+        stopSegmentPreview();
+        preview.pause();
+
+        try {
+          await seekTo(preview, start);
+
+          previewStopHandler = () => {
+            if (preview.currentTime >= end - 0.03) {
+              preview.pause();
+              stopSegmentPreview();
+            }
+          };
+
+          preview.addEventListener(
+            "timeupdate",
+            previewStopHandler
+          );
+
+          await preview.play();
+        } catch (error) {
+          console.error("[VIDEO_PREPROCESS]", error);
+          status.textContent =
+            error.message || "無法預覽分析片段";
+        }
+      };
 
       const onConfirm = async () => {
         const start = Number(startInput.value);
@@ -392,6 +595,14 @@
       confirm.addEventListener("click", onConfirm);
       cancel.addEventListener("click", onCancel);
       close.addEventListener("click", onCancel);
+      startRange.addEventListener("input", onStartRange);
+      endRange.addEventListener("input", onEndRange);
+      startInput.addEventListener("input", onStartInput);
+      endInput.addEventListener("input", onEndInput);
+      previewButton.addEventListener(
+        "click",
+        onPreviewSegment
+      );
     });
   }
 
