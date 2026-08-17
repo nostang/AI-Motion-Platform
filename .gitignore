@@ -55,3 +55,5 @@ videos/
 docs/calibration/serve_window_review/
 docs/calibration/serve_window_review_v0_4/
 *.pyc
+.mobile-preprocess-backup-*/
+.mobile-preprocess-debug-backup-*/
