@@ -69,6 +69,12 @@ EXPECTED_FOOTWORK_EVENT_COUNT = int(
 DIRECTION_MIRROR_X = bool(CALIBRATION_SETTINGS.direction["mirror_x"])
 DIRECTION_X_SCALE = float(CALIBRATION_SETTINGS.direction["x_scale"])
 DIRECTION_Y_SCALE = float(CALIBRATION_SETTINGS.direction["y_scale"])
+DIRECTION_LEFT_BACK_BOUNDARY_DEGREES = float(
+    CALIBRATION_SETTINGS.direction.get(
+        "left_back_boundary_degrees",
+        -157.5,
+    )
+)
 DIRECTION_MIN_VECTOR_LENGTH = float(
     CALIBRATION_SETTINGS.direction["min_vector_length"]
 )

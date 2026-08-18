@@ -22,6 +22,11 @@ from src.assessment.footwork_assessment import FootworkAssessmentBuilder
 from src.coach import CoachEngine
 from src.report import ReportBuilder
 from src.validator import PipelineValidator
+from src.validator.motion_input_validation import (
+    MotionInputValidator,
+    require_motion_input_ready,
+    save_motion_input_validation,
+)
 from src.review.expert_review import (
     build_expert_review_package,
     save_expert_review_package,
@@ -44,6 +49,7 @@ from src.config import (
     REVIEW_MINIMUM_REVIEWERS,
     DIRECTION_MIN_CONFIDENCE,
     DIRECTION_MIN_VECTOR_LENGTH,
+    DIRECTION_LEFT_BACK_BOUNDARY_DEGREES,
     DIRECTION_MIRROR_X,
     DIRECTION_X_SCALE,
     DIRECTION_Y_SCALE,
@@ -72,12 +78,17 @@ from src.drawing import (
     draw_trajectory,
     get_hip_center_pixel,
 )
-from src.event.footwork_event import FootworkEvent
+from src.event.footwork_event import FootworkEvent, FootworkState
 from src.features.motion_features import MotionFeatureTracker
 from src.measurement import (
     calculate_displacement,
     calculate_hip_center,
     calculate_velocity,
+)
+from src.visualization.footwork_reach_grid import (
+    build_footwork_reach_grid,
+    capture_footwork_pose_sample,
+    save_footwork_reach_grid,
 )
 
 
@@ -139,6 +150,8 @@ def run_pose_demo(
     report_output_path = output_dir / "footwork_analysis_report.json"
     review_output_path = output_dir / "footwork_review_package.json"
     validation_output_path = output_dir / "pipeline_validation.json"
+    input_validation_output_path = output_dir / "motion_input_validation.json"
+    reach_grid_output_path = output_dir / "footwork_reach_grid.json"
 
     if not video_path.exists():
         raise FileNotFoundError(f"找不到影片：{video_path}")
@@ -180,14 +193,20 @@ def run_pose_demo(
         else None
     )
 
-    cap.set(
-        cv2.CAP_PROP_POS_FRAMES,
-        source_start_frame,
-    )
+    for skipped_source_frame in range(source_start_frame):
+        success, _ = cap.read()
+        if not success:
+            cap.release()
+            raise RuntimeError(
+                "OpenCV 無法循序讀取至人工標注的 start frame："
+                f"{skipped_source_frame}"
+            )
 
     frame_index = 0
     source_frame_index = source_start_frame
     detected_frame_count = 0
+    pose_samples: list[dict] = []
+    initial_ready_frame_index: int | None = None
 
     previous_hip_center_normalized = None
     previous_timestamp_ms = None
@@ -218,6 +237,7 @@ def run_pose_demo(
     )
 
     motion_feature_tracker = MotionFeatureTracker()
+    input_validator = MotionInputValidator("footwork")
 
     motion_classifier = MotionClassifier(
         mirror_x=DIRECTION_MIRROR_X,
@@ -225,6 +245,9 @@ def run_pose_demo(
         y_scale=DIRECTION_Y_SCALE,
         min_vector_length=DIRECTION_MIN_VECTOR_LENGTH,
         min_confidence=DIRECTION_MIN_CONFIDENCE,
+        left_back_boundary_degrees=(
+            DIRECTION_LEFT_BACK_BOUNDARY_DEGREES
+        ),
     )
 
     assessment_builder = FootworkAssessmentBuilder(
@@ -269,9 +292,23 @@ def run_pose_demo(
                     timestamp_ms,
                 )
 
+                landmarks = (
+                    result.pose_landmarks[0]
+                    if result.pose_landmarks
+                    else None
+                )
+                input_validator.observe(landmarks)
+
                 if result.pose_landmarks:
                     detected_frame_count += 1
-                    landmarks = result.pose_landmarks[0]
+                    pose_sample = capture_footwork_pose_sample(
+                        landmarks,
+                        timestamp_ms,
+                        analysis_frame_index=frame_index,
+                        source_frame_index=source_frame_index,
+                    )
+                    if pose_sample is not None:
+                        pose_samples.append(pose_sample)
 
                     draw_pose_landmarks(frame, landmarks)
                     draw_knee_angles(frame, landmarks)
@@ -376,6 +413,12 @@ def run_pose_demo(
                             timestamp_ms=timestamp_ms,
                             frame_index=frame_index,
                         )
+
+                        if (
+                            footwork_event.event_id == 0
+                            and current_state == FootworkState.READY
+                        ):
+                            initial_ready_frame_index = frame_index
 
                         motion_feature_tracker.observe(
                             event_id=footwork_event.event_id,
@@ -599,10 +642,26 @@ def run_pose_demo(
         if display:
             cv2.destroyAllWindows()
 
+    input_validation = input_validator.build()
+    save_motion_input_validation(
+        input_validation,
+        input_validation_output_path,
+    )
+    require_motion_input_ready(input_validation)
+
     assessment_result = assessment_builder.build(
         total_frame_count=frame_index,
         detected_frame_count=detected_frame_count,
         source_video=str(video_path),
+    )
+    reach_grid = build_footwork_reach_grid(
+        pose_samples,
+        assessment_result.get("events") or [],
+        ready_frame_index=initial_ready_frame_index,
+    )
+    save_footwork_reach_grid(
+        reach_grid,
+        reach_grid_output_path,
     )
     assessment_builder.save(
         assessment_result,
@@ -743,6 +802,8 @@ def run_pose_demo(
         "review_package": review_package,
         "pipeline_validation": validation_report,
         "artifact_paths": {
+            "motion_input_validation": str(input_validation_output_path),
+            "reach_grid": str(reach_grid_output_path),
             "assessment": str(assessment_output_path),
             "coach_evaluation": str(coach_output_path),
             "analysis_report": str(report_output_path),

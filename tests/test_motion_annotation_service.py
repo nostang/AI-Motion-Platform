@@ -7,6 +7,9 @@ import unittest
 from unittest.mock import patch
 
 from src.api.service import MotionAssessmentService
+from src.validator.motion_input_validation import (
+    MotionInputValidationRejected,
+)
 
 
 class FakeRepository:
@@ -168,6 +171,129 @@ class MotionAnnotationServiceTests(
             "left 或 right",
             final_status["error_message"],
         )
+
+    def test_clear_keyframe_failure_does_not_fail_assessment(self) -> None:
+        video_path = self.repository.task_dir("ma_test") / "source.mov"
+        self.repository.get_analysis = lambda assessment_id: {
+            "assessment_id": assessment_id,
+            "assessment_type": "clear",
+            "video_path": str(video_path),
+        }
+
+        with (
+            patch(
+                "src.api.service.get_motion_analyzer",
+                return_value=self.analyzer,
+            ),
+            patch(
+                "src.api.service._persist_clear_keyframes",
+                side_effect=RuntimeError("presentation only"),
+            ),
+        ):
+            self.service.process("ma_test")
+
+        self.assertIsNotNone(self.repository.saved_report)
+        self.assertEqual(
+            self.repository.status_updates[-1][1]["processing_status"],
+            "completed",
+        )
+
+    def test_serve_sequence_failure_does_not_fail_assessment(self) -> None:
+        with (
+            patch(
+                "src.api.service.get_motion_analyzer",
+                return_value=self.analyzer,
+            ),
+            patch(
+                "src.api.service._persist_serve_motion_sequence",
+                side_effect=RuntimeError("presentation only"),
+            ),
+        ):
+            self.service.process("ma_test")
+
+        self.assertIsNotNone(self.repository.saved_report)
+        self.assertEqual(
+            self.repository.status_updates[-1][1]["processing_status"],
+            "completed",
+        )
+
+    def test_footwork_does_not_create_racket_motion_assets(self) -> None:
+        self.repository.get_analysis = lambda assessment_id: {
+            "assessment_id": assessment_id,
+            "assessment_type": "footwork",
+            "video_path": str(self.root / "source.mov"),
+        }
+
+        with (
+            patch(
+                "src.api.service.get_motion_analyzer",
+                return_value=self.analyzer,
+            ),
+            patch("src.api.service._persist_clear_keyframes") as clear_persist,
+            patch(
+                "src.api.service._persist_serve_motion_sequence"
+            ) as serve_persist,
+            patch(
+                "src.api.service._persist_footwork_reach_grid"
+            ) as reach_grid_persist,
+        ):
+            self.service.process("ma_test")
+
+        clear_persist.assert_not_called()
+        serve_persist.assert_not_called()
+        reach_grid_persist.assert_called_once()
+
+    def test_footwork_reach_grid_failure_does_not_fail_assessment(self) -> None:
+        self.repository.get_analysis = lambda assessment_id: {
+            "assessment_id": assessment_id,
+            "assessment_type": "footwork",
+            "video_path": str(self.root / "source.mov"),
+        }
+
+        with (
+            patch(
+                "src.api.service.get_motion_analyzer",
+                return_value=self.analyzer,
+            ),
+            patch(
+                "src.api.service._persist_footwork_reach_grid",
+                side_effect=RuntimeError("presentation only"),
+            ),
+        ):
+            self.service.process("ma_test")
+
+        self.assertIsNotNone(self.repository.saved_report)
+        self.assertEqual(
+            self.repository.status_updates[-1][1]["processing_status"],
+            "completed",
+        )
+
+    def test_input_validation_rejection_is_retryable_and_saves_no_report(
+        self,
+    ) -> None:
+        result = {
+            "status": "NEEDS_REVIEW",
+            "message": (
+                "目前沒有偵測到足夠明顯的可分析動作，請確認影片內容。"
+            ),
+            "retryable": True,
+        }
+        rejecting_analyzer = CapturingAnalyzer()
+        rejecting_analyzer.run = lambda context: (_ for _ in ()).throw(
+            MotionInputValidationRejected(result)
+        )
+
+        with patch(
+            "src.api.service.get_motion_analyzer",
+            return_value=rejecting_analyzer,
+        ):
+            self.service.process("ma_test")
+
+        final = self.repository.status_updates[-1][1]
+        self.assertIsNone(self.repository.saved_report)
+        self.assertEqual(final["processing_status"], "failed")
+        self.assertEqual(final["current_stage"], "input_validation")
+        self.assertIn("足夠明顯", final["error_message"])
 
 
 if __name__ == "__main__":

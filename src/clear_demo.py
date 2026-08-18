@@ -20,6 +20,19 @@ from src.validator.clear_validator import (
     save_clear_validation,
     validate_clear_pipeline,
 )
+from src.validator.motion_input_validation import (
+    MotionInputValidator,
+    require_motion_input_ready,
+    save_motion_input_validation,
+)
+from src.visualization.clear_pose_visualization import (
+    build_clear_pose_visualization,
+    save_clear_pose_visualization,
+)
+from src.visualization.clear_motion_sequence import (
+    build_clear_motion_sequence,
+    save_clear_motion_sequence,
+)
 
 
 def _load_calibration() -> dict[str, Any]:
@@ -53,6 +66,9 @@ def run_clear_demo(
     coach_path = output_dir / "clear_coach_evaluation.json"
     report_path = output_dir / "clear_analysis_report.json"
     validation_path = output_dir / "clear_pipeline_validation.json"
+    pose_visualization_path = output_dir / "clear_pose_visualization.json"
+    motion_sequence_path = output_dir / "clear_motion_sequence.json"
+    input_validation_path = output_dir / "motion_input_validation.json"
 
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
@@ -85,10 +101,14 @@ def run_clear_demo(
         else None
     )
 
-    cap.set(
-        cv2.CAP_PROP_POS_FRAMES,
-        source_start_frame,
-    )
+    for skipped_source_frame in range(source_start_frame):
+        ok, _ = cap.read()
+        if not ok:
+            cap.release()
+            raise RuntimeError(
+                "OpenCV 無法循序讀取至人工標注的 start frame："
+                f"{skipped_source_frame}"
+            )
 
     frame_index = 0
     source_frame_index = source_start_frame
@@ -97,6 +117,7 @@ def run_clear_demo(
     last_detected_frame: int | None = None
 
     tracker = ClearFeatureTracker(expected_racket_side="right")
+    input_validator = MotionInputValidator("clear")
 
     try:
         with create_pose_landmarker(model_path) as landmarker:
@@ -124,6 +145,12 @@ def run_clear_demo(
                 )
 
                 pose_detected = bool(result.pose_landmarks)
+                landmarks = (
+                    result.pose_landmarks[0]
+                    if pose_detected
+                    else None
+                )
+                input_validator.observe(landmarks)
                 overlay_lines: list[str] = []
 
                 if pose_detected:
@@ -133,9 +160,12 @@ def run_clear_demo(
                         first_detected_frame = frame_index
 
                     last_detected_frame = frame_index
-                    landmarks = result.pose_landmarks[0]
-
-                    tracker.observe(landmarks, timestamp_ms)
+                    tracker.observe(
+                        landmarks,
+                        timestamp_ms,
+                        analysis_frame_index=frame_index,
+                        source_frame_index=source_frame_index,
+                    )
                     draw_pose_landmarks(frame, landmarks)
 
                     overlay_lines.append(
@@ -172,6 +202,13 @@ def run_clear_demo(
         if display:
             cv2.destroyAllWindows()
 
+    input_validation = input_validator.build()
+    save_motion_input_validation(
+        input_validation,
+        input_validation_path,
+    )
+    require_motion_input_ready(input_validation)
+
     event = build_clear_event(
         first_detected_frame=first_detected_frame,
         last_detected_frame=last_detected_frame,
@@ -181,6 +218,29 @@ def run_clear_demo(
     )
 
     features = tracker.build()
+
+    pose_visualization = build_clear_pose_visualization(
+        tracker.samples,
+        racket_side=features.get(
+            "racket_side_estimate",
+            tracker.expected_racket_side or "unknown",
+        ),
+    )
+    save_clear_pose_visualization(
+        pose_visualization,
+        pose_visualization_path,
+    )
+    motion_sequence = build_clear_motion_sequence(
+        tracker.samples,
+        racket_side=features.get(
+            "racket_side_estimate",
+            tracker.expected_racket_side or "unknown",
+        ),
+    )
+    save_clear_motion_sequence(
+        motion_sequence,
+        motion_sequence_path,
+    )
 
     assessment = ClearAssessmentBuilder(
         _load_calibration()
@@ -229,6 +289,8 @@ def run_clear_demo(
     print(f"Assessment JSON：{assessment_path}")
     print(f"Coach JSON：{coach_path}")
     print(f"Analysis Report：{report_path}")
+    print(f"Explainable Pose：{pose_visualization_path}")
+    print(f"Motion Sequence：{motion_sequence_path}")
     print(
         "Pipeline Validator："
         f"{validation['status']} | "
@@ -252,9 +314,11 @@ def run_clear_demo(
         "analysis_report": report,
         "pipeline_validation": validation,
         "artifact_paths": {
+            "motion_input_validation": str(input_validation_path),
             "assessment": str(assessment_path),
             "coach_evaluation": str(coach_path),
             "analysis_report": str(report_path),
             "pipeline_validation": str(validation_path),
+            "motion_sequence": str(motion_sequence_path),
         },
     }

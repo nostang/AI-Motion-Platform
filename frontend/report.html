@@ -54,15 +54,84 @@
         <p id="dimensionEmpty" class="empty-state" hidden>目前沒有可顯示的維度分數。</p>
       </article>
 
+      <section class="report-card key-motion-section" id="keyMotionSection" aria-labelledby="keyMotionTitle" hidden>
+        <div class="key-motion-heading-row">
+          <div class="card-heading"><span>02</span><div><p>MOTION SEQUENCE</p><h2 id="keyMotionTitle">動作序列</h2></div></div>
+        </div>
+        <p class="key-motion-intro">從本次分析片段擷取連續代表畫面，查看完整動作變化。</p>
+        <div class="motion-sequence-player" id="keyMotionPlayer" data-skeleton-visible="true">
+          <div class="motion-sequence-stage" id="keyMotionStage"></div>
+          <div class="motion-sequence-controls">
+            <button class="motion-sequence-playback" id="keyMotionPlayback" type="button" aria-label="暫停動作序列">
+              <strong id="keyMotionPlaybackIcon" aria-hidden="true">❚❚</strong>
+              <span id="keyMotionPlaybackLabel">暫停</span>
+            </button>
+            <span class="motion-sequence-counter" id="keyMotionCounter">01 / 06</span>
+            <button
+              class="key-motion-skeleton-toggle"
+              id="keyMotionSkeletonToggle"
+              type="button"
+              role="switch"
+              aria-checked="true"
+            >
+              <span>顯示骨架</span>
+              <strong id="keyMotionSkeletonState">ON</strong>
+            </button>
+          </div>
+          <div class="motion-sequence-indicators" id="keyMotionIndicators" aria-label="動作序列畫面選擇"></div>
+        </div>
+      </section>
+
+      <section class="report-card footwork-reach-section" id="footworkReachSection" aria-labelledby="footworkReachTitle" hidden>
+        <div class="footwork-reach-heading-row">
+          <div class="card-heading"><span>02</span><div><p>MOVEMENT REACH GRID</p><h2 id="footworkReachTitle">移動觸及圖</h2></div></div>
+          <button
+            class="key-motion-skeleton-toggle"
+            id="footworkReachSkeletonToggle"
+            type="button"
+            role="switch"
+            aria-checked="true"
+          >
+            <span>顯示骨架</span>
+            <strong id="footworkReachSkeletonState">ON</strong>
+          </button>
+        </div>
+        <p class="key-motion-intro">以中心準備位置與各方向最遠觸及畫面，呈現本次步法移動範圍。</p>
+        <div class="footwork-reach-grid" id="footworkReachGrid" data-skeleton-visible="true"></div>
+      </section>
+
       <article class="report-card coach-card">
-        <div class="card-heading"><span>02</span><div><p>AI COACH</p><h2>教練回饋</h2></div></div>
+        <div class="card-heading"><span>03</span><div><p>AI COACH</p><h2>教練回饋</h2></div></div>
+        <div class="coach-v2" id="coachV2" hidden>
+          <section class="coach-v2-block coach-v2-strengths">
+            <h3>本次亮點</h3>
+            <ul id="coachV2Strengths"></ul>
+          </section>
+          <section class="coach-v2-block coach-v2-priorities">
+            <h3>優先改善</h3>
+            <ul id="coachV2Priorities"></ul>
+          </section>
+          <section class="coach-v2-block coach-v2-training">
+            <h3>建議訓練菜單</h3>
+            <ol id="coachV2Training"></ol>
+            <small>以上為本次分析後的練習建議，系統不會追蹤是否完成。</small>
+          </section>
+          <section class="coach-v2-block coach-v2-next">
+            <h3>下次測驗觀察重點</h3>
+            <p id="coachV2NextFocus"></p>
+          </section>
+          <section class="coach-v2-block coach-v2-trend">
+            <h3>近期變化</h3>
+            <p id="coachV2RecentTrend"></p>
+          </section>
+        </div>
         <p class="coach-message" id="coachMessage" hidden></p>
         <ul id="feedbackList" class="feedback-list"></ul>
       </article>
     </section>
 
     <section class="report-card evidence-card">
-      <div class="card-heading"><span>03</span><div><p>ASSESSMENT CONTEXT</p><h2>分析資訊</h2></div></div>
+      <div class="card-heading"><span>04</span><div><p>ASSESSMENT CONTEXT</p><h2>分析資訊</h2></div></div>
       <dl class="evidence-grid">
         <div><dt>動作類型</dt><dd id="motionTypeValue">--</dd></div>
         <div><dt>持拍／慣用側</dt><dd id="handValue">--</dd></div>
@@ -110,6 +179,7 @@
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/motion-sequence-player.js"></script>
   <script src="js/report.js"></script>
   <script src="js/engineer-mode.js"></script>
 </body>

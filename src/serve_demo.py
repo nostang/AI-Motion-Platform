@@ -17,6 +17,15 @@ from src.pose_demo import create_pose_landmarker
 from src.overlay import draw_pose_landmarks, draw_status_panel
 from src.report.serve_report import build_serve_report, save_serve_report
 from src.validator.serve_validator import validate_serve_pipeline, save_serve_validation
+from src.validator.motion_input_validation import (
+    MotionInputValidator,
+    require_motion_input_ready,
+    save_motion_input_validation,
+)
+from src.visualization.clear_motion_sequence import (
+    build_serve_motion_sequence,
+    save_clear_motion_sequence,
+)
 
 
 def _load_calibration() -> dict[str, Any]:
@@ -38,6 +47,8 @@ def run_serve_demo(
     coach_path = output_dir / "serve_coach_evaluation.json"
     report_path = output_dir / "serve_analysis_report.json"
     validation_path = output_dir / "serve_pipeline_validation.json"
+    motion_sequence_path = output_dir / "serve_motion_sequence.json"
+    input_validation_path = output_dir / "motion_input_validation.json"
 
     cap = cv2.VideoCapture(str(video_path))
     if not cap.isOpened():
@@ -69,10 +80,14 @@ def run_serve_demo(
         else None
     )
 
-    cap.set(
-        cv2.CAP_PROP_POS_FRAMES,
-        source_start_frame,
-    )
+    for skipped_source_frame in range(source_start_frame):
+        ok, _ = cap.read()
+        if not ok:
+            cap.release()
+            raise RuntimeError(
+                "OpenCV 無法循序讀取至人工標注的 start frame："
+                f"{skipped_source_frame}"
+            )
 
     frame_index = 0
     source_frame_index = source_start_frame
@@ -82,6 +97,7 @@ def run_serve_demo(
     tracker = ServeFeatureTracker(
         racket_side=racket_side,
     )
+    input_validator = MotionInputValidator("serve")
 
     try:
         with create_pose_landmarker(model_path) as landmarker:
@@ -102,14 +118,24 @@ def run_serve_demo(
                     mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb), timestamp_ms
                 )
                 pose_detected = bool(result.pose_landmarks)
+                landmarks = (
+                    result.pose_landmarks[0]
+                    if pose_detected
+                    else None
+                )
+                input_validator.observe(landmarks)
                 overlay_lines: list[str] = []
                 if pose_detected:
                     detected_frames += 1
                     if first_detected_frame is None:
                         first_detected_frame = frame_index
                     last_detected_frame = frame_index
-                    landmarks = result.pose_landmarks[0]
-                    tracker.observe(landmarks, timestamp_ms)
+                    tracker.observe(
+                        landmarks,
+                        timestamp_ms,
+                        analysis_frame_index=frame_index,
+                        source_frame_index=source_frame_index,
+                    )
                     draw_pose_landmarks(frame, landmarks)
                     overlay_lines.append(f"Samples: {len(tracker.samples)}")
                 overlay_lines.append(f"Frame: {frame_index}")
@@ -131,6 +157,13 @@ def run_serve_demo(
         if display:
             cv2.destroyAllWindows()
 
+    input_validation = input_validator.build()
+    save_motion_input_validation(
+        input_validation,
+        input_validation_path,
+    )
+    require_motion_input_ready(input_validation)
+
     start_frame = first_detected_frame or 0
     end_frame = last_detected_frame if last_detected_frame is not None else max(0, frame_index - 1)
     event = ServeEvent(
@@ -148,6 +181,18 @@ def run_serve_demo(
         "completed": event.completed,
     }
     features = tracker.build()
+    motion_sequence = build_serve_motion_sequence(
+        tracker.samples,
+        racket_side=features.get(
+            "active_side_estimate",
+            tracker.racket_side or "unknown",
+        ),
+        analysis_window=features.get("analysis_window") or {},
+    )
+    save_clear_motion_sequence(
+        motion_sequence,
+        motion_sequence_path,
+    )
     assessment = ServeAssessmentBuilder(_load_calibration()).build(
         video_id=video_id, source_video=str(video_path), total_frames=frame_index,
         detected_frames=detected_frames, event=event_dict, features=features,
@@ -174,6 +219,8 @@ def run_serve_demo(
         "assessment": assessment, "coach_evaluation": coach,
         "analysis_report": report, "pipeline_validation": validation,
         "artifact_paths": {
+            "motion_input_validation": str(input_validation_path),
+            "motion_sequence": str(motion_sequence_path),
             "assessment": str(assessment_path), "coach_evaluation": str(coach_path),
             "analysis_report": str(report_path), "pipeline_validation": str(validation_path),
         },

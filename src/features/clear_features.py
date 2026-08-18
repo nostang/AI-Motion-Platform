@@ -81,10 +81,14 @@ class ClearFeatureTracker:
         self,
         landmarks: Sequence[Any],
         timestamp_ms: int,
+        *,
+        analysis_frame_index: int | None = None,
+        source_frame_index: int | None = None,
     ) -> None:
         if len(landmarks) < 33:
             return
 
+        nose = _point(landmarks[0])
         left_shoulder = _point(landmarks[11])
         right_shoulder = _point(landmarks[12])
         left_elbow = _point(landmarks[13])
@@ -93,6 +97,8 @@ class ClearFeatureTracker:
         right_wrist = _point(landmarks[16])
         left_hip = _point(landmarks[23])
         right_hip = _point(landmarks[24])
+        left_knee = _point(landmarks[25])
+        right_knee = _point(landmarks[26])
         left_ankle = _point(landmarks[27])
         right_ankle = _point(landmarks[28])
 
@@ -109,47 +115,56 @@ class ClearFeatureTracker:
             1e-6,
         )
 
-        self.samples.append(
-            {
-                "timestamp_ms": float(timestamp_ms),
-                "left_shoulder_x": left_shoulder[0],
-                "left_shoulder_y": left_shoulder[1],
-                "right_shoulder_x": right_shoulder[0],
-                "right_shoulder_y": right_shoulder[1],
-                "left_elbow_x": left_elbow[0],
-                "left_elbow_y": left_elbow[1],
-                "right_elbow_x": right_elbow[0],
-                "right_elbow_y": right_elbow[1],
-                "left_wrist_x": left_wrist[0],
-                "left_wrist_y": left_wrist[1],
-                "right_wrist_x": right_wrist[0],
-                "right_wrist_y": right_wrist[1],
-                "left_hip_x": left_hip[0],
-                "left_hip_y": left_hip[1],
-                "right_hip_x": right_hip[0],
-                "right_hip_y": right_hip[1],
-                "left_ankle_x": left_ankle[0],
-                "left_ankle_y": left_ankle[1],
-                "right_ankle_x": right_ankle[0],
-                "right_ankle_y": right_ankle[1],
-                "shoulder_center_x": shoulder_center[0],
-                "shoulder_center_y": shoulder_center[1],
-                "hip_center_x": hip_center[0],
-                "hip_center_y": hip_center[1],
-                "shoulder_width": shoulder_width,
-                "hip_width": hip_width,
-                "torso_length": torso_length,
-                "body_scale": body_scale,
-                "shoulder_line_angle": _axis_angle(
-                    left_shoulder,
-                    right_shoulder,
-                ),
-                "hip_line_angle": _axis_angle(
-                    left_hip,
-                    right_hip,
-                ),
-            }
-        )
+        sample = {
+            "timestamp_ms": float(timestamp_ms),
+            "nose_x": nose[0],
+            "nose_y": nose[1],
+            "left_shoulder_x": left_shoulder[0],
+            "left_shoulder_y": left_shoulder[1],
+            "right_shoulder_x": right_shoulder[0],
+            "right_shoulder_y": right_shoulder[1],
+            "left_elbow_x": left_elbow[0],
+            "left_elbow_y": left_elbow[1],
+            "right_elbow_x": right_elbow[0],
+            "right_elbow_y": right_elbow[1],
+            "left_wrist_x": left_wrist[0],
+            "left_wrist_y": left_wrist[1],
+            "right_wrist_x": right_wrist[0],
+            "right_wrist_y": right_wrist[1],
+            "left_hip_x": left_hip[0],
+            "left_hip_y": left_hip[1],
+            "right_hip_x": right_hip[0],
+            "right_hip_y": right_hip[1],
+            "left_knee_x": left_knee[0],
+            "left_knee_y": left_knee[1],
+            "right_knee_x": right_knee[0],
+            "right_knee_y": right_knee[1],
+            "left_ankle_x": left_ankle[0],
+            "left_ankle_y": left_ankle[1],
+            "right_ankle_x": right_ankle[0],
+            "right_ankle_y": right_ankle[1],
+            "shoulder_center_x": shoulder_center[0],
+            "shoulder_center_y": shoulder_center[1],
+            "hip_center_x": hip_center[0],
+            "hip_center_y": hip_center[1],
+            "shoulder_width": shoulder_width,
+            "hip_width": hip_width,
+            "torso_length": torso_length,
+            "body_scale": body_scale,
+            "shoulder_line_angle": _axis_angle(
+                left_shoulder,
+                right_shoulder,
+            ),
+            "hip_line_angle": _axis_angle(
+                left_hip,
+                right_hip,
+            ),
+        }
+        if analysis_frame_index is not None:
+            sample["analysis_frame_index"] = int(analysis_frame_index)
+        if source_frame_index is not None:
+            sample["source_frame_index"] = int(source_frame_index)
+        self.samples.append(sample)
 
     def _estimate_racket_side(self) -> str:
         if self.expected_racket_side in {"left", "right"}:

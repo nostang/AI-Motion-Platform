@@ -11,12 +11,17 @@
     content: $("summaryContent"), retry: $("retryButton"), canvas: $("competencyRadar"),
     previousLegend: $("previousLegend"), comparisonNote: $("comparisonNote"), changes: $("axisChanges"),
     motions: $("motionCards"), headline: $("aiHeadline"), progress: $("progressSummary"),
+    progressHighlights: $("progressHighlights"),
+    historyChartWrap: $("historyTrendChartWrap"), historyChart: $("historyTrendChart"),
+    historyDetail: $("historyTrendDetail"), historyEmpty: $("historyTrendEmpty"),
     focus: $("focusTags"), recommendations: $("recommendations"), hand: $("racketHand"),
     handConfidence: $("racketConfidence"), handContext:$("racketContext"), userReference: $("userReference")
   };
   let radarData = null;
   let radarHitPoints = [];
   let radarTooltip = null;
+  let historyTrendData = null;
+  let selectedHistoryMotion = "footwork";
 
   const directionLabels = { IMPROVED: "進步", DECLINED: "下降", UNCHANGED: "持平", NOT_INTERPRETED: "暫不解讀" };
   const motionLabels = { footwork: "步法", serve: "正手發球", clear: "高遠球" };
@@ -37,8 +42,29 @@
     return payload.data;
   }
 
+  async function requestHistoryTrend() {
+    const response = await fetch(
+      `${apiBase}/users/${encodeURIComponent(userId)}/history-trend`
+    );
+    let payload = null;
+    try { payload = await response.json(); } catch (_) { /* handled below */ }
+    if (!response.ok || !payload?.success) {
+      throw new Error(payload?.error?.message || `API request failed (${response.status})`);
+    }
+    return payload.data;
+  }
+
   function number(value, fallback = null) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
   function scoreText(value) { const n = number(value); return n === null ? "--" : Number.isInteger(n) ? String(n) : n.toFixed(1); }
+  function historyDate(value) {
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return "日期未知";
+    return new Intl.DateTimeFormat("zh-TW", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(date);
+  }
   function showError(error) { elements.loading.hidden = true; elements.content.hidden = true; elements.error.hidden = false; elements.errorMessage.textContent = error?.message || "發生未知錯誤。"; }
 
   function renderComparison(competency) {
@@ -119,7 +145,11 @@
       elements.changes.appendChild(card);
     });
     if (!changes.length) {
-      const empty = document.createElement("p"); empty.className = "comparison-note"; empty.textContent = "完成下一輪三項測驗後，這裡會顯示各能力維度的變化。"; elements.changes.appendChild(empty);
+      const empty = document.createElement("p");
+      empty.className = "axis-comparison-empty";
+      empty.textContent =
+        "目前前次資料不足以完整比較能力維度，本次先顯示最新能力輪廓。";
+      elements.changes.appendChild(empty);
     }
     drawRadar();
   }
@@ -461,6 +491,213 @@ const link = document.createElement("a");
     });
   }
 
+  function svgNode(name, attributes = {}) {
+    const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+    Object.entries(attributes).forEach(([key, value]) => {
+      node.setAttribute(key, String(value));
+    });
+    return node;
+  }
+
+  function showHistoryPoint(point) {
+    const timestamp = point.completed_at || point.created_at;
+    elements.historyDetail.textContent = (
+      `${historyDate(timestamp)} · ${scoreText(point.overall_score)} 分`
+    );
+  }
+
+  function renderHistoryMotion(motionType) {
+    selectedHistoryMotion = motionType;
+    document.querySelectorAll("[data-history-motion]").forEach((button) => {
+      button.setAttribute(
+        "aria-selected",
+        button.dataset.historyMotion === motionType ? "true" : "false"
+      );
+    });
+    elements.historyChart.replaceChildren();
+    const series = historyTrendData?.motions?.find(
+      (item) => item?.motion_type === motionType
+    );
+    const points = Array.isArray(series?.points) ? series.points : [];
+    if (series?.status !== "READY" || points.length < 2) {
+      elements.historyChartWrap.hidden = true;
+      elements.historyEmpty.hidden = false;
+      return;
+    }
+
+    elements.historyChartWrap.hidden = false;
+    elements.historyEmpty.hidden = true;
+    const width = 760;
+    const height = 300;
+    const margin = { top: 22, right: 24, bottom: 52, left: 52 };
+    const chartWidth = width - margin.left - margin.right;
+    const chartHeight = height - margin.top - margin.bottom;
+    const x = (index) => (
+      margin.left + chartWidth * index / Math.max(1, points.length - 1)
+    );
+    const y = (score) => (
+      margin.top + chartHeight * (1 - Math.max(0, Math.min(100, score)) / 100)
+    );
+
+    [0, 25, 50, 75, 100].forEach((score) => {
+      const lineY = y(score);
+      elements.historyChart.appendChild(svgNode("line", {
+        class: "history-grid-line",
+        x1: margin.left,
+        y1: lineY,
+        x2: width - margin.right,
+        y2: lineY
+      }));
+      const label = svgNode("text", {
+        class: "history-axis-label",
+        x: margin.left - 12,
+        y: lineY + 4,
+        "text-anchor": "end"
+      });
+      label.textContent = String(score);
+      elements.historyChart.appendChild(label);
+    });
+
+    const coordinates = points.map((point, index) => (
+      `${x(index)},${y(number(point.overall_score, 0))}`
+    ));
+    elements.historyChart.appendChild(svgNode("polyline", {
+      class: "history-trend-line",
+      points: coordinates.join(" "),
+      fill: "none"
+    }));
+
+    points.forEach((point, index) => {
+      const timestamp = point.completed_at || point.created_at;
+      const circle = svgNode("circle", {
+        class: "history-trend-point",
+        cx: x(index),
+        cy: y(number(point.overall_score, 0)),
+        r: 7,
+        tabindex: 0,
+        role: "img",
+        "aria-label": `${historyDate(timestamp)}，${scoreText(point.overall_score)} 分`
+      });
+      const title = svgNode("title");
+      title.textContent = `${historyDate(timestamp)} · ${scoreText(point.overall_score)} 分`;
+      circle.appendChild(title);
+      ["pointerenter", "click", "focus"].forEach((eventName) => {
+        circle.addEventListener(eventName, () => showHistoryPoint(point));
+      });
+      elements.historyChart.appendChild(circle);
+
+      const showDate = points.length <= 6 || index === 0 || index === points.length - 1;
+      if (showDate) {
+        const dateLabel = svgNode("text", {
+          class: "history-date-label",
+          x: x(index),
+          y: height - 18,
+          "text-anchor": index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"
+        });
+        dateLabel.textContent = historyDate(timestamp).replace(/^\d{4}\//, "");
+        elements.historyChart.appendChild(dateLabel);
+      }
+    });
+    showHistoryPoint(points[points.length - 1]);
+  }
+
+  function renderHistoryTrend(data) {
+    historyTrendData = data?.status === "READY" ? data : { motions: [] };
+    renderHistoryMotion(selectedHistoryMotion);
+  }
+
+  function renderProgressHighlights(motions) {
+    const container = elements.progressHighlights;
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const comparable = (Array.isArray(motions) ? motions : [])
+      .map((motion) => {
+        const progress = motion?.progress || {};
+        const change = number(progress.change);
+
+        return { motion, progress, change };
+      })
+      .filter(({ progress, change }) => (
+        progress.status === "READY"
+        && progress.comparison_status === "COMPARABLE"
+        && change !== null
+        && progress.direction
+        && progress.direction !== "NOT_INTERPRETED"
+      ));
+
+    if (!comparable.length) {
+      container.hidden = true;
+      return;
+    }
+
+    const improved = comparable
+      .filter(({ change }) => change > 0)
+      .sort((a, b) => b.change - a.change);
+
+    const declined = comparable
+      .filter(({ change }) => change < 0)
+      .sort((a, b) => a.change - b.change);
+
+    const unchanged = comparable
+      .filter(({ change }) => change === 0);
+
+    const displayEntries = [];
+
+    improved.forEach((entry, index) => {
+      displayEntries.push({
+        ...entry,
+        label: index === 0 ? "本輪最大進步" : "持續進步",
+        tone: "improved"
+      });
+    });
+
+    declined.forEach((entry, index) => {
+      displayEntries.push({
+        ...entry,
+        label: index === 0 ? "優先改善" : "持續關注",
+        tone: "declined"
+      });
+    });
+
+    unchanged.forEach((entry) => {
+      displayEntries.push({
+        ...entry,
+        label: "維持穩定",
+        tone: "unchanged"
+      });
+    });
+
+    displayEntries.forEach(({ motion, change, label, tone }) => {
+      const card = document.createElement("article");
+      card.className = `progress-highlight ${tone}`;
+
+      const eyebrow = document.createElement("small");
+      eyebrow.textContent = label;
+
+      const row = document.createElement("div");
+      row.className = "progress-highlight-row";
+
+      const title = document.createElement("strong");
+      title.textContent =
+        motion.label
+        || motionLabels[motion.motion_type]
+        || motion.motion_type
+        || "動作";
+
+      const value = document.createElement("span");
+      value.textContent =
+        `${change > 0 ? "+" : ""}${scoreText(change)}`;
+
+      row.append(title, value);
+      card.append(eyebrow, row);
+      container.appendChild(card);
+    });
+
+    container.hidden = false;
+  }
+
   function renderCoach(aiSummary) {
     const ready = aiSummary?.status === "READY";
     elements.headline.textContent = ready ? aiSummary.headline : "完成步法、發球與高遠球後，即可產生完整摘要。";
@@ -495,12 +732,17 @@ async function load() {
   elements.content.hidden = true;
 
   try {
-    const data = await requestSummary();
+    const [data, historyTrend] = await Promise.all([
+      requestSummary(),
+      requestHistoryTrend().catch(() => null)
+    ]);
 
     renderComparison(data.competency_axes || {});
     renderMotions(data.motions);
+    renderProgressHighlights(data.motions);
     renderCoach(data.ai_summary);
     renderContext(data.player_context);
+    renderHistoryTrend(historyTrend);
 
     elements.userReference.textContent = `PLAYER / ${userId}`;
     elements.loading.hidden = true;
@@ -513,6 +755,12 @@ async function load() {
 }
 
 elements.retry.addEventListener("click", load);
+
+document.querySelectorAll("[data-history-motion]").forEach((button) => {
+  button.addEventListener("click", () => {
+    renderHistoryMotion(button.dataset.historyMotion);
+  });
+});
 
 window.addEventListener("resize", () => {
   requestAnimationFrame(drawRadar);

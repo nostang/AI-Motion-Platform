@@ -210,7 +210,16 @@
       onUpdate?.(assessment);
       if (isComplete(assessment)) return assessment;
       if (isFailed(assessment)) {
-        throw new Error(assessment?.error_message || assessment?.message || "動作分析失敗");
+        const failure = assessment?.failure ?? assessment?.data?.failure;
+        const error = new Error(
+          failure?.message
+          || assessment?.error_message
+          || assessment?.message
+          || "動作分析失敗"
+        );
+        error.code = failure?.code || "ANALYSIS_FAILED";
+        error.retryable = failure?.retryable === true;
+        throw error;
       }
       await new Promise((resolve) => setTimeout(resolve, config.POLL_INTERVAL_MS));
     }
@@ -221,6 +230,18 @@
   async function getReport(assessmentId) {
     return request(
       `/motion-assessments/${encodeURIComponent(assessmentId)}/report`
+    );
+  }
+
+  async function getVisualization(assessmentId) {
+    return request(
+      `/motion-assessments/${encodeURIComponent(assessmentId)}/visualization`
+    );
+  }
+
+  async function getCoachV2(assessmentId) {
+    return request(
+      `/motion-assessments/${encodeURIComponent(assessmentId)}/coach-v2`
     );
   }
 
@@ -243,6 +264,8 @@
   });
   window.motionAPI = Object.freeze({
     getReport,
+    getVisualization,
+    getCoachV2,
     getEngineerDebug
   });
 })();

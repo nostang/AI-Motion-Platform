@@ -15,6 +15,8 @@ from google.cloud import storage
 
 
 DEFAULT_BUCKET = "your-private-video-bucket"
+VIDEO_UPLOAD_BUCKET_ENV = "VIDEO_UPLOAD_BUCKET"
+UPLOAD_OBJECT_PREFIX = "uploads"
 ALLOWED_CONTENT_TYPES = frozenset({
     "video/mp4",
     "video/quicktime",
@@ -51,7 +53,7 @@ class StorageUploadService:
     ):
         self.bucket_name = (
             bucket_name
-            or os.environ.get("VIDEO_UPLOAD_BUCKET")
+            or os.environ.get(VIDEO_UPLOAD_BUCKET_ENV)
             or DEFAULT_BUCKET
         )
         self.service_account_email = (
@@ -75,7 +77,7 @@ class StorageUploadService:
             suffix = expected_suffix
 
         object_name = (
-            f"uploads/{uuid4().hex}/source{suffix}"
+            f"{UPLOAD_OBJECT_PREFIX}/{uuid4().hex}/source{suffix}"
         )
 
         source_credentials, _ = google.auth.default()
@@ -118,7 +120,7 @@ class StorageUploadService:
         path = PurePosixPath(value)
 
         if (
-            not value.startswith("uploads/")
+            not value.startswith(f"{UPLOAD_OBJECT_PREFIX}/")
             or ".." in path.parts
             or path.suffix.lower() not in {".mp4", ".mov"}
         ):

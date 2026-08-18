@@ -441,6 +441,28 @@ class MotionAnnotationApiTests(unittest.TestCase):
             openapi["paths"],
         )
 
+    def test_status_exposes_additive_input_validation_failure(self) -> None:
+        self.create_task(status="failed")
+        self.repository.tasks["ma_test"].update({
+            "current_stage": "input_validation",
+            "error_message": (
+                "未偵測到可分析的人體動作，請重新錄製或上傳。"
+            ),
+        })
+
+        response = self.client.get(
+            "/api/v1/motion-assessments/ma_test"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        failure = response.json()["data"]["failure"]
+        self.assertEqual(
+            failure["code"],
+            "INPUT_VALIDATION_FAILED",
+        )
+        self.assertTrue(failure["retryable"])
+        self.assertIn("重新錄製", failure["message"])
+
 
 if __name__ == "__main__":
     unittest.main()

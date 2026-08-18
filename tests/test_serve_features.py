@@ -263,5 +263,40 @@ class ServeFeatureTests(unittest.TestCase):
             "left",
         )
 
+    def test_visualization_frame_mapping_does_not_change_features(self) -> None:
+        baseline = ServeFeatureTracker()
+        mapped = ServeFeatureTracker()
+
+        for index, (x, y) in enumerate(serve_motion()):
+            pose = landmarks(x, y)
+            baseline.observe(pose, index * 33)
+            mapped.observe(
+                pose,
+                index * 33,
+                analysis_frame_index=index,
+                source_frame_index=index + 120,
+            )
+
+        self.assertEqual(mapped.build(), baseline.build())
+        self.assertEqual(mapped.samples[0]["analysis_frame_index"], 0)
+        self.assertEqual(mapped.samples[0]["source_frame_index"], 120)
+        for name in (
+            "nose",
+            "left_shoulder",
+            "right_shoulder",
+            "left_elbow",
+            "right_elbow",
+            "left_wrist",
+            "right_wrist",
+            "left_hip",
+            "right_hip",
+            "left_knee",
+            "right_knee",
+            "left_ankle",
+            "right_ankle",
+        ):
+            self.assertIn(f"{name}_x", mapped.samples[0])
+            self.assertIn(f"{name}_y", mapped.samples[0])
+
 if __name__ == "__main__":
     unittest.main()

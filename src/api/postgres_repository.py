@@ -303,7 +303,11 @@ class PostgresVideoAnalysisRepository:
             ),
             "failure": (
                 {
-                    "code": "ANALYSIS_FAILED",
+                    "code": (
+                        "INPUT_VALIDATION_FAILED"
+                        if row["current_stage"] == "input_validation"
+                        else "ANALYSIS_FAILED"
+                    ),
                     "message": row["error_message"],
                     "retryable": True,
                 }

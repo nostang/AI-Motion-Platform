@@ -35,6 +35,11 @@ videos/
 # Zip Backup
 # ========================================
 *.zip
+*.bak
+
+# Local visual review assets (not part of a release)
+/球拍1.png
+/球拍2.png
 
 # ========================================
 # Logs

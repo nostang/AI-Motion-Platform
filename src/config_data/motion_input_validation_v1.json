@@ -1,0 +1,56 @@
+{
+  "validation_version": "motion-input-validation-v1",
+  "status": "PROVISIONAL",
+  "description": "Conservative pre-scoring checks for reusable MediaPipe Pose observations. This is not a motion classifier or scoring calibration.",
+  "landmark_confidence": 0.45,
+  "coordinate_margin": 0.05,
+  "minimum_reliable_pose_frames": 3,
+  "invalid_below_pose_detection_ratio": 0.1,
+  "profiles": {
+    "clear": {
+      "minimum_pose_detection_ratio": 0.5,
+      "minimum_body_completeness_ratio": 0.55,
+      "minimum_upper_body_completeness_ratio": 0.7,
+      "minimum_lower_body_completeness_ratio": 0.0,
+      "minimum_motion_activity": 0.02,
+      "motion_landmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip"
+      ]
+    },
+    "serve": {
+      "minimum_pose_detection_ratio": 0.55,
+      "minimum_body_completeness_ratio": 0.55,
+      "minimum_upper_body_completeness_ratio": 0.7,
+      "minimum_lower_body_completeness_ratio": 0.0,
+      "minimum_motion_activity": 0.018,
+      "motion_landmarks": [
+        "left_shoulder",
+        "right_shoulder",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip"
+      ]
+    },
+    "footwork": {
+      "minimum_pose_detection_ratio": 0.6,
+      "minimum_body_completeness_ratio": 0.65,
+      "minimum_upper_body_completeness_ratio": 0.35,
+      "minimum_lower_body_completeness_ratio": 0.75,
+      "minimum_motion_activity": 0.015,
+      "motion_landmarks": [
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle"
+      ]
+    }
+  }
+}

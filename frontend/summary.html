@@ -59,13 +59,38 @@
         <div id="motionCards" class="motion-grid"></div>
       </section>
 
+      <section class="panel history-trend-panel" aria-labelledby="historyTrendTitle">
+        <div class="section-heading history-trend-heading">
+          <span class="step">03</span>
+          <div><small>HISTORY TREND</small><h2 id="historyTrendTitle">歷史趨勢</h2></div>
+        </div>
+        <div class="history-trend-tabs" role="tablist" aria-label="選擇動作分數趨勢">
+          <button type="button" role="tab" data-history-motion="footwork" aria-selected="true">步法</button>
+          <button type="button" role="tab" data-history-motion="serve" aria-selected="false">發球</button>
+          <button type="button" role="tab" data-history-motion="clear" aria-selected="false">高遠球</button>
+        </div>
+        <div class="history-trend-chart-wrap" id="historyTrendChartWrap">
+          <svg id="historyTrendChart" viewBox="0 0 760 300" role="img" aria-label="多次測驗 overall score 折線圖"></svg>
+          <p id="historyTrendDetail" class="history-trend-detail" role="status"></p>
+        </div>
+        <p id="historyTrendEmpty" class="history-trend-empty" hidden>完成更多測驗後，這裡會顯示分數趨勢。</p>
+      </section>
+
       <section class="panel coach-panel">
         <div class="section-heading">
-          <span class="step">03</span>
+          <span class="step">04</span>
           <div><small>AI COACH</small><h2>本次摘要</h2></div>
         </div>
         <p id="aiHeadline" class="coach-headline"></p>
         <p id="progressSummary" class="progress-summary"></p>
+
+        <div
+          id="progressHighlights"
+          class="progress-highlights"
+          aria-label="本輪變化重點"
+          hidden
+        ></div>
+
     <p class="player-context-line" id="racketContext" hidden>
       <span>EXPERIMENTAL</span>
       <strong id="racketHand"></strong>

@@ -7,11 +7,182 @@ from pathlib import Path
 import json
 
 from src.config import MODEL_PATH
+from src.api.explainable_pose import (
+    sanitize_explainable_pose,
+    sanitize_motion_sequence,
+)
+from src.api.footwork_reach_grid import sanitize_footwork_reach_grid
+from src.api.keyframe_storage import KeyframeStorageService
 from src.motion import MotionContext, get_motion_analyzer
+from src.visualization.clear_keyframes import extract_clear_keyframes
+from src.visualization.clear_motion_sequence_keyframes import (
+    extract_clear_motion_sequence_keyframes,
+    extract_serve_motion_sequence_keyframes,
+)
+from src.visualization.footwork_reach_grid_keyframes import (
+    extract_footwork_reach_grid_keyframes,
+)
+from src.validator.motion_input_validation import (
+    MotionInputValidationRejected,
+)
 
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _persist_clear_keyframes(
+    assessment_id: str,
+    video_path: Path,
+    output_dir: Path,
+) -> dict | None:
+    visualization_path = output_dir / "clear_pose_visualization.json"
+    sequence_path = output_dir / "clear_motion_sequence.json"
+    if not visualization_path.is_file() and not sequence_path.is_file():
+        return None
+
+    storage = KeyframeStorageService()
+    durable: dict[str, dict] = {}
+
+    if visualization_path.is_file():
+        try:
+            visualization = json.loads(
+                visualization_path.read_text(encoding="utf-8")
+            )
+            keyframe_dir = output_dir / "keyframes"
+            manifest = extract_clear_keyframes(
+                video_path,
+                visualization,
+                keyframe_dir,
+            )
+            manifest["visualization"] = sanitize_explainable_pose(
+                visualization,
+                "clear",
+            )
+            durable["keyframes"] = storage.persist(
+                assessment_id,
+                keyframe_dir,
+                manifest,
+            )
+            print(
+                "[KEYFRAME_V1]",
+                assessment_id,
+                durable["keyframes"].get("status"),
+                durable["keyframes"].get("performance_ms") or {},
+            )
+        except Exception as exc:
+            print("[KEYFRAME_V1_NOT_READY]", assessment_id, type(exc).__name__)
+
+    if sequence_path.is_file():
+        try:
+            sequence = json.loads(sequence_path.read_text(encoding="utf-8"))
+            sequence_dir = output_dir / "motion_sequence"
+            manifest = extract_clear_motion_sequence_keyframes(
+                video_path,
+                sequence,
+                sequence_dir,
+            )
+            manifest["sequence"] = sanitize_motion_sequence(
+                sequence,
+                "clear",
+            )
+            durable["sequence"] = storage.persist_sequence(
+                assessment_id,
+                sequence_dir,
+                manifest,
+            )
+            print(
+                "[MOTION_SEQUENCE_V1_1]",
+                assessment_id,
+                durable["sequence"].get("status"),
+                durable["sequence"].get("performance_ms") or {},
+            )
+        except Exception as exc:
+            print(
+                "[MOTION_SEQUENCE_V1_1_NOT_READY]",
+                assessment_id,
+                type(exc).__name__,
+            )
+
+    return durable or None
+
+
+def _persist_serve_motion_sequence(
+    assessment_id: str,
+    video_path: Path,
+    output_dir: Path,
+) -> dict | None:
+    sequence_path = output_dir / "serve_motion_sequence.json"
+    if not sequence_path.is_file():
+        return None
+
+    try:
+        sequence = json.loads(sequence_path.read_text(encoding="utf-8"))
+        sequence_dir = output_dir / "motion_sequence"
+        manifest = extract_serve_motion_sequence_keyframes(
+            video_path,
+            sequence,
+            sequence_dir,
+        )
+        manifest["sequence"] = sanitize_motion_sequence(sequence, "serve")
+        durable = KeyframeStorageService().persist_sequence(
+            assessment_id,
+            sequence_dir,
+            manifest,
+        )
+        print(
+            "[SERVE_MOTION_SEQUENCE_V1_1]",
+            assessment_id,
+            durable.get("status"),
+            durable.get("performance_ms") or {},
+        )
+        return durable
+    except Exception as exc:
+        print(
+            "[SERVE_MOTION_SEQUENCE_V1_1_NOT_READY]",
+            assessment_id,
+            type(exc).__name__,
+        )
+        return None
+
+
+def _persist_footwork_reach_grid(
+    assessment_id: str,
+    video_path: Path,
+    output_dir: Path,
+) -> dict | None:
+    grid_path = output_dir / "footwork_reach_grid.json"
+    if not grid_path.is_file():
+        return None
+
+    try:
+        grid = json.loads(grid_path.read_text(encoding="utf-8"))
+        keyframe_dir = output_dir / "reach_grid"
+        manifest = extract_footwork_reach_grid_keyframes(
+            video_path,
+            grid,
+            keyframe_dir,
+        )
+        manifest["reach_grid"] = sanitize_footwork_reach_grid(grid)
+        durable = KeyframeStorageService().persist_reach_grid(
+            assessment_id,
+            keyframe_dir,
+            manifest,
+        )
+        print(
+            "[FOOTWORK_REACH_GRID_V1]",
+            assessment_id,
+            durable.get("status"),
+            durable.get("performance_ms") or {},
+        )
+        return durable
+    except Exception as exc:
+        print(
+            "[FOOTWORK_REACH_GRID_V1_NOT_READY]",
+            assessment_id,
+            type(exc).__name__,
+        )
+        return None
 
 
 class MotionAssessmentService:
@@ -112,6 +283,52 @@ class MotionAssessmentService:
             result = analyzer.run(context)
             report = result["analysis_report"]
 
+            if assessment_type == "clear":
+                try:
+                    _persist_clear_keyframes(
+                        assessment_id,
+                        context.video_path,
+                        output_dir,
+                    )
+                except Exception as exc:
+                    # Presentation artifacts are fail-soft. A keyframe issue
+                    # must never change assessment, scoring, or report status.
+                    print(
+                        "[KEYFRAME_V1_NOT_READY]",
+                        assessment_id,
+                        type(exc).__name__,
+                    )
+
+            if assessment_type == "serve":
+                try:
+                    _persist_serve_motion_sequence(
+                        assessment_id,
+                        context.video_path,
+                        output_dir,
+                    )
+                except Exception as exc:
+                    # Serve sequence is presentation-only and fail-soft.
+                    print(
+                        "[SERVE_MOTION_SEQUENCE_V1_1_NOT_READY]",
+                        assessment_id,
+                        type(exc).__name__,
+                    )
+
+            if assessment_type == "footwork":
+                try:
+                    _persist_footwork_reach_grid(
+                        assessment_id,
+                        context.video_path,
+                        output_dir,
+                    )
+                except Exception as exc:
+                    # Reach Grid is presentation-only and fail-soft.
+                    print(
+                        "[FOOTWORK_REACH_GRID_V1_NOT_READY]",
+                        assessment_id,
+                        type(exc).__name__,
+                    )
+
             if use_annotation:
                 report_meta = report.setdefault(
                     "meta",
@@ -155,6 +372,16 @@ class MotionAssessmentService:
                 "source video retained for annotation",
             )
 
+        except MotionInputValidationRejected as exc:
+            self.repository.update_status(
+                assessment_id,
+                processing_status="failed",
+                progress=100,
+                current_stage="input_validation",
+                updated_at=utc_now(),
+                completed_at=utc_now(),
+                error_message=str(exc),
+            )
         except Exception as exc:
             self.repository.update_status(
                 assessment_id,

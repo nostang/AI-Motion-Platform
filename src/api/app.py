@@ -15,12 +15,28 @@ from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.api.dashboard_service import build_user_dashboard
 from src.api.engineer_debug import build_engineer_debug
+from src.api.explainable_pose import (
+    add_motion_sequence_references,
+    add_keyframe_references,
+    explainable_pose_state,
+    load_explainable_pose,
+    load_motion_sequence,
+    sanitize_explainable_pose,
+    sanitize_motion_sequence,
+)
+from src.api.keyframe_storage import KeyframeStorageService
+from src.api.history_trend import build_history_trend
+from src.api.footwork_reach_grid import (
+    add_footwork_reach_grid_references,
+    load_footwork_reach_grid,
+    sanitize_footwork_reach_grid,
+)
 from src.api.postgres_repository import PostgresVideoAnalysisRepository
 from src.api.service import MotionAssessmentService
 from src.api.storage_upload import StorageUploadService
@@ -29,6 +45,7 @@ from src.api.video_normalization import (
     normalize_for_analysis,
 )
 from src.coach.ai_coach_engine import AICoachEngine
+from src.coach.ai_coach_v2 import build_ai_coach_v2
 from src.training.training_planner import AITrainingPlanner
 from src.progress.progress_engine import ProgressEngine
 from src.competency.competency_engine import CompetencyEngine
@@ -1153,6 +1170,21 @@ def get_motion_assessment(
         )
     }
 
+    if (
+        task.get("current_stage") == "input_validation"
+        and task.get("status") == "failed"
+    ):
+        existing_failure = task.get("failure") or {}
+        data["failure"] = {
+            "code": "INPUT_VALIDATION_FAILED",
+            "message": (
+                existing_failure.get("message")
+                or task.get("error_message")
+                or "未偵測到可分析的人體動作，請重新錄製或上傳。"
+            ),
+            "retryable": True,
+        }
+
     if task["status"] == "completed":
         data["report_url"] = (
             f"{API_PREFIX}/motion-assessments/"
@@ -1224,6 +1256,389 @@ def get_motion_assessment_report(
     )
 
     return envelope(report)
+
+
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/coach-v2"
+)
+def get_motion_assessment_coach_v2(
+    assessment_id: str,
+):
+    """Return additive coaching presentation without changing Report JSON."""
+
+    task = repository.get_analysis(assessment_id)
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+    if task.get("status") != "completed":
+        return failure(
+            409,
+            "COACH_V2_NOT_READY",
+            "分析尚未完成，暫時無法取得教練建議。",
+            {
+                "assessment_id": assessment_id,
+                "status": task.get("status"),
+            },
+        )
+
+    motion_type = str(task.get("assessment_type") or "").strip().lower()
+    if motion_type not in {"footwork", "serve", "clear"}:
+        return failure(
+            422,
+            "COACH_V2_UNSUPPORTED_MOTION",
+            "此動作尚未支援 AI Coach V2。",
+            {"assessment_type": motion_type},
+        )
+
+    report = repository.get_report(
+        assessment_id,
+        analysis_type=motion_type,
+    )
+    if report is None:
+        return failure(
+            500,
+            "ANALYSIS_FAILED",
+            "分析完成但找不到 Report JSON。",
+            {
+                "assessment_id": assessment_id,
+                "assessment_type": motion_type,
+            },
+        )
+
+    user_id = task.get("user_id")
+    history = (
+        repository.get_motion_history(user_id, motion_type)
+        if isinstance(user_id, int)
+        else []
+    )
+    trend = build_history_trend(
+        user_id if isinstance(user_id, int) else 0,
+        {motion_type: history},
+    )
+    history_series = next(
+        (
+            item
+            for item in trend["motions"]
+            if item.get("motion_type") == motion_type
+        ),
+        None,
+    )
+    coach = build_ai_coach_v2(report, history_series)
+    coach["assessment_id"] = assessment_id
+    if isinstance(user_id, int):
+        coach["user_id"] = user_id
+    return envelope(coach)
+
+
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/visualization"
+)
+def get_motion_assessment_visualization(
+    assessment_id: str,
+):
+    """Return task-scoped display data without changing the report contract."""
+
+    task = repository.get_analysis(assessment_id)
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+
+    motion_type = task.get("assessment_type")
+    if motion_type not in {"clear", "serve", "footwork"}:
+        return envelope(
+            explainable_pose_state(
+                motion_type,
+                status="NOT_AVAILABLE",
+                reason="UNSUPPORTED_MOTION",
+            )
+        )
+
+    if task.get("status") != "completed":
+        return envelope(
+            explainable_pose_state(
+                motion_type,
+                status="NOT_READY",
+                reason="ANALYSIS_NOT_READY",
+            )
+        )
+
+    if motion_type == "footwork":
+        reach_grid_manifest = None
+        try:
+            reach_grid_manifest = (
+                KeyframeStorageService().load_reach_grid_manifest(
+                    assessment_id
+                )
+            )
+        except Exception:
+            reach_grid_manifest = None
+        reach_grid = load_footwork_reach_grid(
+            repository.task_dir(assessment_id)
+        )
+        if reach_grid.get("status") not in {"READY", "PARTIAL"} and isinstance(
+            reach_grid_manifest,
+            Mapping,
+        ):
+            reach_grid = sanitize_footwork_reach_grid(
+                reach_grid_manifest.get("reach_grid")
+            )
+        visualization = explainable_pose_state(
+            motion_type,
+            status="NOT_AVAILABLE",
+            reason="UNSUPPORTED_MOTION",
+        )
+        visualization["reach_grid"] = add_footwork_reach_grid_references(
+            reach_grid,
+            assessment_id,
+            reach_grid_manifest,
+        )
+        return envelope(visualization)
+
+    manifest = None
+    sequence_manifest = None
+    try:
+        storage_service = KeyframeStorageService()
+        manifest = storage_service.load_manifest(assessment_id)
+    except Exception:
+        # Durable presentation retrieval is fail-soft; preserve local V0.
+        manifest = None
+    try:
+        sequence_manifest = storage_service.load_sequence_manifest(
+            assessment_id
+        )
+    except Exception:
+        sequence_manifest = None
+    visualization = load_explainable_pose(
+        repository.task_dir(assessment_id),
+        motion_type,
+    )
+    if visualization.get("status") != "READY" and isinstance(manifest, Mapping):
+        visualization = sanitize_explainable_pose(
+            manifest.get("visualization"),
+            motion_type,
+        )
+    sequence = load_motion_sequence(
+        repository.task_dir(assessment_id),
+        motion_type,
+    )
+    if sequence.get("status") != "READY" and isinstance(
+        sequence_manifest,
+        Mapping,
+    ):
+        sequence = sanitize_motion_sequence(
+            sequence_manifest.get("sequence"),
+            motion_type,
+        )
+    visualization["sequence"] = add_motion_sequence_references(
+        sequence,
+        assessment_id,
+        sequence_manifest,
+    )
+    return envelope(
+        add_keyframe_references(
+            visualization,
+            assessment_id,
+            manifest,
+        )
+    )
+
+
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/visualization/sequence/{index}"
+)
+def get_motion_assessment_visualization_sequence_frame(
+    assessment_id: str,
+    index: int,
+):
+    task = repository.get_analysis(assessment_id)
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+    if task.get("assessment_type") not in {"clear", "serve"}:
+        return failure(404, "SEQUENCE_NOT_AVAILABLE", "這次分析沒有動作序列。")
+    if task.get("status") != "completed":
+        return failure(404, "SEQUENCE_NOT_READY", "本次暫無可用的動作序列。")
+    if not 1 <= index <= 6:
+        return failure(404, "SEQUENCE_FRAME_NOT_FOUND", "找不到指定的動作序列畫面。")
+
+    storage_service = KeyframeStorageService()
+    try:
+        manifest = storage_service.load_sequence_manifest(assessment_id)
+        entries = manifest.get("frames") if isinstance(manifest, Mapping) else []
+        entry = next(
+            (
+                item
+                for item in entries
+                if isinstance(item, Mapping)
+                and item.get("index") == index
+                and item.get("status") == "READY"
+                and item.get("storage_status") == "READY"
+            ),
+            None,
+        )
+        if entry is None:
+            raise FileNotFoundError(index)
+        image = storage_service.download_sequence_frame(assessment_id, index)
+    except Exception:
+        return failure(404, "SEQUENCE_FRAME_NOT_READY", "本張動作序列畫面暫無法取得。")
+
+    return Response(
+        content=image,
+        media_type="image/jpeg",
+        headers={
+            "Cache-Control": "private, max-age=300",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/visualization/reach-grid/{cell_key}"
+)
+def get_motion_assessment_visualization_reach_grid_frame(
+    assessment_id: str,
+    cell_key: str,
+):
+    task = repository.get_analysis(assessment_id)
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+    if task.get("assessment_type") != "footwork":
+        return failure(404, "REACH_GRID_NOT_AVAILABLE", "這次分析沒有移動觸及圖。")
+    if task.get("status") != "completed":
+        return failure(404, "REACH_GRID_NOT_READY", "本次暫無可用的移動觸及圖。")
+
+    storage_service = KeyframeStorageService()
+    try:
+        normalized_key = storage_service._reach_grid_key(cell_key)
+        manifest = storage_service.load_reach_grid_manifest(assessment_id)
+        entries = manifest.get("cells") if isinstance(manifest, Mapping) else []
+        entry = next(
+            (
+                item
+                for item in entries
+                if isinstance(item, Mapping)
+                and item.get("key") == normalized_key
+                and item.get("status") == "READY"
+                and item.get("storage_status") == "READY"
+            ),
+            None,
+        )
+        if entry is None:
+            raise FileNotFoundError(normalized_key)
+        image = storage_service.download_reach_grid_frame(
+            assessment_id,
+            normalized_key,
+        )
+    except Exception:
+        return failure(404, "REACH_GRID_FRAME_NOT_READY", "本格移動畫面暫無法取得。")
+
+    return Response(
+        content=image,
+        media_type="image/jpeg",
+        headers={
+            "Cache-Control": "private, max-age=300",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@app.get(
+    f"{API_PREFIX}/motion-assessments/"
+    "{assessment_id}/visualization/keyframes/{stage}"
+)
+def get_motion_assessment_visualization_keyframe(
+    assessment_id: str,
+    stage: str,
+):
+    task = repository.get_analysis(assessment_id)
+    if task is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": assessment_id},
+        )
+    if task.get("assessment_type") != "clear":
+        return failure(
+            404,
+            "KEYFRAME_NOT_AVAILABLE",
+            "這次分析沒有關鍵影格。",
+        )
+    if task.get("status") != "completed":
+        return failure(
+            404,
+            "KEYFRAME_NOT_READY",
+            "本次暫無可用的關鍵影格。",
+        )
+    if stage not in {"preparation", "swing", "finish"}:
+        return failure(
+            404,
+            "KEYFRAME_NOT_FOUND",
+            "找不到指定的關鍵影格。",
+        )
+
+    storage_service = KeyframeStorageService()
+    try:
+        manifest = storage_service.load_manifest(assessment_id)
+        entries = (
+            manifest.get("keyframes")
+            if isinstance(manifest, Mapping)
+            else []
+        )
+        entry = next(
+            (
+                item
+                for item in entries
+                if isinstance(item, Mapping)
+                and item.get("stage") == stage
+                and item.get("status") == "READY"
+                and item.get("storage_status") == "READY"
+            ),
+            None,
+        )
+        if entry is None:
+            raise FileNotFoundError(stage)
+        image = storage_service.download_keyframe(
+            assessment_id,
+            stage,
+        )
+    except Exception:
+        # Retrieval failures are presentation-only and must stay fail-soft.
+        return failure(
+            404,
+            "KEYFRAME_NOT_READY",
+            "本次暫無可用的關鍵影格。",
+        )
+
+    return Response(
+        content=image,
+        media_type="image/jpeg",
+        headers={
+            "Cache-Control": "private, max-age=300",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 @app.get(
@@ -1459,6 +1874,41 @@ def get_user_summary(
         }
 
     return envelope(summary)
+
+
+@app.get(
+    f"{API_PREFIX}/users/{{user_id}}/history-trend"
+)
+def get_user_history_trend(
+    user_id: int,
+):
+    """Return additive, overall-score-only history for Summary presentation."""
+
+    if not repository.user_exists(user_id):
+        return failure(
+            404,
+            "USER_NOT_FOUND",
+            "找不到指定的使用者。",
+            {"user_id": user_id},
+        )
+
+    histories = {
+        motion_type: repository.get_motion_history(
+            user_id,
+            motion_type,
+        )
+        for motion_type in (
+            "footwork",
+            "serve",
+            "clear",
+        )
+    }
+    return envelope(
+        build_history_trend(
+            user_id,
+            histories,
+        )
+    )
 
 
 @app.get(

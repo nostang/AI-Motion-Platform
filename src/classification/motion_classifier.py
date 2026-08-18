@@ -13,6 +13,9 @@ from enum import Enum
 from math import atan2, degrees, hypot
 
 
+DEFAULT_LEFT_BACK_BOUNDARY_DEGREES = -157.5
+
+
 class MotionDirection(str, Enum):
     FRONT = "FRONT"
     RIGHT_FRONT = "RIGHT_FRONT"
@@ -50,6 +53,9 @@ class MotionClassifier:
         y_scale: float,
         min_vector_length: float,
         min_confidence: float,
+        left_back_boundary_degrees: float = (
+            DEFAULT_LEFT_BACK_BOUNDARY_DEGREES
+        ),
     ) -> None:
         if x_scale <= 0 or y_scale <= 0:
             raise ValueError("x_scale 與 y_scale 必須大於 0。")
@@ -57,12 +63,17 @@ class MotionClassifier:
             raise ValueError("min_vector_length 不可小於 0。")
         if not 0 <= min_confidence <= 1:
             raise ValueError("min_confidence 必須介於 0 與 1。")
+        if not -180.0 < left_back_boundary_degrees < -112.5:
+            raise ValueError(
+                "left_back_boundary_degrees 必須位於 -180 與 -112.5 之間。"
+            )
 
         self.mirror_x = mirror_x
         self.x_scale = x_scale
         self.y_scale = y_scale
         self.min_vector_length = min_vector_length
         self.min_confidence = min_confidence
+        self.left_back_boundary_degrees = left_back_boundary_degrees
 
     def classify(
         self,
@@ -99,6 +110,7 @@ class MotionClassifier:
         confidence = self._calculate_confidence(
             angle=angle,
             vector_length=vector_length,
+            direction=raw_direction,
         )
 
         # 有效位移應保留最佳方向候選。
@@ -125,6 +137,7 @@ class MotionClassifier:
         *,
         angle: float,
         vector_length: float,
+        direction: MotionDirection,
     ) -> float:
         """
         以角度接近分類中心的程度與向量長度估算信心值。
@@ -132,11 +145,18 @@ class MotionClassifier:
         這是可解釋的工程信心值，不是模型機率。
         """
 
-        sector_centers = (0, 45, 90, 135, 180, -135, -90, -45)
-        angular_error = min(
-            abs(((angle - center + 180) % 360) - 180)
-            for center in sector_centers
-        )
+        sector_centers = {
+            MotionDirection.RIGHT: 0,
+            MotionDirection.RIGHT_FRONT: 45,
+            MotionDirection.FRONT: 90,
+            MotionDirection.LEFT_FRONT: 135,
+            MotionDirection.LEFT: 180,
+            MotionDirection.LEFT_BACK: -135,
+            MotionDirection.BACK: -90,
+            MotionDirection.RIGHT_BACK: -45,
+        }
+        center = sector_centers[direction]
+        angular_error = abs(((angle - center + 180) % 360) - 180)
         angle_confidence = max(0.0, 1.0 - angular_error / 22.5)
 
         strong_vector_length = max(self.min_vector_length * 3.0, 0.12)
@@ -154,8 +174,7 @@ class MotionClassifier:
             4,
         )
 
-    @staticmethod
-    def _direction_from_angle(angle: float) -> MotionDirection:
+    def _direction_from_angle(self, angle: float) -> MotionDirection:
         if -22.5 <= angle < 22.5:
             return MotionDirection.RIGHT
         if 22.5 <= angle < 67.5:
@@ -164,9 +183,9 @@ class MotionClassifier:
             return MotionDirection.FRONT
         if 112.5 <= angle < 157.5:
             return MotionDirection.LEFT_FRONT
-        if angle >= 157.5 or angle < -157.5:
+        if angle >= 157.5 or angle < self.left_back_boundary_degrees:
             return MotionDirection.LEFT
-        if -157.5 <= angle < -112.5:
+        if self.left_back_boundary_degrees <= angle < -112.5:
             return MotionDirection.LEFT_BACK
         if -112.5 <= angle < -67.5:
             return MotionDirection.BACK
