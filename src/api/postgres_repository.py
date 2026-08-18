@@ -480,8 +480,9 @@ class PostgresVideoAnalysisRepository:
     ) -> list[dict[str, Any]]:
         """取得同一使用者、同一 Motion 的完整已完成 Assessment History。
 
-        Progress Engine 只需要永久保存的數值證據與版本資訊，
-        不需要讀取完整 Report JSON 或 AI Coach 文字。
+        Progress Engine V2 需要永久保存的總分、版本資訊，
+        以及 Report JSON 中的 dimension score evidence。
+        不需要讀取 AI Coach 文字。
         """
 
         normalized_type = motion_type.strip().lower()
@@ -493,6 +494,7 @@ class PostgresVideoAnalysisRepository:
                     external_analysis_id,
                     analysis_type,
                     overall_score,
+                    metrics_json,
                     model_version,
                     rule_version,
                     created_at,
@@ -502,6 +504,7 @@ class PostgresVideoAnalysisRepository:
                   AND analysis_type = %s
                   AND processing_status = 'completed'
                   AND overall_score IS NOT NULL
+                  AND metrics_json IS NOT NULL
                 ORDER BY created_at ASC, analysis_id ASC
                 """,
                 (user_id, normalized_type),
@@ -514,6 +517,7 @@ class PostgresVideoAnalysisRepository:
                 "motion_type": row["analysis_type"],
                 "assessment_type": row["analysis_type"],
                 "overall_score": float(row["overall_score"]),
+                "report": dict(row["metrics_json"]),
                 "model_version": row["model_version"],
                 "rule_version": row["rule_version"],
                 "created_at": row["created_at"].isoformat(),
