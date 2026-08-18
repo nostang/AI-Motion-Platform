@@ -66,9 +66,15 @@ class ProgressEngine:
             else:
                 direction = "UNCHANGED"
 
+        dimensions = self._compare_dimensions(
+            current,
+            reference,
+            version_mismatch=version_mismatch,
+        )
+
         return {
             "schema_version": "1.0",
-            "progress_version": "progress-engine-v1.0",
+            "progress_version": "progress-engine-v2.0",
             "status": "READY",
             "comparison_status": comparison_status,
             "comparison_mode": mode,
@@ -77,6 +83,7 @@ class ProgressEngine:
             "reference": self._snapshot(reference),
             "change": change,
             "direction": direction,
+            "dimensions": dimensions,
             "version_mismatch": {
                 "detected": version_mismatch,
                 "current_model_version": current.get("model_version"),
@@ -90,6 +97,154 @@ class ProgressEngine:
                 "When model_version or rule_version differs, the numeric difference is shown but is not interpreted as improvement or decline.",
             ],
         }
+
+    @classmethod
+    def _compare_dimensions(
+        cls,
+        current: Mapping[str, Any],
+        reference: Mapping[str, Any],
+        *,
+        version_mismatch: bool,
+    ) -> dict[str, Any]:
+        current_dimensions = cls._extract_dimensions(
+            current.get("report")
+        )
+        reference_dimensions = cls._extract_dimensions(
+            reference.get("report")
+        )
+
+        dimension_ids = (
+            set(current_dimensions)
+            | set(reference_dimensions)
+        )
+
+        result: dict[str, Any] = {}
+
+        for dimension_id in sorted(dimension_ids):
+            current_item = current_dimensions.get(
+                dimension_id
+            )
+            reference_item = reference_dimensions.get(
+                dimension_id
+            )
+
+            current_score = (
+                current_item.get("score")
+                if current_item
+                else None
+            )
+            reference_score = (
+                reference_item.get("score")
+                if reference_item
+                else None
+            )
+
+            comparable = (
+                current_score is not None
+                and reference_score is not None
+            )
+
+            if not comparable:
+                change = None
+                comparison_status = "NOT_COMPARABLE"
+                direction = "NOT_INTERPRETED"
+            else:
+                change = round(
+                    float(current_score)
+                    - float(reference_score),
+                    3,
+                )
+
+                if version_mismatch:
+                    comparison_status = (
+                        "COMPARISON_VERSION_MISMATCH"
+                    )
+                    direction = "NOT_INTERPRETED"
+                else:
+                    comparison_status = "COMPARABLE"
+
+                    if change > 0:
+                        direction = "IMPROVED"
+                    elif change < 0:
+                        direction = "DECLINED"
+                    else:
+                        direction = "UNCHANGED"
+
+            result[dimension_id] = {
+                "current": current_item,
+                "reference": reference_item,
+                "change": change,
+                "comparison_status": comparison_status,
+                "direction": direction,
+            }
+
+        return result
+
+    @staticmethod
+    def _extract_dimensions(
+        report: Any,
+    ) -> dict[str, dict[str, Any]]:
+        if not isinstance(report, Mapping):
+            return {}
+
+        dimensions: dict[str, dict[str, Any]] = {}
+
+        for section_name in (
+            "skill_score",
+            "assessment_metrics",
+            "score_breakdown",
+        ):
+            section = report.get(section_name)
+
+            if not isinstance(section, Mapping):
+                continue
+
+            for dimension_id, raw_item in section.items():
+                if not isinstance(raw_item, Mapping):
+                    continue
+
+                raw_score = raw_item.get("score")
+
+                score = (
+                    float(raw_score)
+                    if isinstance(raw_score, (int, float))
+                    and not isinstance(raw_score, bool)
+                    else None
+                )
+
+                raw_max_score = raw_item.get("max_score")
+
+                max_score = (
+                    float(raw_max_score)
+                    if isinstance(raw_max_score, (int, float))
+                    and not isinstance(raw_max_score, bool)
+                    else None
+                )
+
+                level = raw_item.get("level")
+
+                normalized_id = str(dimension_id)
+
+                # Earlier sections have higher precedence.
+                #
+                # Footwork's normalized skill_score /
+                # assessment_metrics must not be silently
+                # overwritten by a later generic
+                # score_breakdown compatibility section.
+                if normalized_id in dimensions:
+                    continue
+
+                dimensions[normalized_id] = {
+                    "score": score,
+                    "max_score": max_score,
+                    "level": (
+                        str(level)
+                        if level is not None
+                        else None
+                    ),
+                }
+
+        return dimensions
 
     def _select_reference(
         self,
