@@ -99,6 +99,55 @@ class FootworkReportDimensionContractTests(unittest.TestCase):
             "POOR",
         )
 
+    # ------------------------------------------------------------------
+    # Body Stability V2 report compatibility contract.
+    # Expected to fail against current Report V1 because FAIR is not
+    # currently preserved by _dimension_level().
+    # ------------------------------------------------------------------
+
+    def test_report_preserves_body_stability_fair_level(self) -> None:
+        assessment = assessment_fixture()
+        assessment["body_stability"] = {
+            "metric_id": "AR004",
+            "status": "EVALUATED",
+            "result": "NEEDS_REVIEW",
+            "level": "FAIR",
+            "score": 19.4,
+            "max_score": 25,
+            "weighted_level_points": 2.35,
+            "feature_levels": [],
+        }
+
+        coach = CoachEngine().evaluate(assessment)
+        report = ReportBuilder().build(assessment, coach)
+
+        body = report["skill_score"]["body_stability"]
+
+        self.assertEqual(body["level"], "FAIR")
+        self.assertAlmostEqual(body["score"], 19.4, places=6)
+        self.assertEqual(body["status"], "EVALUATED")
+
+    def test_report_accepts_continuous_body_stability_score(self) -> None:
+        assessment = assessment_fixture()
+        assessment["body_stability"] = {
+            "metric_id": "AR004",
+            "status": "EVALUATED",
+            "result": "PASS",
+            "level": "GOOD",
+            "score": 21.25,
+            "max_score": 25,
+            "weighted_level_points": 2.8125,
+            "feature_levels": [],
+        }
+
+        coach = CoachEngine().evaluate(assessment)
+        report = ReportBuilder().build(assessment, coach)
+
+        body = report["skill_score"]["body_stability"]
+
+        self.assertAlmostEqual(body["score"], 21.25, places=6)
+        self.assertEqual(body["level"], "GOOD")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,8 +1,9 @@
 """AR004 Body Stability Assessment.
 
-This module consumes calibrated Motion Feature levels only. It does not read
-MediaPipe landmarks or recalculate raw angles. V1 evaluates image-plane body
-stability from MF001 shoulder tilt, MF002 hip tilt, and MF003 torso lean.
+This module consumes aggregated Motion Feature measurements and versioned
+calibration thresholds. It does not read MediaPipe landmarks or recalculate
+raw angles. V2 continuously scores image-plane body stability from MF001
+shoulder tilt, MF002 hip tilt, and MF003 torso lean.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from src.calibration import MotionFeatureCalibrationEngine
 
 
 METRIC_ID = "AR004"
-CONFIG_VERSION = "body-stability-v1"
+CONFIG_VERSION = "body-stability-v2"
 REQUIRED_EVENT_COUNT = 6
 
 FEATURE_IDS = (
@@ -28,20 +29,6 @@ FEATURE_WEIGHTS = {
     "MF001_shoulder_tilt": 0.35,
     "MF002_hip_tilt": 0.35,
     "MF003_torso_lean": 0.30,
-}
-
-LEVEL_POINTS = {
-    "EXCELLENT": 4.0,
-    "GOOD": 3.0,
-    "FAIR": 2.0,
-    "POOR": 1.0,
-}
-
-LEVEL_SCORES = {
-    "EXCELLENT": 25,
-    "GOOD": 22,
-    "FAIR": 18,
-    "POOR": 12,
 }
 
 
@@ -97,18 +84,74 @@ def _overall_level(weighted_level_points: float) -> str:
     return "POOR"
 
 
+def _continuous_feature_points(
+    value: float,
+    thresholds: Mapping[str, Any],
+) -> float:
+    """Map one lower-is-better feature continuously onto 1.0-4.0 points."""
+
+    absolute_value = abs(float(value))
+    excellent = float(thresholds["EXCELLENT"])
+    good = float(thresholds["GOOD"])
+    fair = float(thresholds["FAIR"])
+
+    if absolute_value <= excellent:
+        return 4.0
+
+    if absolute_value <= good:
+        return 4.0 - (
+            (absolute_value - excellent)
+            / (good - excellent)
+        )
+
+    if absolute_value <= fair:
+        return 3.0 - (
+            (absolute_value - good)
+            / (fair - good)
+        )
+
+    poor_span = fair - good
+    return max(
+        1.0,
+        2.0 - (
+            (absolute_value - fair)
+            / poor_span
+        ),
+    )
+
+
+def _continuous_body_score(
+    weighted_points: float,
+) -> float:
+    """Map continuous 1.0-4.0 points onto the existing 12-25 anchors."""
+
+    points = max(
+        1.0,
+        min(4.0, float(weighted_points)),
+    )
+
+    if points <= 2.0:
+        return 12.0 + (points - 1.0) * 6.0
+
+    if points <= 3.0:
+        return 18.0 + (points - 2.0) * 4.0
+
+    return 22.0 + (points - 3.0) * 3.0
+
+
 def evaluate_body_stability(
     *,
     events: Iterable[Mapping[str, Any]],
     calibration_engine: MotionFeatureCalibrationEngine,
     required_event_count: int = REQUIRED_EVENT_COUNT,
 ) -> dict[str, Any]:
-    """Evaluate body stability from calibrated aggregate Feature Levels.
+    """Evaluate body stability from aggregated Motion Feature measurements.
 
     Each feature uses the median of its event-level input statistic. Median is
-    used to reduce the effect of one short or noisy event. Calibration converts
-    the aggregate value to a qualitative level; AR004 then combines only those
-    levels and maps the result to a provisional 25-point assessment score.
+    used to reduce the effect of one short or noisy event. V2 uses the existing
+    calibration thresholds to derive continuous feature points, combines them
+    with the existing feature weights, and maps the result continuously onto
+    the existing 12-25 score anchors.
     """
 
     event_list = list(events)
@@ -163,17 +206,34 @@ def evaluate_body_stability(
             "calibration_version": calibration_engine.config_version,
             "explanation": "Motion Feature 有效樣本不足，暫不評估身體穩定度。",
             "limitations": [
-                "Body Stability V1 需要三項 Feature 各至少六個有效 Event。",
+                "Body Stability V2 需要三項 Feature 各至少六個有效 Event。",
                 "未評估不代表動作不穩定。",
             ],
         }
 
-    weighted_points = sum(
-        LEVEL_POINTS[item.level] * FEATURE_WEIGHTS[item.feature_id]
-        for item in feature_levels
-    )
+    weighted_points = 0.0
+
+    for item in feature_levels:
+        rule = calibration_engine.get_rule(
+            item.feature_id
+        )
+        thresholds = rule.get("thresholds") or {}
+
+        feature_points = _continuous_feature_points(
+            item.aggregate_value,
+            thresholds,
+        )
+
+        weighted_points += (
+            feature_points
+            * FEATURE_WEIGHTS[item.feature_id]
+        )
+
     level = _overall_level(weighted_points)
-    score = LEVEL_SCORES[level]
+    score = round(
+        _continuous_body_score(weighted_points),
+        3,
+    )
 
     result = "PASS" if level in {"EXCELLENT", "GOOD"} else "NEEDS_REVIEW"
     explanations = {
@@ -202,7 +262,7 @@ def evaluate_body_stability(
         "calibration_status": calibration_engine.status,
         "explanation": explanations[level],
         "limitations": [
-            "Body Stability V1 使用暫定 Calibration，尚未經羽球教練樣本驗證。",
+            "Body Stability V2 使用暫定 Calibration，尚未經羽球教練樣本驗證。",
             "評估僅使用 2D 影像平面的肩線、髖線與軀幹傾斜 Feature。",
             "拍攝角度、透視與衣物遮擋可能影響結果。",
             "NEEDS_REVIEW 不等同於使用者動作錯誤。",

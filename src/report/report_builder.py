@@ -105,10 +105,10 @@ class ReportBuilder:
                 source_rule_id=(
                     "CR006" if body_stability_score is not None else None
                 ),
-                level=self._dimension_level(
-                    body_stability_rule,
-                    body_stability_score,
-                    25,
+                level=(
+                    (body_stability_rule.get("evidence") or {}).get("level")
+                    if body_stability_score is not None
+                    else None
                 ),
             ),
         }
