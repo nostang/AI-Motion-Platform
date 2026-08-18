@@ -72,6 +72,10 @@ class ProgressEngine:
             version_mismatch=version_mismatch,
         )
 
+        highlights = self._build_highlights(
+            dimensions
+        )
+
         return {
             "schema_version": "1.0",
             "progress_version": "progress-engine-v2.0",
@@ -84,6 +88,7 @@ class ProgressEngine:
             "change": change,
             "direction": direction,
             "dimensions": dimensions,
+            "highlights": highlights,
             "version_mismatch": {
                 "detected": version_mismatch,
                 "current_model_version": current.get("model_version"),
@@ -96,6 +101,82 @@ class ProgressEngine:
                 "Progress does not predict future performance.",
                 "When model_version or rule_version differs, the numeric difference is shown but is not interpreted as improvement or decline.",
             ],
+        }
+
+    @staticmethod
+    def _build_highlights(
+        dimensions: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        """Summarize the largest comparable dimension changes.
+
+        Highlights describe observed score changes only. Dimensions
+        that are not comparable, unchanged, or version-mismatched
+        are intentionally excluded from interpretation.
+        """
+
+        improvements: list[dict[str, Any]] = []
+        declines: list[dict[str, Any]] = []
+
+        for dimension_id, comparison in dimensions.items():
+            if not isinstance(comparison, Mapping):
+                continue
+
+            if comparison.get("comparison_status") != "COMPARABLE":
+                continue
+
+            direction = comparison.get("direction")
+            change = comparison.get("change")
+
+            if (
+                not isinstance(change, (int, float))
+                or isinstance(change, bool)
+            ):
+                continue
+
+            current = comparison.get("current")
+            reference = comparison.get("reference")
+
+            if not isinstance(current, Mapping):
+                continue
+            if not isinstance(reference, Mapping):
+                continue
+
+            item = {
+                "dimension_id": str(dimension_id),
+                "change": float(change),
+                "direction": direction,
+                "reference_score": reference.get("score"),
+                "current_score": current.get("score"),
+                "reference_level": reference.get("level"),
+                "current_level": current.get("level"),
+            }
+
+            if direction == "IMPROVED" and change > 0:
+                improvements.append(item)
+            elif direction == "DECLINED" and change < 0:
+                declines.append(item)
+
+        largest_improvement = (
+            max(
+                improvements,
+                key=lambda item: item["change"],
+            )
+            if improvements
+            else None
+        )
+
+        largest_decline = (
+            min(
+                declines,
+                key=lambda item: item["change"],
+            )
+            if declines
+            else None
+        )
+
+        return {
+            "largest_improvement": largest_improvement,
+            "largest_decline": largest_decline,
         }
 
     @classmethod

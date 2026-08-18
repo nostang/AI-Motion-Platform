@@ -362,5 +362,204 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
         )
 
 
+    def test_v2_highlights_largest_improvement(self) -> None:
+        history = [
+            history_item(
+                "ma_old",
+                overall_score=80.0,
+                report={
+                    "skill_score": {
+                        "recovery_speed": {
+                            "score": 18.0,
+                            "max_score": 25,
+                            "level": "FAIR",
+                        },
+                        "body_stability": {
+                            "score": 18.4,
+                            "max_score": 25,
+                            "level": "FAIR",
+                        },
+                    },
+                },
+                created_at="2026-08-01T00:00:00+00:00",
+            ),
+            history_item(
+                "ma_new",
+                overall_score=84.5,
+                report={
+                    "skill_score": {
+                        "recovery_speed": {
+                            "score": 21.0,
+                            "max_score": 25,
+                            "level": "GOOD",
+                        },
+                        "body_stability": {
+                            "score": 19.756,
+                            "max_score": 25,
+                            "level": "FAIR",
+                        },
+                    },
+                },
+                created_at="2026-08-18T00:00:00+00:00",
+            ),
+        ]
+
+        result = self.engine.compare(history)
+
+        highlight = result["highlights"]["largest_improvement"]
+
+        self.assertEqual(
+            highlight["dimension_id"],
+            "recovery_speed",
+        )
+        self.assertEqual(highlight["change"], 3.0)
+        self.assertEqual(highlight["direction"], "IMPROVED")
+        self.assertEqual(highlight["reference_score"], 18.0)
+        self.assertEqual(highlight["current_score"], 21.0)
+
+    def test_v2_highlights_largest_decline(self) -> None:
+        history = [
+            history_item(
+                "ma_old",
+                overall_score=82.0,
+                report={
+                    "skill_score": {
+                        "recovery_speed": {
+                            "score": 20.0,
+                            "max_score": 25,
+                            "level": "GOOD",
+                        },
+                        "body_stability": {
+                            "score": 21.0,
+                            "max_score": 25,
+                            "level": "GOOD",
+                        },
+                    },
+                },
+                created_at="2026-08-01T00:00:00+00:00",
+            ),
+            history_item(
+                "ma_new",
+                overall_score=80.0,
+                report={
+                    "skill_score": {
+                        "recovery_speed": {
+                            "score": 19.0,
+                            "max_score": 25,
+                            "level": "FAIR",
+                        },
+                        "body_stability": {
+                            "score": 17.5,
+                            "max_score": 25,
+                            "level": "FAIR",
+                        },
+                    },
+                },
+                created_at="2026-08-18T00:00:00+00:00",
+            ),
+        ]
+
+        result = self.engine.compare(history)
+
+        highlight = result["highlights"]["largest_decline"]
+
+        self.assertEqual(
+            highlight["dimension_id"],
+            "body_stability",
+        )
+        self.assertEqual(highlight["change"], -3.5)
+        self.assertEqual(highlight["direction"], "DECLINED")
+        self.assertEqual(highlight["reference_score"], 21.0)
+        self.assertEqual(highlight["current_score"], 17.5)
+
+    def test_v2_unchanged_dimension_is_not_a_highlight(self) -> None:
+        history = [
+            history_item(
+                "ma_old",
+                overall_score=80.0,
+                report={
+                    "skill_score": {
+                        "body_stability": {
+                            "score": 19.756,
+                            "max_score": 25,
+                            "level": "FAIR",
+                        },
+                    },
+                },
+                created_at="2026-08-01T00:00:00+00:00",
+            ),
+            history_item(
+                "ma_new",
+                overall_score=80.0,
+                report={
+                    "skill_score": {
+                        "body_stability": {
+                            "score": 19.756,
+                            "max_score": 25,
+                            "level": "FAIR",
+                        },
+                    },
+                },
+                created_at="2026-08-18T00:00:00+00:00",
+            ),
+        ]
+
+        result = self.engine.compare(history)
+
+        self.assertIsNone(
+            result["highlights"]["largest_improvement"]
+        )
+        self.assertIsNone(
+            result["highlights"]["largest_decline"]
+        )
+
+    def test_v2_version_mismatch_dimensions_are_not_highlighted(self) -> None:
+        history = [
+            history_item(
+                "ma_old",
+                overall_score=80.0,
+                report={
+                    "skill_score": {
+                        "body_stability": {
+                            "score": 12.0,
+                            "max_score": 25,
+                            "level": "POOR",
+                        },
+                    },
+                },
+                created_at="2026-08-01T00:00:00+00:00",
+                rule_version="footwork-calibration-v1.2",
+            ),
+            history_item(
+                "ma_new",
+                overall_score=84.0,
+                report={
+                    "skill_score": {
+                        "body_stability": {
+                            "score": 19.756,
+                            "max_score": 25,
+                            "level": "FAIR",
+                        },
+                    },
+                },
+                created_at="2026-08-18T00:00:00+00:00",
+                rule_version="footwork-calibration-v1.3",
+            ),
+        ]
+
+        result = self.engine.compare(history)
+
+        self.assertEqual(
+            result["dimensions"]["body_stability"]["direction"],
+            "NOT_INTERPRETED",
+        )
+        self.assertIsNone(
+            result["highlights"]["largest_improvement"]
+        )
+        self.assertIsNone(
+            result["highlights"]["largest_decline"]
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
