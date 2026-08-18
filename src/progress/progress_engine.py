@@ -225,6 +225,24 @@ class ProgressEngine:
                 and reference_score is not None
             )
 
+            current_config_version = (
+                current_item.get("config_version")
+                if current_item
+                else None
+            )
+            reference_config_version = (
+                reference_item.get("config_version")
+                if reference_item
+                else None
+            )
+
+            dimension_version_mismatch = (
+                current_config_version is not None
+                and reference_config_version is not None
+                and current_config_version
+                != reference_config_version
+            )
+
             if not comparable:
                 change = None
                 comparison_status = "NOT_COMPARABLE"
@@ -236,7 +254,10 @@ class ProgressEngine:
                     3,
                 )
 
-                if version_mismatch:
+                if (
+                    version_mismatch
+                    or dimension_version_mismatch
+                ):
                     comparison_status = (
                         "COMPARISON_VERSION_MISMATCH"
                     )
@@ -269,6 +290,40 @@ class ProgressEngine:
             return {}
 
         dimensions: dict[str, dict[str, Any]] = {}
+
+        observation = report.get("observation")
+        observation = (
+            observation
+            if isinstance(observation, Mapping)
+            else {}
+        )
+
+        dimension_versions = {
+            "body_stability": (
+                observation.get("body_stable") or {}
+            ).get("config_version")
+            if isinstance(
+                observation.get("body_stable"),
+                Mapping,
+            )
+            else None,
+            "recovery_speed": (
+                observation.get("recovery_time") or {}
+            ).get("config_version")
+            if isinstance(
+                observation.get("recovery_time"),
+                Mapping,
+            )
+            else None,
+            "motion_quality": (
+                observation.get("motion_quality") or {}
+            ).get("config_version")
+            if isinstance(
+                observation.get("motion_quality"),
+                Mapping,
+            )
+            else None,
+        }
 
         for section_name in (
             "skill_score",
@@ -315,7 +370,7 @@ class ProgressEngine:
                 if normalized_id in dimensions:
                     continue
 
-                dimensions[normalized_id] = {
+                dimension = {
                     "score": score,
                     "max_score": max_score,
                     "level": (
@@ -324,6 +379,19 @@ class ProgressEngine:
                         else None
                     ),
                 }
+
+                config_version = (
+                    dimension_versions.get(
+                        normalized_id
+                    )
+                )
+
+                if config_version is not None:
+                    dimension["config_version"] = str(
+                        config_version
+                    )
+
+                dimensions[normalized_id] = dimension
 
         return dimensions
 

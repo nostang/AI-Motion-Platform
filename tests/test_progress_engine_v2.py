@@ -574,5 +574,196 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
         )
 
 
+
+    def test_v2_dimension_version_mismatch_is_not_interpreted(
+        self,
+    ) -> None:
+        old_report = footwork_report(
+            recovery=18.0,
+            body=12.0,
+            body_level="POOR",
+        )
+        old_report["observation"] = {
+            "body_stable": {
+                "config_version": "body-stability-v1",
+            },
+            "recovery_time": {
+                "config_version": "recovery-speed-v1",
+            },
+        }
+
+        new_report = footwork_report(
+            recovery=21.0,
+            body=19.783,
+            body_level="FAIR",
+        )
+        new_report["observation"] = {
+            "body_stable": {
+                "config_version": "body-stability-v2",
+            },
+            "recovery_time": {
+                "config_version": "recovery-speed-v1",
+            },
+        }
+
+        history = [
+            history_item(
+                "ma_old",
+                overall_score=65.0,
+                report=old_report,
+                created_at="2026-08-01T00:00:00+00:00",
+            ),
+            history_item(
+                "ma_new",
+                overall_score=84.78,
+                report=new_report,
+                created_at="2026-08-18T00:00:00+00:00",
+            ),
+        ]
+
+        result = self.engine.compare(history)
+
+        body = result["dimensions"]["body_stability"]
+
+        self.assertEqual(body["change"], 7.783)
+        self.assertEqual(
+            body["comparison_status"],
+            "COMPARISON_VERSION_MISMATCH",
+        )
+        self.assertEqual(
+            body["direction"],
+            "NOT_INTERPRETED",
+        )
+
+        self.assertEqual(
+            body["reference"]["config_version"],
+            "body-stability-v1",
+        )
+        self.assertEqual(
+            body["current"]["config_version"],
+            "body-stability-v2",
+        )
+
+        highlight = result["highlights"][
+            "largest_improvement"
+        ]
+
+        self.assertIsNotNone(highlight)
+        self.assertEqual(
+            highlight["dimension_id"],
+            "recovery_speed",
+        )
+
+    def test_v2_same_dimension_version_remains_comparable(
+        self,
+    ) -> None:
+        old_report = footwork_report(
+            recovery=6.0,
+            body=18.0,
+        )
+        old_report["observation"] = {
+            "recovery_time": {
+                "config_version": "recovery-speed-v1",
+            },
+        }
+
+        new_report = footwork_report(
+            recovery=18.0,
+            body=18.0,
+        )
+        new_report["observation"] = {
+            "recovery_time": {
+                "config_version": "recovery-speed-v1",
+            },
+        }
+
+        history = [
+            history_item(
+                "ma_old",
+                overall_score=65.0,
+                report=old_report,
+                created_at="2026-08-01T00:00:00+00:00",
+            ),
+            history_item(
+                "ma_new",
+                overall_score=84.78,
+                report=new_report,
+                created_at="2026-08-18T00:00:00+00:00",
+            ),
+        ]
+
+        result = self.engine.compare(history)
+
+        recovery = result["dimensions"]["recovery_speed"]
+
+        self.assertEqual(
+            recovery["reference"]["config_version"],
+            "recovery-speed-v1",
+        )
+        self.assertEqual(
+            recovery["current"]["config_version"],
+            "recovery-speed-v1",
+        )
+        self.assertEqual(
+            recovery["comparison_status"],
+            "COMPARABLE",
+        )
+        self.assertEqual(
+            recovery["direction"],
+            "IMPROVED",
+        )
+
+    def test_v2_dimension_without_version_uses_global_compatibility(
+        self,
+    ) -> None:
+        old_report = {
+            "skill_score": {
+                "movement_completion": {
+                    "score": 20.0,
+                    "max_score": 25,
+                    "level": "GOOD",
+                },
+            },
+        }
+        new_report = {
+            "skill_score": {
+                "movement_completion": {
+                    "score": 25.0,
+                    "max_score": 25,
+                    "level": "EXCELLENT",
+                },
+            },
+        }
+
+        history = [
+            history_item(
+                "ma_old",
+                overall_score=80.0,
+                report=old_report,
+                created_at="2026-08-01T00:00:00+00:00",
+            ),
+            history_item(
+                "ma_new",
+                overall_score=85.0,
+                report=new_report,
+                created_at="2026-08-18T00:00:00+00:00",
+            ),
+        ]
+
+        result = self.engine.compare(history)
+
+        movement = result["dimensions"][
+            "movement_completion"
+        ]
+
+        self.assertEqual(
+            movement["comparison_status"],
+            "COMPARABLE",
+        )
+        self.assertEqual(
+            movement["direction"],
+            "IMPROVED",
+        )
+
 if __name__ == "__main__":
     unittest.main()
