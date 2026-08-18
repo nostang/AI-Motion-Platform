@@ -561,5 +561,18 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
         )
 
 
+    def test_v2_not_ready_uses_v2_contract_version(self) -> None:
+        result = self.engine.compare([])
+
+        self.assertEqual(
+            result["status"],
+            "NOT_READY",
+        )
+        self.assertEqual(
+            result["progress_version"],
+            "progress-engine-v2.0",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

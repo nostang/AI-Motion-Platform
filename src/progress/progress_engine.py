@@ -385,7 +385,7 @@ class ProgressEngine:
     ) -> dict[str, Any]:
         return {
             "schema_version": "1.0",
-            "progress_version": "progress-engine-v1.0",
+            "progress_version": "progress-engine-v2.0",
             "status": "NOT_READY",
             "reason": {"code": code, "message": message},
             "motion_type": motion_type,
