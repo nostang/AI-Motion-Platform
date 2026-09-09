@@ -17,11 +17,11 @@ while the two object prefixes keep their retention behavior separate.
 
 ## Production audit — 2026-08-18
 
-- Project: `your-gcp-project-id`
+- Project: `<gcp-project-id>`
 - Cloud Run service: `ai-motion` in `asia-east1`
 - Runtime service account:
-  `service-account@project-id.iam.gserviceaccount.com`
-- Video bucket: `your-private-video-bucket`
+  `<service-account-email>`
+- Video bucket: `<private-video-bucket>`
 - Bucket location/storage class: `ASIA-EAST1` / `STANDARD`
 - Uniform bucket-level access: enabled
 - Public principals: none in the bucket IAM policy
@@ -48,29 +48,29 @@ It contains exactly one delete rule: age 1 day and case-sensitive prefix
 Run from the repository root:
 
 ```bash
-gcloud storage buckets update gs://your-private-video-bucket \
+gcloud storage buckets update gs://<private-video-bucket> \
   --lifecycle-file=infra/gcs/video-temp-lifecycle.json
 
 gcloud run services update ai-motion \
-  --project=your-gcp-project-id \
+  --project=<gcp-project-id> \
   --region=asia-east1 \
-  --update-env-vars=KEYFRAME_ASSET_BUCKET=your-private-video-bucket
+  --update-env-vars=KEYFRAME_ASSET_BUCKET=<private-video-bucket>
 ```
 
 Verify the resulting configuration:
 
 ```bash
 gcloud storage buckets describe \
-  gs://your-private-video-bucket \
+  gs://<private-video-bucket> \
   --format='json(lifecycle_config,uniform_bucket_level_access,public_access_prevention)'
 
 gcloud run services describe ai-motion \
-  --project=your-gcp-project-id \
+  --project=<gcp-project-id> \
   --region=asia-east1 \
   --format='json(spec.template.spec.serviceAccountName,spec.template.spec.containers[0].env)'
 
 gcloud storage ls --recursive \
-  gs://your-private-video-bucket/motion-assessments
+  gs://<private-video-bucket>/motion-assessments
 ```
 
 Cloud Storage lifecycle changes can take up to 24 hours to take effect, and

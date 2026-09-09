@@ -201,7 +201,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env
-# Update DATABASE_URL in .env for your PostgreSQL instance.
+# Update DATABASE_URL and deployment-specific values in .env.
 
 uvicorn api_main:app --reload --port 8000
 ```

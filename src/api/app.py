@@ -108,18 +108,21 @@ app = FastAPI(
     version="2.6.0",
 )
 
+local_cors_origins = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8080",
+    "http://localhost:8080",
+]
+configured_cors_origins = [
+    origin.strip()
+    for origin in os.environ.get("CORS_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8080",
-        "http://localhost:8080",
-        (
-            "https://match-searching-collecting-"
-            "sunday.trycloudflare.com"
-        ),
-    ],
+    allow_origins=local_cors_origins + configured_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
