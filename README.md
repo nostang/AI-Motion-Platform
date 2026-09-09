@@ -1,233 +1,127 @@
 # 🏸 AI Motion Platform
 
-> AI-powered badminton footwork assessment platform built with FastAPI, MediaPipe Pose, and JavaScript.
+AI-powered badminton motion assessment built with FastAPI, MediaPipe Pose,
+OpenCV, and a browser-based JavaScript interface.
 
-An end-to-end AI motion analysis platform that detects badminton footwork from video, evaluates movement quality through a rule-based coach engine, and delivers an interactive web report through REST APIs.
+The platform accepts a training video, extracts pose and motion features,
+evaluates the movement with rule-based assessment and coaching engines, and
+returns an explainable interactive report through REST APIs.
 
----
+## Features
 
-# Demo
-
-## Home
-
-Upload a badminton video and start AI analysis.
-
-> *(Insert Home Screenshot Here)*
-
----
-
-## REST API
-
-Interactive Swagger documentation powered by FastAPI.
-
-> *(Insert Swagger Screenshot Here)*
-
----
-
-## Motion Report
-
-AI Coach evaluation with radar visualization.
-
-> *(Insert Report Screenshot Here)*
-
----
-
-# Features
-
-- 🎥 Upload badminton videos
-- 🤖 AI Pose Estimation (MediaPipe Pose)
-- 🏸 Footwork Motion Detection
-- 📐 Rule-based Assessment Engine
-- 👨‍🏫 Coach Evaluation Engine
-- 📊 Interactive Motion Report
-- 📡 RESTful API
-- 📁 JSON Report Export
-
----
+- Video upload and optional segment selection
+- MediaPipe pose estimation and motion event detection
+- Footwork, forehand serve, and high clear assessment
+- Rule-based scoring, coaching feedback, and training suggestions
+- Explainable pose keyframes and motion visualizations
+- Progress history and dimension-level comparisons
+- Interactive reports plus JSON API output
+- Local filesystem or PostgreSQL-backed assessment storage
 
 ## Architecture
 
-![](docs/Architecture/architecture.png)
+```mermaid
+flowchart LR
+    A[Video] --> B[Pose]
+    B --> C[Motion events]
+    C --> D[Features]
+    D --> E[Assessment]
+    E --> F[Coach]
+    F --> G[Summary and report]
+    G --> H[REST API and web UI]
+```
 
----
+## Quick start
 
-# API
+Requirements: Python 3.13 and `ffmpeg`.
 
-## Create Motion Assessment
+```bash
+git clone https://github.com/nostang/AI-Motion-Platform.git
+cd AI-Motion-Platform
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+uvicorn api_main:app --reload --port 8000
+```
+
+Open <http://127.0.0.1:8000>. FastAPI serves both the web interface and the API;
+interactive API documentation is available at <http://127.0.0.1:8000/docs>.
+
+For a production-oriented installation, use `requirements.runtime.txt` or the
+included `Dockerfile`.
+
+## Main API flow
+
+Create an assessment:
 
 ```http
 POST /api/v1/motion-assessments
 ```
 
-Upload a badminton video and create a new assessment.
-
-Returns:
-
-```json
-{
-  "assessment_id": "...",
-  "status": "uploaded"
-}
-```
-
----
-
-## Get Assessment Status
+Poll its status:
 
 ```http
 GET /api/v1/motion-assessments/{assessment_id}
 ```
 
-Returns
-
-- uploaded
-- processing
-- completed
-- failed
-
----
-
-## Get Motion Report
+Read the completed report:
 
 ```http
 GET /api/v1/motion-assessments/{assessment_id}/report
 ```
 
-Returns
+The full interface and response contracts are indexed in
+[`docs/README.md`](docs/README.md).
 
-- Motion Summary
-- Coach Evaluation
-- Skill Scores
-- Radar Chart
-- Training Suggestions
-
----
-
-# Tech Stack
-
-| Category | Technology |
-|----------|------------|
-| Backend | FastAPI |
-| AI Vision | MediaPipe Pose |
-| Computer Vision | OpenCV |
-| Frontend | HTML / CSS / JavaScript |
-| Chart | Chart.js |
-| Data | JSON |
-| Version Control | Git / GitHub |
-
----
-
-# Project Structure
+## Project structure
 
 ```text
-AI-Motion-Platform
-│
-├── frontend/
-│   ├── index.html
-│   ├── report.html
-│   ├── css/
-│   ├── js/
-│   └── assets/
-│
-├── src/
-│
-├── tests/
-│
-├── docs/
-│
-├── models/
-│
-├── api_main.py
-├── main.py
-├── requirements.txt
-└── README.md
+AI-Motion-Platform/
+├── frontend/       Browser UI, styles, scripts, and capture guides
+├── src/            Pose, motion, assessment, coach, report, and API modules
+├── tests/          Automated unit, contract, API, and frontend tests
+├── docs/           Specifications, API contracts, releases, and calibration notes
+├── models/         MediaPipe model assets required at runtime
+├── dataset/        Dataset metadata; local videos are intentionally ignored
+├── scripts/        End-to-end checks
+├── tools/          Calibration and shadow-comparison utilities
+├── migrations/     Database migrations
+├── infra/          Deployment and storage configuration
+├── api_main.py     FastAPI entry point
+└── main.py         Local dataset analysis entry point
 ```
 
----
+Generated reports, uploaded videos, local datasets, virtual environments,
+caches, and `.env` files are excluded from Git. See `.gitignore` for the full
+list.
 
-# Quick Start
+## Current version
 
-Clone
+The latest documented L3 release is **v1.3.0-L3**, with Footwork, Forehand
+Serve, and High Clear motion modules. The current feature line also includes
+productionized Body Stability V2 scoring, progress comparisons, and explainable
+motion insights.
+
+- [v1.3.0-L3 release notes](docs/Release/v1.3.0-L3.md)
+- [v1.0.0-L3 freeze contract](docs/Release/v1.0.0-L3.md)
+- [Documentation index](docs/README.md)
+
+## Testing
+
+Run the complete automated suite from the repository root:
 
 ```bash
-git clone https://github.com/nostang/AI-Motion-Platform.git
+python -m pytest -q
 ```
 
-Install
+## License
 
-```bash
-pip install -r requirements.txt
-```
+Licensed under the [MIT License](LICENSE).
 
-Run Backend
+## Author
 
-```bash
-uvicorn api_main:app --reload
-```
+Developed by **Yu-Yin Tang**.
 
-Run Frontend
-
-```bash
-cd frontend
-python -m http.server 8080
-```
-
-Open
-
-```
-http://127.0.0.1:8080
-```
-
----
-
-# Current Version
-
-**v1.0.0-L3 Release Candidate**
-
-Implemented
-
-- REST API and web frontend
-- Pose estimation and footwork event detection
-- Motion Feature Library
-- Calibration Engine
-- Movement Completion assessment
-- Recovery Speed assessment
-- Direction Coverage review metric
-- Body Stability assessment
-- Motion Quality assessment
-- Explainable Coach feedback and training suggestions
-- Stable L3 Summary and Report contract
-
-## Current Assessment Support
-
-- ✅ Footwork Motion Assessment
-- ⏳ Serve Assessment — planned after L3 freeze
-- ⏳ Clear Assessment — planned after L3 freeze
-
-The current L3 release evaluates general motion quality. Badminton-specific technique rules such as split step, lead foot, and extra-step detection remain L4 work.
-
----
-
-# Development Roadmap
-
-- **L1 Motion Capture:** complete
-- **L2 Motion Engine:** complete
-- **L3 Motion Assessment Platform:** release candidate
-- **L4 Sport-specific Technique Rules:** planned
-- **Future Assessment Modules:** Serve and Clear
-
-Release details: [`RELEASE_L3.md`](RELEASE_L3.md)
-
----
-
-# License
-
-MIT License
-
----
-
-# Author
-
-Developed by **Yu-Yin Tang**
-
-AI Motion Platform is an experimental project exploring AI-assisted badminton motion analysis using computer vision and modern web technologies.
+AI Motion Platform is an experimental project exploring AI-assisted badminton
+motion analysis using computer vision and modern web technologies.
