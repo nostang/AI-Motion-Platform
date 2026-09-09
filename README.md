@@ -7,6 +7,29 @@ The platform accepts a training video, extracts pose and motion features,
 evaluates the movement with rule-based assessment and coaching engines, and
 returns an explainable interactive report through REST APIs.
 
+## Demo
+
+### Home
+
+Choose a badminton motion, upload or record a video, and select the movement
+segment to analyze.
+
+![AI Motion upload and recording interface](docs/assets/screenshots/home.jpg)
+
+### REST API
+
+FastAPI provides an interactive Swagger interface for the complete assessment
+and progress API.
+
+![AI Motion FastAPI Swagger documentation](docs/assets/screenshots/api-docs.jpg)
+
+### Motion report
+
+The report combines dimension scores, confidence, explainable movement
+visualizations, AI Coach feedback, and training suggestions.
+
+![AI Motion assessment report](docs/assets/screenshots/motion-report.jpg)
+
 ## Features
 
 - Video upload and optional segment selection
