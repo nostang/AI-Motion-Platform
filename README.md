@@ -19,6 +19,14 @@ FastAPI, MediaPipe Pose, OpenCV, PostgreSQL, and vanilla JavaScript.
 > 中文簡介：上傳或錄製羽球動作影片後，系統會擷取人體姿態、辨識動作事件、
 > 計算可觀察特徵，最後產生分項評分、動作證據、AI Coach 建議與進步趨勢。
 
+> **Live product context:** This repository presents my focused AI motion-analysis
+> implementation. The module is also integrated into
+> [羽球＋1｜找到你的羽球生活](https://badminton-web-lwvgtj65aa-de.a.run.app/),
+> a collaborative team product where visitors can explore the broader badminton
+> experience and its **能力＋1** workflow. The standalone deployment documented
+> here is a portfolio preview; full analysis requires separately configured
+> PostgreSQL and private Cloud Storage services.
+
 ## Overview
 
 Pose landmarks alone do not tell an athlete what to improve. AI Motion Platform
