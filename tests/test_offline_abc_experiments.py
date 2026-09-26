@@ -1,5 +1,7 @@
 import importlib.util
+import io
 import json
+import urllib.error
 from pathlib import Path
 
 
@@ -34,7 +36,25 @@ def test_gemma_validation_and_case_id(tmp_path):
     assert gemma._parse_response("not json") is None
     assert "無明確優點" in gemma._prompt(compact, "v2")
     assert "無明確優點" not in gemma._prompt(compact, "v1")
+    assert "snake_case" in gemma._prompt(compact, "v3")
+    assert "body_coordination" in gemma._prompt(compact, "v3")
     assert gemma._percentile([1.0, 2.0, 3.0], 0.5) == 2.0
+    lean = gemma._lean_compact_report(
+        {
+            "score_breakdown": {
+                "swing": {
+                    "score": 18,
+                    "max_score": 25,
+                    "level": "GOOD",
+                    "source_rule_id": "RULE-1",
+                    "measurement_levels": {"speed": "GOOD"},
+                }
+            },
+            "limitations": ["one", "two", "three", "four", "five"],
+        }
+    )
+    assert lean["score_breakdown"] == {"swing": {"score": 18, "level": "GOOD"}}
+    assert lean["limitations"] == ["one", "two", "three", "four"]
     aggregate = gemma._aggregate_cases(
         [
             {
@@ -116,6 +136,7 @@ def test_gemini_preflight_is_zero_network_and_cost_capped(tmp_path):
     assert plan["execution_evidence_kind"] == "cloud_api_dry_run_not_measurement"
     assert plan["data_boundary"].endswith("no video upload")
     assert plan["estimated_maximum_cost_usd"] < 0.01
+    assert gemini._paid_tier_equivalent_cost_usd(500, 320) == 0.00095
 
 
 def test_gemini_schema_and_usage_account_for_thinking_tokens():
@@ -140,6 +161,15 @@ def test_gemini_schema_and_usage_account_for_thinking_tokens():
         }
     )
     assert usage["billable_output_tokens"] == 75
+
+    error = urllib.error.HTTPError(
+        "https://example.invalid",
+        400,
+        "Bad Request",
+        {},
+        io.BytesIO(b'{"error":{"code":400,"message":"safe detail","status":"INVALID_ARGUMENT"}}'),
+    )
+    assert gemini._safe_error(error)["provider_error"]["message"] == "safe detail"
 
 
 def test_ab_corpus_has_separate_real_and_synthetic_evidence(tmp_path):
@@ -241,3 +271,45 @@ def test_llm_corpus_rejects_invented_strength_when_input_has_none(tmp_path):
     assert evaluator._positive_metric_tokens(
         {"swing": {"level": "FAIR", "measurement_levels": {"path": "EXCELLENT"}}}
     ) == {"path"}
+
+
+def test_llm_corpus_accepts_empty_strength_when_evidence_is_insufficient(tmp_path):
+    evaluator = _load("evaluate_llm_corpus")
+    report = {
+        "assessment_id": "CASE-EMPTY",
+        "assessment_type": "clear",
+        "summary": {"evaluation_status": "INSUFFICIENT_EVIDENCE", "overall_score": None},
+        "highlights": {"strengths": [], "improvement_priorities": []},
+        "limitations": ["single camera 2D"],
+    }
+    report_path = tmp_path / "analysis_report.json"
+    report_path.write_text(json.dumps(report))
+    case = {
+        "case_id": "CASE-EMPTY",
+        "report_path": str(report_path),
+        "input_overall_score": None,
+        "response": {
+            "summary": "證據不足，無法評分",
+            "strength": [],
+            "priority": [],
+            "drill": [],
+            "caution": "單鏡頭2D限制",
+        },
+    }
+
+    evaluated = evaluator._evaluate_case(case)
+    assert evaluated["checks"]["strength_grounded_or_explicitly_none"] is True
+
+
+def test_blind_ab_review_hides_provider_and_keeps_mapping():
+    blind = _load("build_blind_ab_review")
+    a_run = {"cases": [{"case_id": "CASE-1", "response": {"summary": "A"}}]}
+    b_run = {"cases": [{"case_id": "CASE-1", "response": {"summary": "B"}}]}
+    rows, mapping = blind.build_rows(a_run, b_run, seed=7)
+
+    assert len(rows) == 2
+    assert "system" not in rows[0]
+    assert {item["system"] for item in mapping} == {"A", "B"}
+    assert {item["blind_output_id"] for item in mapping} == {
+        row["blind_output_id"] for row in rows
+    }

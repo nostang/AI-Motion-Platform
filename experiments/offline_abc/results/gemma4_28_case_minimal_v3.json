@@ -1,0 +1,1208 @@
+{
+  "benchmark": "local-gemma4-motion-explanation",
+  "model": "gemma4:e2b",
+  "runtime": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.14",
+    "transport": "Ollama localhost",
+    "num_gpu_override": null,
+    "corpus_manifest": "experiments/offline_abc/results/ab_corpus_manifest.json",
+    "prompt_version": "v3",
+    "compact_profile": "minimal"
+  },
+  "resource": {
+    "resident_size_bytes": 1689507593,
+    "resident_vram_bytes": 1689507593,
+    "quantization_level": "Q4_K_M"
+  },
+  "cases": [
+    {
+      "case_id": "R-CLR-01",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-01/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.657,
+      "load_seconds": 0.0025,
+      "prompt_tokens": 223,
+      "output_tokens": 143,
+      "tokens_per_second": 95.239,
+      "input_overall_score": 62,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估主要針對可見的高清發球動作，使用單鏡頭2D MediaPipe地標進行分析。",
+          "結果評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "側向準備"
+        ],
+        "priority": [
+          "重量轉移",
+          "非球拍手臂平衡",
+          "揮拍順暢度"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": [
+          "單鏡頭2D限制"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-02",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-02/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.4467,
+      "load_seconds": 0.0008,
+      "prompt_tokens": 224,
+      "output_tokens": 222,
+      "tokens_per_second": 94.945,
+      "input_overall_score": 58,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估主要針對可見的高清發球動作，使用單鏡頭2D MediaPipe地標進行分析。",
+          "結果評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "priority": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "drill": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "caution": [
+          "單鏡頭2D限制：無法完全捕捉球的軌跡和最終結果。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-03",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-03/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.7474,
+      "load_seconds": 0.0007,
+      "prompt_tokens": 224,
+      "output_tokens": 156,
+      "tokens_per_second": 95.161,
+      "input_overall_score": 85,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估主要針對可見的高清發球動作，使用單鏡頭2D MediaPipe地標進行分析。",
+          "結果評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "側向準備",
+          "重量轉移",
+          "非球拍手臂平衡",
+          "揮拍順暢度"
+        ],
+        "priority": [
+          "(優點/改善ID)"
+        ],
+        "drill": [
+          "(優點/改善ID)"
+        ],
+        "caution": [
+          "單鏡頭2D限制"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-04",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-04/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.4468,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 224,
+      "output_tokens": 222,
+      "tokens_per_second": 94.922,
+      "input_overall_score": 51,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估主要針對可見的高清發球動作，使用單鏡頭2D MediaPipe地標進行分析。",
+          "結果評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "priority": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "drill": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "caution": [
+          "單鏡頭2D限制：無法完全捕捉球的軌跡和最終結果。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-05",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-05/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.4477,
+      "load_seconds": 0.0007,
+      "prompt_tokens": 224,
+      "output_tokens": 222,
+      "tokens_per_second": 94.865,
+      "input_overall_score": 53,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估主要針對可見的高清發球動作，使用單鏡頭2D MediaPipe地標進行分析。",
+          "結果評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "priority": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "drill": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "caution": [
+          "單鏡頭2D限制：無法完全捕捉球的軌跡和最終結果。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-06",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-06/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.7888,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 223,
+      "output_tokens": 160,
+      "tokens_per_second": 95.171,
+      "input_overall_score": 59,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估主要針對可見的高清發球動作，使用單鏡頭2D MediaPipe地標進行分析。",
+          "結果評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "揮拍順暢"
+        ],
+        "priority": [
+          "側向準備",
+          "重量轉移",
+          "非球拍手臂平衡"
+        ],
+        "drill": [
+          "側向準備",
+          "重量轉移",
+          "非球拍手臂平衡"
+        ],
+        "caution": [
+          "單鏡頭2D限制"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-07",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-07/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.8912,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 223,
+      "output_tokens": 170,
+      "tokens_per_second": 95.167,
+      "input_overall_score": 62,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估主要針對可見的高清發球動作，使用單鏡頭2D MediaPipe地標進行分析。",
+          "結果評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "側向準備",
+          "揮拍順暢"
+        ],
+        "priority": [
+          "重量轉移",
+          "非球拍手臂平衡"
+        ],
+        "drill": [
+          "（weight_transfer）",
+          "（non_racket_arm_balance）"
+        ],
+        "caution": "單鏡頭2D限制：無法完全捕捉球的實際軌跡和後續的球運動結果。"
+      }
+    },
+    {
+      "case_id": "R-CLR-08",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-08/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.4509,
+      "load_seconds": 0.0014,
+      "prompt_tokens": 227,
+      "output_tokens": 222,
+      "tokens_per_second": 94.731,
+      "input_overall_score": 56,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估主要針對可見的高清發球動作，使用單鏡頭2D MediaPipe地標進行分析。",
+          "結果評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "priority": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "drill": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "caution": [
+          "單鏡頭2D限制：無法完全捕捉球的實際軌跡和結果。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-09",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-09/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.5985,
+      "load_seconds": 0.0005,
+      "prompt_tokens": 226,
+      "output_tokens": 142,
+      "tokens_per_second": 95.105,
+      "input_overall_score": 73,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估主要針對可見的高清發球動作，使用單鏡頭2D MediaPipe地標進行分析。",
+          "結果評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "側向準備",
+          "揮拍順暢"
+        ],
+        "priority": [
+          "重量轉移",
+          "非球拍手臂平衡"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": [
+          "單鏡頭2D限制"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-10",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-10/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.7916,
+      "load_seconds": 0.0005,
+      "prompt_tokens": 226,
+      "output_tokens": 160,
+      "tokens_per_second": 94.881,
+      "input_overall_score": 82,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "評估顯示在高清動作中，身體運動的品質是主要的評估對象。",
+          "此分析基於單鏡頭2D影像的MediaPipe地標，評估的是身體動作的品質，而非球的最終結果。"
+        ],
+        "strength": [
+          "sideways_preparation",
+          "weight_transfer"
+        ],
+        "priority": [
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": "單鏡頭2D限制：無法完全捕捉球的實際軌跡和結果。"
+      }
+    },
+    {
+      "case_id": "R-FW-01",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "footwork",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-FW-01/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.998,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 220,
+      "output_tokens": 180,
+      "tokens_per_second": 95.215,
+      "input_overall_score": null,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "評估顯示在腳部動作方面，整體完成度尚可，但存在精準度上的提升空間。",
+          "後續訓練應著重於優化移動的精確性和效率，並確保在不同動作間的銜接順暢。"
+        ],
+        "strength": [
+          "movement_completion"
+        ],
+        "priority": [
+          "movement_completion"
+        ],
+        "drill": [
+          "針對移動的精準度進行重複練習"
+        ],
+        "caution": [
+          "單鏡頭2D限制：請注意，2D影像無法完全捕捉三維空間中的精確位置關係，尤其在複雜的腳部動作中，需透過多角度觀察輔助理解。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-FW-02",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "footwork",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-FW-02/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.6712,
+      "load_seconds": 0.0008,
+      "prompt_tokens": 228,
+      "output_tokens": 148,
+      "tokens_per_second": 94.673,
+      "input_overall_score": 84.756,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "評估顯示整體表現良好，但在特定動作的精準度上仍有提升空間。",
+          "建議著重於提升身體的恢復速度，以優化整體運動效率。"
+        ],
+        "strength": [
+          "動作完成度"
+        ],
+        "priority": [
+          "恢復速度"
+        ],
+        "drill": [
+          "針對恢復速度的特定訓練項目"
+        ],
+        "caution": [
+          "單鏡頭2D限制：需注意在動作轉換時，身體的精準定位，避免過度依賴視覺判斷。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-FW-03",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "footwork",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-FW-03/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.6383,
+      "load_seconds": 0.0007,
+      "prompt_tokens": 228,
+      "output_tokens": 145,
+      "tokens_per_second": 94.753,
+      "input_overall_score": 70.259,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "評估顯示在腳部動作上存在一些需要改進的空間，整體表現尚可。",
+          "主要的發展方向應著重於恢復速度的提升，並需注意2D單鏡頭的空間限制。"
+        ],
+        "strength": [
+          "動作完成度"
+        ],
+        "priority": [
+          "恢復速度"
+        ],
+        "drill": [
+          "針對恢復速度的特定訓練項目"
+        ],
+        "caution": [
+          "請注意單鏡頭2D影像在捕捉空間和精準度上的限制。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-SV-01",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-01/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.8971,
+      "load_seconds": 0.0005,
+      "prompt_tokens": 225,
+      "output_tokens": 170,
+      "tokens_per_second": 95.026,
+      "input_overall_score": 81,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估針對發球動作的教學，整體表現良好，具備良好的身體協調性。",
+          "主要建議著重於準備的穩定性，以進一步優化發球的品質。"
+        ],
+        "strength": [
+          "swing_completeness",
+          "body_coordination",
+          "motion_smoothness"
+        ],
+        "priority": [
+          "preparation_stability"
+        ],
+        "drill": [
+          "針對準備動作的穩定性進行練習"
+        ],
+        "caution": [
+          "此評估基於單鏡頭2D限制，無法評估球的實際進程或官方發球合法性。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-SV-02",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-02/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.3894,
+      "load_seconds": 0.0005,
+      "prompt_tokens": 226,
+      "output_tokens": 214,
+      "tokens_per_second": 93.818,
+      "input_overall_score": 85,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估針對可見的前手發球動作，使用單鏡頭2D MediaPipe地標進行教學。結果評估的是可見的身體動作品質，而非球的結果或官方發球合法性。",
+          "評估結果基於可見的身體動作品質，請注意這僅為單鏡頭2D限制，無法完全反映實際的球拍或羽球互動。"
+        ],
+        "strength": [
+          "準備穩定性",
+          "揮拍完整性",
+          "身體協調性",
+          "動作流暢性"
+        ],
+        "priority": [
+          "(優點/改善ID)"
+        ],
+        "drill": [
+          "(優點/改善ID)"
+        ],
+        "caution": [
+          "此評估基於單鏡頭2D限制，無法完全反映實際的球拍或羽球互動。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-SV-03",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-03/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.2242,
+      "load_seconds": 0.0005,
+      "prompt_tokens": 225,
+      "output_tokens": 200,
+      "tokens_per_second": 94.429,
+      "input_overall_score": 76,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估針對可見的前手發球動作，使用單鏡頭2D MediaPipe地標進行教學。結果評估的是可見的身體動作品質，而非球的結果或官方發球合法性。",
+          "評估結果基於可見的身體動作品質，請注意這僅為單鏡頭2D限制。"
+        ],
+        "strength": [
+          "準備穩定性",
+          "動作流暢性"
+        ],
+        "priority": [
+          "揮拍完整性",
+          "身體協調性"
+        ],
+        "drill": [
+          "針對前手發球動作進行動作分解練習"
+        ],
+        "caution": [
+          "此評估基於單鏡頭2D限制，無法完全反映球的實際結果或官方發球合法性。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-SV-04",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-04/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.2235,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 225,
+      "output_tokens": 200,
+      "tokens_per_second": 94.602,
+      "input_overall_score": 73,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估針對可見的前手發球動作，使用單鏡頭2D MediaPipe地標進行教學。結果評估的是可見的身體動作品質，而非球的結果或官方發球合法性。",
+          "評估結果基於可見的身體動作品質，請注意這僅為單鏡頭2D限制。"
+        ],
+        "strength": [
+          "準備穩定性",
+          "動作流暢性"
+        ],
+        "priority": [
+          "揮拍完整性",
+          "身體協調性"
+        ],
+        "drill": [
+          "針對前手發球動作進行動作分解練習"
+        ],
+        "caution": [
+          "此評估基於單鏡頭2D限制，無法完全反映球的實際結果或官方發球合法性。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-SV-05",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-05/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.0178,
+      "load_seconds": 0.0008,
+      "prompt_tokens": 225,
+      "output_tokens": 181,
+      "tokens_per_second": 94.734,
+      "input_overall_score": 79,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估針對發球動作的教學，整體表現良好，具備穩定的準備和流暢的動作。",
+          "主要的進步方向在於身體協調性，建議著重於提升身體各部位的協同配合。"
+        ],
+        "strength": [
+          "準備穩定",
+          "揮拍完整",
+          "動作流暢"
+        ],
+        "priority": [
+          "身體協調性"
+        ],
+        "drill": [
+          "針對身體協調性的特定練習步驟"
+        ],
+        "caution": [
+          "單鏡頭2D限制：無法完全捕捉球拍的精確軌跡和球的實際飛行結果，僅評估可見的身體動作品質。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-SV-06",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-06/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.8773,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 228,
+      "output_tokens": 168,
+      "tokens_per_second": 94.88,
+      "input_overall_score": 84,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": false,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估針對發球動作的教學過程，基於單鏡頭2D影像的MediaPipe地標進行分析。",
+          "結果主要評估了可見的身體動作品質，而非飛羽的實際結果或官方發球合法性。"
+        ],
+        "strength": [
+          "準備穩定性",
+          "身體協調性",
+          "動作流暢性"
+        ],
+        "priority": [
+          "揮拍完整性"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": [
+          "單鏡頭2D限制：無法完全評估羽球的實際飛軌和擊球效果。"
+        ]
+      }
+    },
+    {
+      "case_id": "S-CLR-01",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "clear",
+      "scenario": "high_score_minor_issue",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-CLR-01/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.5057,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 211,
+      "output_tokens": 133,
+      "tokens_per_second": 95.086,
+      "input_overall_score": 92,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "整體評分高，顯示在擊球準備方面表現良好。",
+          "主要建議著重於提升收拍的完整性，並注意單鏡頭2D的限制。"
+        ],
+        "strength": [
+          "擊球準備穩定"
+        ],
+        "priority": [
+          "收拍完整性"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": "單鏡頭2D限制：無法直接偵測羽球或球拍的精確位置和動態。"
+      }
+    },
+    {
+      "case_id": "S-CLR-02",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "clear",
+      "scenario": "low_score_multiple_priorities",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-CLR-02/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.7827,
+      "load_seconds": 0.0005,
+      "prompt_tokens": 215,
+      "output_tokens": 157,
+      "tokens_per_second": 93.678,
+      "input_overall_score": 48,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "整體評估顯示，在特定條件下，身體的重心仍可被辨識。",
+          "主要的改進方向應著重於引拍高度和身體旋轉的調整。"
+        ],
+        "strength": [
+          "重心仍可辨識"
+        ],
+        "priority": [
+          "引拍高度",
+          "身體旋轉"
+        ],
+        "drill": [
+          "引拍高度訓練",
+          "身體旋轉練習"
+        ],
+        "caution": [
+          "單鏡頭 2D 限制：無法直接偵測羽球或球拍的精確互動。"
+        ]
+      }
+    },
+    {
+      "case_id": "S-CLR-03",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "clear",
+      "scenario": "insufficient_evidence_no_score",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-CLR-03/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.5493,
+      "load_seconds": 0.0007,
+      "prompt_tokens": 205,
+      "output_tokens": 133,
+      "tokens_per_second": 92.463,
+      "input_overall_score": null,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估缺乏足夠的證據來進行詳細的羽球技術分析。",
+          "由於缺乏直接的球拍和羽球影像，無法進行有效的技術評估。"
+        ],
+        "strength": [
+          "無"
+        ],
+        "priority": [
+          "無"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": [
+          "單鏡頭 2D 限制：無法準確判斷球拍的動態和球的軌跡。"
+        ]
+      }
+    },
+    {
+      "case_id": "S-FW-01",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "footwork",
+      "scenario": "high_score_single_priority",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-FW-01/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.687,
+      "load_seconds": 0.0009,
+      "prompt_tokens": 212,
+      "output_tokens": 146,
+      "tokens_per_second": 92.559,
+      "input_overall_score": 88,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "評估結果顯示整體表現良好，具備穩定的回位節奏。",
+          "建議著重於啟動反應的訓練，以進一步提升整體表現。"
+        ],
+        "strength": [
+          "回位節奏穩定"
+        ],
+        "priority": [
+          "啟動反應"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": [
+          "單鏡頭 2D 限制：資料僅為單鏡頭 2D 姿態資料，未直接偵測羽球或球拍。"
+        ]
+      }
+    },
+    {
+      "case_id": "S-FW-02",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "footwork",
+      "scenario": "low_score_multiple_priorities",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-FW-02/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.0071,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 213,
+      "output_tokens": 179,
+      "tokens_per_second": 94.101,
+      "input_overall_score": 35,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "評估顯示整體表現尚可，具體需要針對移動和平衡進行調整。",
+          "本次分析基於結構化壓力測試，僅提供單鏡頭2D姿態資料，無法直接偵測羽球或球拍的互動。"
+        ],
+        "strength": [
+          "能完成移動"
+        ],
+        "priority": [
+          "回中心位置",
+          "左右平衡"
+        ],
+        "drill": [
+          "專注於移動的精準度訓練",
+          "進行左右平衡的靜態與動態訓練"
+        ],
+        "caution": "單鏡頭2D限制：無法完全捕捉球拍與羽球的精確互動軌跡，需進一步補足空間資訊。"
+      }
+    },
+    {
+      "case_id": "S-FW-03",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "footwork",
+      "scenario": "low_confidence_scored",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-FW-03/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.5008,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 214,
+      "output_tokens": 131,
+      "tokens_per_second": 93.9,
+      "input_overall_score": 67,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "評估結果顯示，在腳部動作方面存在一些可辨識的特徵。",
+          "本次分析基於結構化壓力測試，僅提供單鏡頭2D姿態資料，無法直接偵測羽球或球拍。"
+        ],
+        "strength": [
+          "部分步序可辨識"
+        ],
+        "priority": [
+          "步幅一致性"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": "單鏡頭2D限制"
+      }
+    },
+    {
+      "case_id": "S-SV-01",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "serve",
+      "scenario": "high_score_no_priority",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-01/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.4449,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 207,
+      "output_tokens": 127,
+      "tokens_per_second": 94.757,
+      "input_overall_score": 95,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "整體評估狀態為已評估，總分高達95分，系統信心度高達0.99。",
+          "本次分析是結構化壓力測試，而非直接的影片分析結果。"
+        ],
+        "strength": [
+          "動作節奏穩定"
+        ],
+        "priority": [
+          "無"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": [
+          "單鏡頭 2D 限制"
+        ]
+      }
+    },
+    {
+      "case_id": "S-SV-02",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "serve",
+      "scenario": "low_score_multiple_priorities",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-02/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.0932,
+      "load_seconds": 0.0007,
+      "prompt_tokens": 217,
+      "output_tokens": 188,
+      "tokens_per_second": 94.719,
+      "input_overall_score": 52,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "評估結果顯示整體表現尚可，具體需針對擊球點穩定度和重心轉移進行進一步訓練。",
+          "本次分析基於結構化壓力測試，僅提供單鏡頭2D姿態資料，未直接偵測羽球或球拍。"
+        ],
+        "strength": [
+          "準備姿勢可辨識"
+        ],
+        "priority": [
+          "擊球點穩定度",
+          "重心轉移"
+        ],
+        "drill": [
+          "擊球點穩定度訓練",
+          "重心轉移練習"
+        ],
+        "caution": [
+          "單鏡頭2D限制：無法完全捕捉球拍和羽球的動態交互，需注意空間感和動態平衡的訓練。"
+        ]
+      }
+    },
+    {
+      "case_id": "S-SV-03",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "serve",
+      "scenario": "medium_confidence_forbidden_visual_claim_trap",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-03/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 1.7609,
+      "load_seconds": 0.0005,
+      "prompt_tokens": 209,
+      "output_tokens": 157,
+      "tokens_per_second": 94.756,
+      "input_overall_score": 73,
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": true,
+      "response": {
+        "summary": [
+          "本次評估的整體表現分數為73分，系統對此評估的信心度為0.63。",
+          "主要優勢在出手方向的一致性，建議著重於手腕控制的進步。"
+        ],
+        "strength": [
+          "出手方向一致"
+        ],
+        "priority": [
+          "手腕控制"
+        ],
+        "drill": [
+          "無"
+        ],
+        "caution": [
+          "單鏡頭2D限制：由於僅有單鏡頭2D姿態資料，無法直接偵測羽球或球拍的精確資訊。"
+        ]
+      }
+    }
+  ],
+  "aggregate": {
+    "case_count": 28,
+    "mean_wall_seconds": 1.912,
+    "p50_wall_seconds": 1.8344,
+    "p95_wall_seconds": 2.4474,
+    "mean_tokens_per_second": 94.583,
+    "success_rate": 1.0,
+    "json_valid_rate": 1.0,
+    "required_keys_rate": 1.0,
+    "priority_grounded_rate": 0.643
+  },
+  "aggregate_by_evidence_kind": {
+    "real_video_pipeline_output": {
+      "case_count": 19,
+      "mean_wall_seconds": 2.0107,
+      "p50_wall_seconds": 1.8971,
+      "p95_wall_seconds": 2.448,
+      "mean_tokens_per_second": 94.859,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "required_keys_rate": 1.0,
+      "priority_grounded_rate": 0.474
+    },
+    "synthetic_structured_stress_case": {
+      "case_count": 9,
+      "mean_wall_seconds": 1.7035,
+      "p50_wall_seconds": 1.687,
+      "p95_wall_seconds": 2.0588,
+      "mean_tokens_per_second": 94.002,
+      "success_rate": 1.0,
+      "json_valid_rate": 1.0,
+      "required_keys_rate": 1.0,
+      "priority_grounded_rate": 1.0
+    }
+  }
+}

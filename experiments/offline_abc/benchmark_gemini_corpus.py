@@ -26,11 +26,11 @@ if str(SCRIPT_DIR) not in sys.path:
 from benchmark_gemma4 import (
     PROJECT_ROOT,
     REQUIRED_KEYS,
-    _compact_report,
     _manifest_reports,
     _parse_response,
     _percentile,
     _prompt,
+    _select_compact_report,
     _validate,
 )
 
@@ -75,7 +75,7 @@ def _estimate_input_tokens(prompt: str) -> int:
     return max(1, (byte_count + 1) // 2)
 
 
-def _cost_usd(input_tokens: int, billable_output_tokens: int) -> float:
+def _paid_tier_equivalent_cost_usd(input_tokens: int, billable_output_tokens: int) -> float:
     return (
         input_tokens * INPUT_USD_PER_MILLION
         + billable_output_tokens * OUTPUT_USD_PER_MILLION
@@ -145,7 +145,12 @@ def _call_gemini(model: str, api_key: str, prompt: str, timeout: float) -> dict:
     return {"payload": payload, "client_wall_seconds": time.perf_counter() - started}
 
 
-def _load_cases(manifest: Path, selected_case_ids: set[str]) -> list[dict]:
+def _load_cases(
+    manifest: Path,
+    selected_case_ids: set[str],
+    compact_profile: str,
+    prompt_version: str,
+) -> list[dict]:
     report_paths, metadata = _manifest_reports(manifest)
     cases = []
     for report_path in report_paths:
@@ -154,8 +159,8 @@ def _load_cases(manifest: Path, selected_case_ids: set[str]) -> list[dict]:
         if selected_case_ids and case_id not in selected_case_ids:
             continue
         report = json.loads(report_path.read_text(encoding="utf-8"))
-        compact = _compact_report(report)
-        prompt = _prompt(compact, "v1")
+        compact = _select_compact_report(report, compact_profile)
+        prompt = _prompt(compact, prompt_version)
         cases.append(
             {
                 **item,
@@ -177,19 +182,26 @@ def _load_cases(manifest: Path, selected_case_ids: set[str]) -> list[dict]:
     return cases
 
 
-def _preflight(cases: list[dict], model: str) -> dict:
+def _preflight(
+    cases: list[dict],
+    model: str,
+    compact_profile: str = "full",
+    prompt_version: str = "v1",
+) -> dict:
     estimated_input_tokens = sum(case["estimated_input_tokens"] for case in cases)
     maximum_output_tokens = len(cases) * MAX_OUTPUT_TOKENS
     return {
         "execution_evidence_kind": "cloud_api_dry_run_not_measurement",
         "provider": "Google Gemini API",
         "model": model,
+        "compact_profile": compact_profile,
+        "prompt_version": prompt_version,
         "case_count": len(cases),
         "data_boundary": "compact structured motion JSON only; no video upload",
         "estimated_input_tokens_upper_bound": estimated_input_tokens,
         "maximum_output_tokens": maximum_output_tokens,
         "estimated_maximum_cost_usd": round(
-            _cost_usd(estimated_input_tokens, maximum_output_tokens), 6
+            _paid_tier_equivalent_cost_usd(estimated_input_tokens, maximum_output_tokens), 6
         ),
         "pricing": {
             "input_usd_per_million_tokens": INPUT_USD_PER_MILLION,
@@ -222,7 +234,7 @@ def _aggregate(cases: list[dict]) -> dict:
             "case_count": len(cases),
             "completed_count": 0,
             "success_rate": None,
-            "total_actual_cost_usd": 0.0,
+            "total_estimated_paid_tier_cost_usd": 0.0,
         }
     latencies = [case["client_wall_seconds"] for case in completed]
     return {
@@ -238,15 +250,36 @@ def _aggregate(cases: list[dict]) -> dict:
         "priority_grounded_rate": round(
             sum(case["checks"]["priority_grounded"] for case in completed) / len(completed), 3
         ),
-        "total_actual_cost_usd": round(
-            sum(case["actual_cost_usd"] for case in completed), 8
+        "total_estimated_paid_tier_cost_usd": round(
+            sum(case["estimated_paid_tier_cost_usd"] for case in completed), 8
         ),
     }
 
 
 def _safe_error(error: Exception) -> dict:
     if isinstance(error, urllib.error.HTTPError):
-        return {"type": "HTTPError", "status": error.code, "reason": str(error.reason)}
+        detail = None
+        raw_body = b""
+        try:
+            raw_body = error.read(4096)
+            body = json.loads(raw_body.decode("utf-8", errors="replace"))
+            provider_error = body.get("error") if isinstance(body, dict) else None
+            if isinstance(provider_error, dict):
+                detail = {
+                    key: provider_error.get(key)
+                    for key in ("code", "message", "status")
+                    if provider_error.get(key) is not None
+                }
+        except (json.JSONDecodeError, OSError, UnicodeError):
+            body_text = raw_body.decode("utf-8", errors="replace").strip()
+            detail = {"raw_body": body_text[:2000]} if body_text else None
+        return {
+            "type": "HTTPError",
+            "status": error.code,
+            "reason": str(error.reason),
+            "content_type": error.headers.get("Content-Type") if error.headers else None,
+            "provider_error": detail,
+        }
     if isinstance(error, urllib.error.URLError):
         return {"type": "URLError", "reason": str(error.reason)}
     return {"type": type(error).__name__, "reason": str(error)}
@@ -262,18 +295,40 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--case-id", action="append", default=[])
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument(
+        "--compact-profile", choices=("full", "lean", "minimal"), default="full"
+    )
+    parser.add_argument("--prompt-version", choices=("v1", "v2", "v3"), default="v1")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--execute", action="store_true", help="Actually call the isolated cloud API")
+    parser.add_argument(
+        "--billing-tier-label",
+        default="unknown_not_read_from_api",
+        help="Evidence label only; cost remains a paid-tier price equivalent, not an invoice",
+    )
     parser.add_argument("--max-estimated-usd", type=float, default=0.05)
     parser.add_argument("--timeout", type=float, default=90.0)
+    parser.add_argument(
+        "--minimum-request-interval-seconds",
+        type=float,
+        default=0.0,
+        help="Minimum start-to-start interval for respecting project RPM limits",
+    )
     args = parser.parse_args()
 
+    if args.minimum_request_interval_seconds < 0:
+        parser.error("minimum request interval must not be negative")
     if not MODEL_PATTERN.fullmatch(args.model):
         parser.error("model id contains unsupported characters")
-    cases = _load_cases(args.manifest.resolve(), set(args.case_id))
+    cases = _load_cases(
+        args.manifest.resolve(),
+        set(args.case_id),
+        args.compact_profile,
+        args.prompt_version,
+    )
     if not cases:
         parser.error("manifest did not contain any runnable cases")
-    preflight = _preflight(cases, args.model)
+    preflight = _preflight(cases, args.model, args.compact_profile, args.prompt_version)
     if preflight["estimated_maximum_cost_usd"] > args.max_estimated_usd:
         parser.error(
             f"estimated maximum US${preflight['estimated_maximum_cost_usd']:.6f} exceeds "
@@ -298,7 +353,15 @@ def main() -> None:
 
     results = []
     errors = []
+    previous_request_started = None
     for case in cases:
+        if previous_request_started is not None:
+            remaining = args.minimum_request_interval_seconds - (
+                time.monotonic() - previous_request_started
+            )
+            if remaining > 0:
+                time.sleep(remaining)
+        previous_request_started = time.monotonic()
         try:
             raw = _call_gemini(args.model, api_key, case["prompt"], args.timeout)
             response_text = _extract_text(raw["payload"])
@@ -322,8 +385,11 @@ def main() -> None:
                     "input_overall_score": case["compact"]["summary"]["overall_score"],
                     "client_wall_seconds": round(raw["client_wall_seconds"], 4),
                     **usage,
-                    "actual_cost_usd": round(
-                        _cost_usd(usage["prompt_tokens"], usage["billable_output_tokens"]), 8
+                    "estimated_paid_tier_cost_usd": round(
+                        _paid_tier_equivalent_cost_usd(
+                            usage["prompt_tokens"], usage["billable_output_tokens"]
+                        ),
+                        8,
                     ),
                     "finish_reason": (raw["payload"].get("candidates") or [{}])[0].get("finishReason"),
                     "checks": checks,
@@ -350,6 +416,9 @@ def main() -> None:
         "execution_evidence_kind": "cloud_api_measurement",
         "provider": "Google Gemini API",
         "model": args.model,
+        "billing_tier_label": args.billing_tier_label,
+        "cost_semantics": "paid-tier price equivalent from token usage; not an observed invoice",
+        "minimum_request_interval_seconds": args.minimum_request_interval_seconds,
         "data_boundary": preflight["data_boundary"],
         "preflight": preflight,
         "network_request_count": len(results) + len(errors),

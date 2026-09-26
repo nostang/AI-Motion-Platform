@@ -15,12 +15,12 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from benchmark_gemma4 import PROJECT_ROOT, REQUIRED_KEYS, _compact_report
+from benchmark_gemma4 import PROJECT_ROOT, REQUIRED_KEYS, _select_compact_report
 
 
 SCORE_PATTERN = re.compile(r"(?:評分(?:為|是|高達)?|得分(?:為|是)?)\s*(\d+(?:\.\d+)?)\s*分")
 DIRECT_VISUAL_CLAIMS = ("我看到", "影片中可以看到", "畫面顯示", "觀察到球拍", "觀察到羽球")
-LIMITATION_TERMS = ("單鏡頭", "2D", "二維")
+LIMITATION_TERMS = ("單鏡頭", "單攝影機", "單相機", "2D", "二維")
 UNCERTAINTY_TERMS = ("不足", "無法", "尚未", "未評估", "僅能", "缺乏")
 POSITIVE_LEVELS = {"GOOD", "EXCELLENT", "PASS"}
 
@@ -57,11 +57,13 @@ def _positive_metric_tokens(score_breakdown: Any) -> set[str]:
     return tokens
 
 
-def _evaluate_case(case: dict) -> dict:
+def _evaluate_case(case: dict, compact_profile: str = "full") -> dict:
     report_path = Path(case["report_path"])
     if not report_path.is_absolute():
         report_path = PROJECT_ROOT / report_path
-    source = _compact_report(json.loads(report_path.read_text(encoding="utf-8")))
+    source = _select_compact_report(
+        json.loads(report_path.read_text(encoding="utf-8")), compact_profile
+    )
     response = case.get("response") if isinstance(case.get("response"), dict) else {}
     response_text = _text(response)
     response_priority = _text(response.get("priority", ""))
@@ -69,20 +71,32 @@ def _evaluate_case(case: dict) -> dict:
     source_priorities = [str(value) for value in source.get("improvement_priorities") or []]
     source_strengths = [str(value) for value in source.get("strengths") or []]
     positive_metrics = _positive_metric_tokens(source.get("score_breakdown"))
-    if source_strengths:
-        strength_grounded = any(value in response_strength for value in source_strengths)
-    else:
-        strength_grounded = (
-            any(term in response_strength.lower() for term in ("無", "无", "none"))
-            or any(metric in response_strength for metric in positive_metrics)
-        )
-    score_ok, score_mentions = _score_integrity(response_text, case.get("input_overall_score"))
     insufficient = (
         source["summary"].get("evaluation_status") == "INSUFFICIENT_EVIDENCE"
         or case.get("input_overall_score") is None
     )
+    if source_strengths:
+        strength_grounded = any(value in response_strength for value in source_strengths)
+    else:
+        strength_grounded = (
+            (insufficient and response.get("strength") in ([], "", None))
+            or (not positive_metrics and response.get("strength") in ([], "", None))
+            or any(term in response_strength.lower() for term in ("無", "无", "none"))
+            or any(metric in response_strength for metric in positive_metrics)
+        )
+    score_ok, score_mentions = _score_integrity(response_text, case.get("input_overall_score"))
     checks = {
         "schema_exact_keys": set(response) == REQUIRED_KEYS,
+        "schema_value_types": (
+            isinstance(response.get("summary"), str)
+            and isinstance(response.get("strength"), list)
+            and all(isinstance(item, str) for item in response.get("strength", []))
+            and isinstance(response.get("priority"), list)
+            and all(isinstance(item, str) for item in response.get("priority", []))
+            and isinstance(response.get("drill"), list)
+            and all(isinstance(item, str) for item in response.get("drill", []))
+            and isinstance(response.get("caution"), str)
+        ),
         "non_empty_required_values": all(bool(_text(response.get(key, "")).strip()) for key in REQUIRED_KEYS),
         "all_priorities_grounded": all(value in response_priority for value in source_priorities),
         "strength_grounded_or_explicitly_none": strength_grounded,
@@ -172,11 +186,17 @@ def main() -> None:
     args = parser.parse_args()
 
     run = json.loads(args.input.read_text(encoding="utf-8"))
-    cases = [_evaluate_case(case) for case in run["cases"]]
+    compact_profile = (
+        (run.get("runtime") or {}).get("compact_profile")
+        or (run.get("preflight") or {}).get("compact_profile")
+        or "full"
+    )
+    cases = [_evaluate_case(case, compact_profile) for case in run["cases"]]
     evidence_kinds = sorted({case["evidence_kind"] for case in cases})
     result = {
         "evaluation": "automatic_contract_and_grounding_checks_not_human_semantic_review",
         "source_run": str(args.input),
+        "compact_profile": compact_profile,
         "overall": _aggregate(cases),
         "by_evidence_kind": {
             kind: _aggregate([case for case in cases if case["evidence_kind"] == kind])

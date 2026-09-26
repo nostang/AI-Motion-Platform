@@ -50,7 +50,7 @@ def option_a() -> None:
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    fig.suptitle("方案 A｜雲端 MediaPipe + 雲端 LLM：證據與尚未測項", fontproperties=FONT, fontsize=22, color=NAVY)
+    fig.suptitle("方案 A｜雲端 MediaPipe + 雲端 LLM：已測證據與剩餘邊界", fontproperties=FONT, fontsize=22, color=NAVY)
     labels = ["1. 上傳影片", "2. MediaPipe\n擷取人體骨架", "3. 規則引擎\n固定分數", "4. 雲端 LLM\n只負責解說", "5. 報告畫面"]
     colors = [NAVY, BLUE, TEAL, ORANGE, NAVY]
     xs = [0.02, 0.215, 0.41, 0.605, 0.8]
@@ -73,7 +73,7 @@ def option_a() -> None:
         ax.text(x + 0.1, 0.31, value, ha="center", fontproperties=FONT, fontsize=18, color=NAVY)
     scenario = cost["scenario"]
     ax.text(0.03, 0.17, f'估算情境：10,000 次/月約 US${scenario["combined_usd_per_month"]:.3f}（不含儲存、網路、DB、重試）', fontproperties=FONT, fontsize=14, color=ORANGE)
-    ax.text(0.03, 0.09, "尚未實測：雲端冷啟動、網路延遲、雲端 LLM 品質與實際帳單；需隔離測試專案補驗。", fontproperties=FONT, fontsize=13, color=RED)
+    ax.text(0.03, 0.09, "已實測雲端 LLM 28 例；尚未實測完整影片上傳、Cloud Run 冷啟動與正式帳單。", fontproperties=FONT, fontsize=13, color=RED)
     fig.savefig(ASSETS / "a_pipeline_evidence.png", dpi=170, bbox_inches="tight")
     plt.close(fig)
 
@@ -112,6 +112,143 @@ next: isolated GEMINI_API_KEY -> one synthetic smoke test -> 28-case run"""
         color="#93C5FD",
     )
     fig.savefig(ASSETS / "a_cloud_preflight_screen.png", dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
+def option_ab_final_comparison() -> None:
+    cloud = _json("gemini_35_flash_lite_28_case_minimal_v3.json")
+    local = _json("gemma4_28_case_minimal_v3.json")
+    cloud_quality = _json("gemini_35_flash_lite_28_case_minimal_v3_quality.json")
+    local_quality = _json("gemma4_28_case_minimal_v3_quality.json")
+
+    fig, axes = plt.subplots(1, 3, figsize=(17, 7.5), facecolor="white")
+    fig.suptitle(
+        "A vs B｜同一組 28 案例、相同最小輸入與 v3 提示詞",
+        fontproperties=FONT,
+        fontsize=22,
+        color=NAVY,
+    )
+
+    labels = ["p50", "p95"]
+    a_latency = [cloud["aggregate"]["p50_wall_seconds"], cloud["aggregate"]["p95_wall_seconds"]]
+    b_latency = [local["aggregate"]["p50_wall_seconds"], local["aggregate"]["p95_wall_seconds"]]
+    x = [0, 1]
+    axes[0].bar([i - 0.18 for i in x], a_latency, width=0.36, color=BLUE, label="A 雲端 Gemini")
+    axes[0].bar([i + 0.18 for i in x], b_latency, width=0.36, color=ORANGE, label="B 地端 Gemma")
+    axes[0].set_xticks(x, labels)
+    axes[0].set_ylabel("每筆回應時間（秒）", fontproperties=FONT)
+    axes[0].set_title("速度接近", fontproperties=FONT, fontsize=15)
+    axes[0].legend(prop=FONT)
+    axes[0].grid(axis="y", alpha=0.2)
+    for pos, value in zip([i - 0.18 for i in x], a_latency):
+        axes[0].text(pos, value + 0.04, f"{value:.2f}", ha="center")
+    for pos, value in zip([i + 0.18 for i in x], b_latency):
+        axes[0].text(pos, value + 0.04, f"{value:.2f}", ha="center")
+
+    quality_labels = ["型別正確", "改善有依據", "優點有依據", "十項全通過"]
+    a_checks = cloud_quality["overall"]["check_pass_rates"]
+    b_checks = local_quality["overall"]["check_pass_rates"]
+    a_quality = [
+        a_checks["schema_value_types"],
+        a_checks["all_priorities_grounded"],
+        a_checks["strength_grounded_or_explicitly_none"],
+        cloud_quality["overall"]["automatic_all_checks_pass_rate"],
+    ]
+    b_quality = [
+        b_checks["schema_value_types"],
+        b_checks["all_priorities_grounded"],
+        b_checks["strength_grounded_or_explicitly_none"],
+        local_quality["overall"]["automatic_all_checks_pass_rate"],
+    ]
+    qx = list(range(4))
+    axes[1].bar([i - 0.18 for i in qx], [v * 100 for v in a_quality], width=0.36, color=BLUE, label="A")
+    axes[1].bar([i + 0.18 for i in qx], [v * 100 for v in b_quality], width=0.36, color=ORANGE, label="B")
+    axes[1].set_xticks(qx, quality_labels, fontproperties=FONT, rotation=15)
+    axes[1].set_ylim(0, 112)
+    axes[1].set_ylabel("自動檢查通過率（%）", fontproperties=FONT)
+    axes[1].set_title("結構與依據差距", fontproperties=FONT, fontsize=15)
+    axes[1].legend(prop=FONT)
+    axes[1].grid(axis="y", alpha=0.2)
+    for pos, value in zip([i - 0.18 for i in qx], a_quality):
+        axes[1].text(pos, value * 100 + 2, f"{value * 100:.0f}%", ha="center", fontsize=9)
+    for pos, value in zip([i + 0.18 for i in qx], b_quality):
+        axes[1].text(pos, value * 100 + 2, f"{value * 100:.0f}%", ha="center", fontsize=9)
+
+    axes[2].axis("off")
+    axes[2].set_title("怎麼解讀", fontproperties=FONT, fontsize=15, color=NAVY)
+    findings = [
+        ("A：28/28 完成", "0 errors；schema 與十項自動檢查皆 100%。"),
+        ("A：費用口徑", f"28 筆付費單價等值 US${cloud['aggregate']['total_estimated_paid_tier_cost_usd']:.6f}；專案為 Free tier，非實際帳單。"),
+        ("A：免費層限制", "AI Studio 顯示 15 RPM；本輪每筆至少間隔 4.5 秒。"),
+        ("B：仍能產生文字", "28/28 有 JSON，但型別 0%、改善 ID 64.3%、優點依據 42.9%。"),
+        ("共同限制", "56 份 A/B 輸出仍需人工盲評；自動檢查不等於教練認可。"),
+    ]
+    for index, (title, body) in enumerate(findings):
+        y = 0.91 - index * 0.18
+        axes[2].add_patch(
+            FancyBboxPatch(
+                (0.02, y - 0.115),
+                0.96,
+                0.14,
+                boxstyle="round,pad=0.02",
+                fc=PALE,
+                ec="#CBD5E1",
+            )
+        )
+        axes[2].text(0.06, y - 0.01, title, fontproperties=FONT, fontsize=12.5, color=NAVY)
+        axes[2].text(0.06, y - 0.07, body, fontproperties=FONT, fontsize=9.5, color="#52606D")
+
+    fig.text(
+        0.5,
+        0.025,
+        "A 的請求時間不含為遵守 15 RPM 而加入的等待；人工 grounding、實用性、清楚度與幻覺盲評尚未填寫。",
+        ha="center",
+        fontproperties=FONT,
+        fontsize=11.5,
+        color=RED,
+    )
+    fig.tight_layout(rect=[0, 0.07, 1, 0.92])
+    fig.savefig(ASSETS / "ab_cloud_local_28_case_comparison.png", dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
+def option_a_final_screen() -> None:
+    run = _json("gemini_35_flash_lite_28_case_minimal_v3.json")
+    quality = _json("gemini_35_flash_lite_28_case_minimal_v3_quality.json")
+    aggregate = run["aggregate"]
+    checks = quality["overall"]["check_pass_rates"]
+    terminal_text = f"""$ python benchmark_gemini_corpus.py --compact-profile minimal --prompt-version v3 \\
+    --minimum-request-interval-seconds 4.5 --execute ...
+
+provider: Google Gemini API
+model: {run['model']}
+billing tier label: {run['billing_tier_label']}
+data sent: compact de-identified motion JSON; video uploads = 0
+cases completed: {aggregate['completed_count']}/{aggregate['case_count']}
+errors: {len(run['errors'])}
+
+mean request latency: {aggregate['mean_wall_seconds']:.4f} s
+p50 / p95: {aggregate['p50_wall_seconds']:.4f} / {aggregate['p95_wall_seconds']:.4f} s
+schema value types: {checks['schema_value_types'] * 100:.0f}%
+priority grounded: {checks['all_priorities_grounded'] * 100:.0f}%
+strength grounded or explicitly none: {checks['strength_grounded_or_explicitly_none'] * 100:.0f}%
+all 10 automatic checks: {quality['overall']['automatic_all_checks_pass_rate'] * 100:.0f}%
+
+paid-tier price equivalent: US${aggregate['total_estimated_paid_tier_cost_usd']:.7f}
+cost semantics: not an observed invoice
+human blind review: pending (56 A/B outputs)"""
+    fig = plt.figure(figsize=(14, 8), facecolor="#111827")
+    fig.text(0.04, 0.94, "A 雲端 LLM｜28 案例正式執行畫面", fontproperties=FONT, fontsize=20, color="white")
+    fig.text(0.04, 0.865, terminal_text, fontproperties=MONO, fontsize=12.5, color="#D1FAE5", va="top", linespacing=1.32)
+    fig.text(
+        0.04,
+        0.035,
+        "請求時間不含 4.5 秒 pacing｜自動 contract/grounding 檢查不等於人工教練評分",
+        fontproperties=FONT,
+        fontsize=11,
+        color="#93C5FD",
+    )
+    fig.savefig(ASSETS / "a_cloud_final_screen.png", dpi=170, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -354,10 +491,10 @@ def decision() -> None:
         ["通過", "通過", "未通過"],
         ["通過", "未通過", "尚未證明"],
         ["通過", "較困難", "可行但未建立"],
-        ["核心通過；雲端待測", "通過", "僅流程；mAP=0"],
+        ["28例自動檢查通過", "可輸出；合約不穩", "僅流程；mAP=0"],
         ["不需要", "不需要", "需要"],
     ]
-    colors = {"通過": "#D1FAE5", "不需要": "#D1FAE5", "未通過": "#FEE2E2", "較困難": "#FEF3C7", "尚未證明": "#FEF3C7", "核心通過；雲端待測": "#FEF3C7", "僅流程；mAP=0": "#FEE2E2", "可行但未建立": "#FEF3C7", "需要": "#FEE2E2"}
+    colors = {"通過": "#D1FAE5", "不需要": "#D1FAE5", "未通過": "#FEE2E2", "較困難": "#FEF3C7", "尚未證明": "#FEF3C7", "28例自動檢查通過": "#D1FAE5", "可輸出；合約不穩": "#FEF3C7", "僅流程；mAP=0": "#FEE2E2", "可行但未建立": "#FEF3C7", "需要": "#FEE2E2"}
     fig, ax = plt.subplots(figsize=(15, 7), facecolor="white")
     ax.axis("off")
     table = ax.table(cellText=matrix, rowLabels=rows, colLabels=cols, cellLoc="center", loc="center", colWidths=[0.24, 0.24, 0.24])
@@ -372,7 +509,7 @@ def decision() -> None:
         elif col >= 0:
             cell.set_facecolor(colors.get(cell.get_text().get_text(), "white"))
     fig.suptitle("選擇 A 的證據閘門（不是把估算偽裝成實測）", fontproperties=FONT, fontsize=22, color=NAVY)
-    fig.text(0.5, 0.06, "結論：A 最符合現階段產品條件；但雲端 LLM 與端到端延遲仍必須在隔離環境補驗。", ha="center", fontproperties=FONT, fontsize=14, color=RED)
+    fig.text(0.5, 0.06, "結論：A 的雲端 LLM 已完成同條件 28 例；完整上傳、Cloud Run、帳單與人工盲評仍需補驗。", ha="center", fontproperties=FONT, fontsize=14, color=RED)
     fig.savefig(ASSETS / "abc_decision_evidence.png", dpi=170, bbox_inches="tight")
     plt.close(fig)
 
@@ -381,6 +518,8 @@ def main() -> None:
     ASSETS.mkdir(parents=True, exist_ok=True)
     option_a()
     option_a_preflight()
+    option_ab_final_comparison()
+    option_a_final_screen()
     option_b()
     option_b_corpus()
     option_c()

@@ -2,7 +2,7 @@
 
 ## 目的
 
-建立一份 A 與 B 都能使用的固定輸入，避免兩個方案各挑對自己有利的案例。A 尚未執行雲端測試；本輪先完成資料集與 B 的基準結果。
+建立一份 A 與 B 都能使用的固定輸入，避免兩個方案各挑對自己有利的案例。資料集先用 B v1 探索問題，之後 A、B 已用相同 `minimal` 輸入與 v3 合約完成正式比較。
 
 ## 盤點結果
 
@@ -32,7 +32,7 @@
 }
 ```
 
-## B 的第一次完整結果
+## B 的第一次完整結果（v1 探索，非最終公平比較）
 
 | 指標 | 全部 28 份 | 19 份真實 | 9 份模擬 |
 |---|---:|---:|---:|
@@ -44,7 +44,11 @@
 
 自動九項檢查有 26/28 全部通過。九項包含：固定 schema、必要值非空、改善項目有根據、優點有正向證據、分數引用未被修改、說明 2D 限制、沒有聲稱直接看見畫面、證據不足時有保留、基本繁中一致性。
 
-這仍然不是教練人工品質評分。`gemma4_28_case_human_review.csv` 已留下 grounding、實用性、清楚度與幻覺欄位，等 A 產生相同案例輸出後再做盲評。
+這仍然不是教練人工品質評分。後續同條件 A/B 比較已完成，56 份輸出集中在 `ab_28_case_blind_human_review.csv` 等待人工盲評。
+
+## A/B 同條件正式結果
+
+使用相同 `minimal` 輸入、v3 提示詞與新增欄位型別後的十項檢查：A 的 p50/p95 為 1.6191/2.4000 秒，B 為 1.8344/2.4474 秒；A 的欄位型別、priority grounding、strength grounding 與十項全過皆 100%，B 分別為 0%、64.3%、42.9%、0%。完整解讀見 [`AB_CLOUD_LOCAL_COMPARISON.zh-TW.md`](AB_CLOUD_LOCAL_COMPARISON.zh-TW.md)。
 
 ## 發現的兩個問題
 
@@ -73,5 +77,8 @@
 - [`results/gemma4_28_case_quality.json`](results/gemma4_28_case_quality.json)：自動檢查。
 - [`results/gemma4_28_case_human_review.csv`](results/gemma4_28_case_human_review.csv)：待人工填寫的評分表。
 - [`results/gemma4_concurrency_1_2_4.json`](results/gemma4_concurrency_1_2_4.json)：並行原始結果。
+- [`results/gemini_35_flash_lite_28_case_minimal_v3.json`](results/gemini_35_flash_lite_28_case_minimal_v3.json)：A 同條件正式輸出。
+- [`results/gemma4_28_case_minimal_v3.json`](results/gemma4_28_case_minimal_v3.json)：B 同條件正式輸出。
+- [`results/ab_28_case_blind_human_review.csv`](results/ab_28_case_blind_human_review.csv)：56 列待人工評分盲評表。
 
 ![28 案例 B 實驗證據](assets/b_28_case_evidence.png)

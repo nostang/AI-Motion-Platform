@@ -525,3 +525,148 @@ GPU 不是可行性的必要條件，但對互動等待很有價值。由於兩�
 ### 心得
 
 研究用 repository 與主系統共用工作目錄時，測試範圍必須明確。這次保留了「寬範圍收集為何停止」的紀錄，再用主 PoC 的正式測試範圍驗證功能，避免把缺少研究依賴誤報成產品壞掉，也避免反過來隱藏真正的回歸。
+
+## 19. A：隔離專案與一筆 smoke test
+
+### 實際步驟
+
+- 在與羽球＋1無關的 Google AI Studio 測試專案建立臨時 API key；專案介面顯示 Free tier，沒有啟用付費帳務。
+- 金鑰只在執行當下放進終端環境變數，工具結果、URL 與 Git 均不保存金鑰；每次執行後立即 unset。
+- 先只送純模擬 `S-SV-01`，不送真實影片衍生資料。
+
+### 結果
+
+- 1/1 完成，API 回應 1.4409 秒。
+- 五欄 schema、必要值、grounding、限制與繁中檢查全部通過。
+- 依實際 token usage 套 paid-tier 單價等值為 US$0.0004139；專案是 Free tier，這不是實際帳單。
+
+### 心得
+
+先跑一筆純模擬資料，能把授權、schema 和 token 計費問題與真實資料風險分開。金鑰曾在本機終端畫面可見，因此整輪完成後應刪除或輪替；這是憑證衛生問題，不是羽球＋1功能異動。
+
+## 20. A：9 筆模擬壓力案例
+
+### 實際步驟
+
+- 只跑 9 筆明確標示為模擬的高低分、低信心、無分數與禁止視覺宣稱案例。
+- 用同一支 evaluator 檢查輸出；發現「證據不足、沒有任何優點」時，空的 `strength` 應視為正確行為。
+- 修正 evaluator 的規則，而不是要求模型憑空生出優點。
+
+### 結果
+
+- 9/9 完成；平均 1.7049 秒、p50 1.5630 秒、p95 2.1894 秒。
+- 修正合理的空值規則後 9/9 通過自動檢查。
+- paid-tier 單價等值合計 US$0.0038965。
+
+### 心得
+
+評估程式也可能有錯。若輸入明確說證據不足，模型留空比硬湊優點更安全；不能為了追求滿分，把合理拒答判成失敗。
+
+## 21. A：速率限制、資料最小化與 v3 合約
+
+### 實際步驟
+
+- 初次連續跑全量時收到 generic HTTP 400；沒有盲目重試，也保留安全錯誤紀錄。
+- 在隔離專案 Rate Limit 畫面確認 Gemini 3.5 Flash-Lite 的限制為 15 RPM、250K TPM、500 RPD。
+- 測試 `full`、`lean`、`minimal` 三種資料量，最後選 `minimal`：只保留解說必要欄位，不送完整 score breakdown。
+- 將提示詞升到 v3，明定五個 key、字串/陣列型別、snake_case ID 保留、不得改分與不得做視覺/醫療宣稱。
+- 每次請求起點至少相隔 4.5 秒；等待時間不算入單筆 API latency。
+
+### 結果
+
+- 沒有因失敗請求產生可列入比較的 token 成本。
+- `minimal` 仍足以做摘要與 grounding 檢查，並比 full profile 少送不必要資料。
+- 速率限制從不明的 400 轉成可重現、可說明的 pacing 條件。
+
+### 心得
+
+這不是用提示詞美化 A，而是先把兩邊的產品合約說清楚，再用完全相同條件重跑 A、B。資料最小化同時降低隱私面與 token 成本；15 RPM 也提醒免費層只適合 PoC，不能直接外推正式多人服務。
+
+## 22. A vs B：相同 28 案例正式比較
+
+### 實際步驟
+
+- A、B 都讀相同 28 案例、`minimal` profile 與 v3 提示詞。
+- 新增欄位型別檢查，因此自動規則從早期九項變成十項。
+- evaluator 依每次執行真正的 compact profile 判定 grounding，不使用模型沒看到的 full report。
+- 分別產生執行 JSON、品質 JSON 與人工 review CSV。
+
+### 結果
+
+- A：28/28、0 errors；平均 1.6908 秒、p50 1.6191 秒、p95 2.4000 秒。
+- A：欄位型別 100%、priority grounding 100%、strength grounding/合理留空 100%、十項全過 100%。
+- A：28 筆 paid-tier 單價等值 US$0.0121284；Free tier，非實際帳單。
+- B：28/28 有 JSON；平均 1.9120 秒、p50 1.8344 秒、p95 2.4474 秒。
+- B：欄位型別 0%、priority grounding 64.3%、strength grounding/合理留空 42.9%、十項全過 0%。
+
+### 心得
+
+A、B 的速度接近，因此不能把「比較快」當成主結論。真正支持 A 的新證據是：在同一批資料與明確合約下，A 較穩定地提供後端可直接驗證的結構與輸入依據。B 的 0% 不是內容完全無用，而是每案至少有一項合約失敗；這種差異會轉成驗證、修復與 fallback 的工程成本。
+
+### 畫面
+
+![A 的 28 案例正式執行畫面](assets/a_cloud_final_screen.png)
+
+![A 與 B 的同條件 28 案例比較](assets/ab_cloud_local_28_case_comparison.png)
+
+### 證據
+
+[`AB_CLOUD_LOCAL_COMPARISON.zh-TW.md`](AB_CLOUD_LOCAL_COMPARISON.zh-TW.md)、[`results/gemini_35_flash_lite_28_case_minimal_v3.json`](results/gemini_35_flash_lite_28_case_minimal_v3.json)、[`results/gemma4_28_case_minimal_v3.json`](results/gemma4_28_case_minimal_v3.json)
+
+## 23. 人工盲評準備
+
+### 實際步驟
+
+- 合併 A、B 各 28 份輸出，共 56 列。
+- 隱藏 provider/model，使用固定亂數順序產生評分表。
+- 預留 grounding、helpfulness、clarity、hallucination 與備註欄。
+- provider 對照另存 mapping；評分者完成前不應查看。
+
+### 結果
+
+- [`results/ab_28_case_blind_human_review.csv`](results/ab_28_case_blind_human_review.csv) 可直接交給評分者。
+- 人工分數保持空白，沒有用模型或模擬數字冒充人類判斷。
+
+### 心得
+
+自動檢查適合判斷格式、ID 與禁語，不能回答建議是否自然、清楚、真的有用。把人工分數留白不是缺點，而是把「已知」和「尚未有人判斷」分清楚。
+
+## 24. A 雲端實驗的安全收尾
+
+### 實際步驟
+
+- 每次執行後確認 `GEMINI_API_KEY` 已從終端環境移除。
+- 結果檔只留 prompt hash、token usage、延遲、輸出與費用等值，不留 key、帳號、影片或絕對路徑。
+- 沒有建立 VM、Cloud Run、Cloud SQL、bucket、queue、secret、service account 或 IAM。
+- 沒有讀改 `/Users/ivesmi/Documents/badminton-plus-one`；使用者未追蹤檔 `scripts/offline_demo_server.py` 仍不在本實驗範圍。
+
+### 結果
+
+- 羽球＋1正式功能與資源未受影響。
+- 尚待使用者確認後，在 Google AI Studio 刪除或輪替臨時測試 key。
+
+### 心得
+
+完成結果不等於安全工作結束。臨時金鑰應在證據產出與重跑需求結束後撤銷；因刪除是不可逆的外部操作，應明確確認目標後再做。
+
+## 25. 最終驗證與交付整理
+
+### 實際步驟
+
+- 重跑主 PoC 的完整 `tests/`，包含新增的 A/B 輸入、費用語意、欄位型別、盲評隱藏與 mapping 測試。
+- 對五支實驗程式做 Python 語法檢查。
+- 驗證結果目錄 JSON 均可解析、盲評 CSV 為 56 筆資料加 1 列表頭。
+- 搜尋工作區是否留下 Gemini API key 格式；未發現。
+- 重新產生並目視檢查 A 正式執行畫面、A/B 比較圖、A 流程圖與選型證據表。
+- 執行 `git diff --check`；保留使用者未追蹤檔 `scripts/offline_demo_server.py`，不讀改、不加入提交。
+
+### 結果
+
+- 主 PoC Python：246 passed、2 skipped。
+- 新增 A/B 實驗測試：12/12 通過（已包含在上述 246 個 passed）。
+- Python 語法、JSON、CSV 筆數、金鑰掃描與 diff whitespace 檢查通過。
+- 沒有改動羽球＋1專案，也沒有部署或變更任何正式資源。
+
+### 心得
+
+本輪已從「A 架構上比較合理」進展到「A 的解說層有同條件實測依據」。最後仍保留兩個誠實邊界：自動檢查不是人類教練認可；LLM API 成功也不是完整雲端影片流程已上線。

@@ -120,7 +120,8 @@ Google Cloud Taiwan `n2-standard-4` 為 4 vCPU / 16 GiB，公開隨用隨付價 
 ## B 能做到什麼程度
 
 - 已證明：19 個真實影片案例全部產生規則報告，再加 9 個明確標示的模擬壓力案例，共 28 份固定輸入。
-- 已證明：28/28 是有效 JSON；一次輸出 27/28 欄位完整，自動九項檢查 26/28 全部通過。
+- 早期 v1：28/28 是有效 JSON；一次輸出 27/28 欄位完整，當時九項檢查 26/28 全部通過。
+- 正式同條件 v3：28/28 有 JSON，p50 1.8344 秒、p95 2.4474 秒；但字串/陣列型別正確率 0%、priority grounding 64.3%、strength grounding 42.9%，十項全部通過率 0%。這是合約檢查，不是人工內容 0 分。
 - 已發現：沒有任何優點的 `R-CLR-02` 會穩定造成 v1 欄位錯誤；v2 雖修正 schema，卻把待改善項目誤寫成優點。
 - 已證明：CPU 能跑，Apple GPU 明顯縮短等待。
 - 已證明：單 runner 從 1、2 到 4 個請求，總吞吐都約 0.48 requests/s；p95 從 2.07 增至 8.30 秒。
@@ -142,6 +143,8 @@ B 不是做不到，而是「把雲端成本換成每一台終端的硬體與維
 - [`results/gemma4_concurrency.json`](results/gemma4_concurrency.json)
 - [`results/gemma4_28_case_corpus.json`](results/gemma4_28_case_corpus.json)
 - [`results/gemma4_28_case_quality.json`](results/gemma4_28_case_quality.json)
+- [`results/gemma4_28_case_minimal_v3.json`](results/gemma4_28_case_minimal_v3.json)
+- [`results/gemma4_28_case_minimal_v3_quality.json`](results/gemma4_28_case_minimal_v3_quality.json)
 - [`results/gemma4_concurrency_1_2_4.json`](results/gemma4_concurrency_1_2_4.json)
 - [`benchmark_gemma4.py`](benchmark_gemma4.py)
 - [`benchmark_gemma_concurrency.py`](benchmark_gemma_concurrency.py)

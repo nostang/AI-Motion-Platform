@@ -1,111 +1,120 @@
 # A：雲端 LLM 隔離實驗
 
-日期：2026-09-26
+日期：2026-09-26～2026-09-27
 
-目前狀態：**測試工具與 28 案例乾跑已完成；真實雲端 API 尚未執行。**
+目前狀態：**隔離的 Free tier 測試專案已完成 smoke test、9 個模擬案例及正式 28 案例；沒有部署或接觸羽球＋1正式資源。**
 
-這一頁只處理 A 的「雲端 LLM 解說層」。MediaPipe 已有另外的本機基準。本實驗不部署羽球+1、不讀正式資料庫、不上傳影片，也不建立 VM、Cloud Run、bucket、queue、service account 或 IAM。
+這一頁只處理 A 的「雲端 LLM 解說層」。MediaPipe 另有本機基準。本實驗不部署羽球＋1、不讀正式資料庫、不上傳影片，也不建立 VM、Cloud Run、bucket、queue、service account 或 IAM。
 
-## 1. 為什麼選這個模型做比較
+## 1. 用一句話理解這個實驗
 
-本輪預設使用 Google Gemini API 的 `gemini-3.5-flash-lite`。Google 目前把它列為穩定、偏向高量低成本的模型，並支援 structured outputs；官方模型頁也說明新專案應優先使用目前的 3.5 Flash-Lite，而不是把舊的 2.5 單價直接當成今日方案。
+既有 MediaPipe 與規則引擎先產生固定分數；Gemini 只把精簡 JSON 說成人話。它像報告翻譯員，不是裁判，也不能改分數。
+
+本輪使用 Google Gemini API 的 `gemini-3.5-flash-lite` 與 structured output。2026-09-26 查得的 standard paid tier 公開單價為 input US$0.30 / 1M tokens、output（含 thinking）US$2.50 / 1M tokens。
 
 - [官方模型清單](https://ai.google.dev/gemini-api/docs/models)
-- [Gemini 3.5 Flash-Lite 模型說明](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite)
+- [Gemini 3.5 Flash-Lite](https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite)
 - [官方價格](https://ai.google.dev/gemini-api/docs/pricing)
-- [Structured outputs 說明](https://ai.google.dev/gemini-api/docs/structured-output)
+- [Structured outputs](https://ai.google.dev/gemini-api/docs/structured-output)
 
-2026-09-26 查得的 standard paid tier 公開單價為：input US$0.30 / 1M tokens、output（含 thinking）US$2.50 / 1M tokens。價格會變動，正式報告前應再次查價。
+## 2. 實際送了什麼
 
-## 2. 實驗資料到底送什麼
+正式比較使用 `minimal` profile，每案只送：
 
-每一案只送既有 MediaPipe 與規則引擎報告的精簡 JSON：
+- 動作類型、評估狀態、既有總分與系統信心。
+- 既有優點、改善優先項目與前兩項限制。
+- 不送影片、檔案路徑、姓名、帳號、裝置資訊，也不送不需要的完整分項內容。
 
-- 動作類型、評估狀態、既有總分、系統信心。
-- 分項規則結果。
-- 既有優點、改善優先項目與限制。
-- 不送影片、不送檔案路徑、不送姓名、帳號或裝置資訊。
+LLM 必須輸出五個固定欄位：`summary`、`strength`、`priority`、`drill`、`caution`。`summary` 與 `caution` 必須是字串，其餘三個必須是字串陣列；提示詞禁止改分、假裝看見球拍或羽球，以及做醫療診斷。
 
-LLM 只能產生五個欄位：`summary`、`strength`、`priority`、`drill`、`caution`。分數仍由規則引擎決定，LLM 不可改分數，也不可聲稱看到球拍或羽球。
+## 3. 實驗順序
 
-## 3. 已完成的零網路乾跑
+1. 零網路乾跑 28 例，確認資料邊界與最壞費用上限。
+2. 只用一筆純模擬案例 smoke test，確認授權、schema 與 token usage。
+3. 跑 9 筆模擬壓力案例，修正「證據不足時 strength 可為空」的評估規則。
+4. 第一次全量執行遇到 Free tier 速率限制；AI Studio 顯示 15 RPM、250K TPM、500 RPD。
+5. 加入每次請求起點至少相隔 4.5 秒，再跑完整 28 例。
+6. 用完全相同的 `minimal` 輸入、v3 提示規則及十項自動檢查重跑地端 Gemma 4。
+7. 隱藏提供者、隨機排列 56 份輸出，建立人工盲評表。
 
-執行 [`benchmark_gemini_corpus.py`](benchmark_gemini_corpus.py)，讀取與 B 完全相同的 28 案例 manifest，但沒有加 `--execute`。
+刻意等待的 4.5 秒只為遵守 15 RPM，沒有算入單筆 API 回應時間。
+
+## 4. A 的正式 28 案例結果
 
 | 項目 | 結果 |
 |---|---:|
-| 案例 | 28（19 真實影片流程輸出 + 9 模擬壓力 JSON） |
-| 上傳影片 | 0 |
-| API 請求 | 0 |
-| 實際費用 | US$0 |
-| 保守估計 input 上限 | 18,630 tokens |
-| output 上限 | 8,960 tokens |
-| 全部 28 案例最高估計費用 | US$0.027989 |
+| 完成 | 28/28 |
+| 錯誤 | 0 |
+| 平均 API 回應時間 | 1.6908 秒 |
+| p50 / p95 | 1.6191 / 2.4000 秒 |
+| 五欄與欄位型別正確 | 100% |
+| 改善項目有輸入依據 | 100% |
+| 優點有輸入依據或明確表示無資料 | 100% |
+| 十項自動檢查全部通過 | 100%（28/28） |
+| 28 筆 paid-tier 單價等值 | US$0.0121284 |
 
-這個費用是「執行前安全上限」，不是帳單或實測平均。input token 以 UTF-8 bytes / 2 做保守估計；output 則故意用每案完整 320 tokens 計算。原始證據在 [`results/gemini_35_flash_lite_28_case_preflight.json`](results/gemini_35_flash_lite_28_case_preflight.json)。
+專案介面顯示為 **Free tier**。US$0.0121284 是依實際 token usage 套用 paid-tier 公開單價的「比較等值」，不是實際帳單，也不能寫成已付款費用。平均約為 US$0.000433/案。
 
-![A 的 28 案例零網路乾跑畫面](assets/a_cloud_preflight_screen.png)
+原始證據：
 
-## 4. 工具如何保護羽球+1
+- [`results/gemini_35_flash_lite_28_case_minimal_v3.json`](results/gemini_35_flash_lite_28_case_minimal_v3.json)
+- [`results/gemini_35_flash_lite_28_case_minimal_v3_quality.json`](results/gemini_35_flash_lite_28_case_minimal_v3_quality.json)
+- [`results/gemini_35_flash_lite_28_case_minimal_v3_review.csv`](results/gemini_35_flash_lite_28_case_minimal_v3_review.csv)
 
-1. 預設只 dry-run；沒有明確加 `--execute` 就不會連網。
-2. 真實執行還必須另外存在 `GEMINI_API_KEY`。
-3. API host 固定為 Google Gemini API，不能從參數改成羽球+1服務。
-4. 只讀固定 corpus manifest，不讀資料庫、bucket 或正式 API。
-5. 送出的內容是精簡 JSON，不含影片或檔案路徑。
-6. 預設費用安全上限 US$0.05；預估超過即停止。
-7. 不自動重試；若遇到 400、401、403，立即停止後續案例。
-8. 金鑰只放 request header，不寫入結果、不放 URL、不提交 Git。
+![A 的 28 案例正式執行畫面](assets/a_cloud_final_screen.png)
 
-## 5. 真實 API 的正確測試順序
+![A 與 B 的同條件 28 案例比較](assets/ab_cloud_local_28_case_comparison.png)
 
-目前環境沒有 `GEMINI_API_KEY`，所以以下步驟尚未執行：
+## 5. 與 B 的同條件比較
 
-1. 建立與羽球+1正式專案無關的 Gemini 測試金鑰，設定很小的預算或用量限制。
-2. 先只跑模擬案例 `S-SV-01`，驗證授權、JSON schema、token usage 與費用。
-3. 確認輸出沒有敏感資訊、沒有改分數、沒有假裝看見影片。
-4. 才跑全部 28 案例。
-5. 用與 B 相同的九項自動檢查及人工盲評表，比較 A 與 B。
-6. A/B 的輸出需隱藏模型名稱、隨機排序，再由人評 grounding、helpfulness、clarity、hallucination。
+| 指標 | A：雲端 Gemini | B：地端 Gemma 4 |
+|---|---:|---:|
+| p50 | 1.6191 秒 | 1.8344 秒 |
+| p95 | 2.4000 秒 | 2.4474 秒 |
+| 五個 key 齊全 | 100% | 100% |
+| 欄位型別正確 | 100% | 0% |
+| 改善項目有依據 | 100% | 64.3% |
+| 優點有依據或明確無資料 | 100% | 42.9% |
+| 十項全部通過 | 100% | 0% |
 
-單案 smoke test 指令：
+B 的 0% 型別率不是「完全沒有回答」。它 28/28 都有 JSON，但常把應為單一字串的 `summary`、`caution` 回成陣列，因此不符合明確合約。也因每案至少有一項失敗，所以「十項全部通過」為 0%。這是工程合約與 grounding 檢查，不是人類教練對整體內容品質打 0 分。
 
-```bash
-.venv/bin/python experiments/offline_abc/benchmark_gemini_corpus.py \
-  --manifest experiments/offline_abc/results/ab_corpus_manifest.json \
-  --case-id S-SV-01 \
-  --execute \
-  --output experiments/offline_abc/results/gemini_35_flash_lite_smoke.json
-```
+A 與 B 的速度其實接近；支持選 A 的主要新證據是輸出合約與依據一致性，不是宣稱 A 快很多。
 
-全部 28 案例只有在 smoke test 通過後才執行。
+## 6. 十項自動檢查是什麼
 
-## 6. 公平比較要看哪些數字
+1. key 精確一致。
+2. 欄位型別正確。
+3. 必要值非空。
+4. priority ID 來自輸入。
+5. strength 有依據，或在證據不足時明確留空。
+6. 不竄改分數。
+7. 有承認單攝影機 2D 等限制。
+8. 不聲稱直接看見影片、球拍或羽球。
+9. 證據不足時不硬給結論。
+10. 基本繁體中文檢查。
 
-| 面向 | A 與 B 都要量 |
-|---|---|
-| 結構可靠性 | JSON 可解析率、五欄完整率、精確 schema 率 |
-| 內容依據 | priority 與 strength 是否真的來自輸入 |
-| 安全性 | 是否改分數、假裝看見畫面、忽略證據不足 |
-| 語言 | 繁體中文、清楚度、可實行性 |
-| 速度 | p50、p95；A 額外記錄網路延遲，B 額外記錄冷啟動 |
-| 成本與設備 | A 每案實際 token 費；B 模型大小、RAM 與 VM 情境 |
-| 多人能力 | A 的 rate limit/併發；B 的本機排隊吞吐 |
+這些只能證明「遵守合約與已知證據」，不能取代人工判斷是否真的有幫助。因此已建立 [`results/ab_28_case_blind_human_review.csv`](results/ab_28_case_blind_human_review.csv)，共 56 列，待人工評 grounding、helpfulness、clarity、hallucination；提供者對評分者隱藏，對照表另存且評分前不應開啟。
 
-Structured outputs 可以提高「格式正確率」，但官方也明確提醒：schema 正確不保證內容語意正確。因此 A 即使 28/28 都符合 schema，仍然要做與 B 相同的 grounding 與人工盲評，不能直接宣布 A 比 B 準。
+## 7. 安全邊界
 
-## 7. 現在能說與不能說的話
+1. 工具預設 dry-run；必須同時指定 `--execute` 且存在獨立 `GEMINI_API_KEY` 才能連網。
+2. API host 固定為 Google Gemini API，不能改成羽球＋1服務。
+3. 只讀固定 corpus manifest，不讀資料庫、bucket 或正式 API。
+4. 不送影片或路徑；結果不保存金鑰。
+5. 預估超過 US$0.05 即停止；不自動重試；400、401、403 立即停批次。
+6. 使用隔離測試專案與臨時金鑰，沒有使用羽球＋1設定。
+
+Free tier 內容依官方頁面可能用於改善產品。本次資料已去識別且不含影片，但真實影片衍生指標仍應視為資料治理議題；正式產品需改用合適的付費資料條款並完成隱私/法務審查。
+
+## 8. 現在能說與不能說
 
 可以說：
 
-> 我已把 A 的雲端 LLM 測試隔離成只送結構化 JSON的工具，28 案例乾跑完成，沒有發出 API 請求；依當日單價，整批最壞估計低於 US$0.028。
+> 在相同 28 案例、相同最小輸入與 v3 合約下，A 完成 28/28，p50 1.6191 秒、p95 2.4000 秒，十項自動合約/grounding 檢查皆通過；B 的速度接近，但欄位型別與依據一致性較差。因此 A 有比原先「只看架構」更直接的實驗支持。
 
 不能說：
 
-> A 已實測比 B 快、準或便宜。
+> A 已證明整體羽球產品一定比 B 準，或已完成正式雲端成本與端到端部署驗證。
 
-因為沒有獨立測試金鑰，目前還沒有 A 的真實延遲、token 用量、輸出品質與帳單證據。
-
-## 8. 隱私提醒
-
-官方價格頁目前標示：free tier 的內容可能用於改善產品，paid tier 則標示不會。雖然本實驗已移除影片與身份資料，真實影片衍生的動作指標仍建議使用隔離的 paid 測試專案；若只想先驗證連線，可先用純模擬案例 smoke test。
+仍未測得的項目是完整影片上傳、Cloud Run 冷啟動與 MediaPipe 雲端硬體差異、正式 Storage/DB/network 帳單、多人壓測，以及人工教練盲評。

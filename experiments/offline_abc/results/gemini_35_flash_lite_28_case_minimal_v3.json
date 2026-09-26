@@ -1,0 +1,1334 @@
+{
+  "benchmark": "cloud-gemini-motion-explanation",
+  "execution_evidence_kind": "cloud_api_measurement",
+  "provider": "Google Gemini API",
+  "model": "gemini-3.5-flash-lite",
+  "billing_tier_label": "free_tier_visible_in_ai_studio",
+  "cost_semantics": "paid-tier price equivalent from token usage; not an observed invoice",
+  "minimum_request_interval_seconds": 4.5,
+  "data_boundary": "compact structured motion JSON only; no video upload",
+  "preflight": {
+    "execution_evidence_kind": "cloud_api_dry_run_not_measurement",
+    "provider": "Google Gemini API",
+    "model": "gemini-3.5-flash-lite",
+    "compact_profile": "minimal",
+    "prompt_version": "v3",
+    "case_count": 28,
+    "data_boundary": "compact structured motion JSON only; no video upload",
+    "estimated_input_tokens_upper_bound": 11150,
+    "maximum_output_tokens": 8960,
+    "estimated_maximum_cost_usd": 0.025745,
+    "pricing": {
+      "input_usd_per_million_tokens": 0.3,
+      "output_including_thinking_usd_per_million_tokens": 2.5,
+      "checked_on": "2026-09-26",
+      "source": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    "cases": [
+      {
+        "case_id": "R-CLR-01",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-01/analysis_report.json",
+        "prompt_sha256": "d4afe1521da199bec7aef1134de06634589b1639db44ffbf8d19d6e91f790c5e",
+        "estimated_input_tokens": 408
+      },
+      {
+        "case_id": "R-CLR-02",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-02/analysis_report.json",
+        "prompt_sha256": "fc679c9778c70273eca98369bb4442a6f305dc2dc9cd7c61bdabf3cffe5acaa1",
+        "estimated_input_tokens": 408
+      },
+      {
+        "case_id": "R-CLR-03",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-03/analysis_report.json",
+        "prompt_sha256": "1f53fb6ab4031e3dab144cbcd43e5ca028ea56f6884e4daefd608e82c94f8284",
+        "estimated_input_tokens": 408
+      },
+      {
+        "case_id": "R-CLR-04",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-04/analysis_report.json",
+        "prompt_sha256": "4ba21604383112eeffb754373e3e700edc588160106a81de3259468fa314e359",
+        "estimated_input_tokens": 408
+      },
+      {
+        "case_id": "R-CLR-05",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-05/analysis_report.json",
+        "prompt_sha256": "b7c920579ff2dfa9de9d8bd99ff539990e78bba3e3c1583dc89409bbea79afc8",
+        "estimated_input_tokens": 408
+      },
+      {
+        "case_id": "R-CLR-06",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-06/analysis_report.json",
+        "prompt_sha256": "01d5663d834100501d04050159486c7983f2978d4890bad02545e1d79ac2e8c3",
+        "estimated_input_tokens": 408
+      },
+      {
+        "case_id": "R-CLR-07",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-07/analysis_report.json",
+        "prompt_sha256": "d3a491f39133538c17d2ab679c62b8a49aaa2a559cba3dee73706afa78362892",
+        "estimated_input_tokens": 408
+      },
+      {
+        "case_id": "R-CLR-08",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-08/analysis_report.json",
+        "prompt_sha256": "98a8b9a42e7c9751b29ae07cafe493b248bf5722f8e872f964669c64ebc52f64",
+        "estimated_input_tokens": 410
+      },
+      {
+        "case_id": "R-CLR-09",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-09/analysis_report.json",
+        "prompt_sha256": "340544c2bf078014901b2f1b5cfd1c59a4200e0a630051ecb94ebacba70a972c",
+        "estimated_input_tokens": 409
+      },
+      {
+        "case_id": "R-CLR-10",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "clear",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-CLR-10/analysis_report.json",
+        "prompt_sha256": "869ad4b1523108bafe901d85afcb784d341c02223e10fa4731ebfd41255cca92",
+        "estimated_input_tokens": 409
+      },
+      {
+        "case_id": "R-FW-01",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "footwork",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-FW-01/analysis_report.json",
+        "prompt_sha256": "501b4d8e54c8d8d0d15dc30ef13f42f53bfd8058764f968daa211d7dd0b65c93",
+        "estimated_input_tokens": 403
+      },
+      {
+        "case_id": "R-FW-02",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "footwork",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-FW-02/analysis_report.json",
+        "prompt_sha256": "744678996cbfa48fdb75286545450eab2e30b061162f88c3dd30ad858f386348",
+        "estimated_input_tokens": 401
+      },
+      {
+        "case_id": "R-FW-03",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "footwork",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-FW-03/analysis_report.json",
+        "prompt_sha256": "5d42e080d7ec1aa50a55efda8c5dc9275057ab4c4f4a1e971270a078c9593b25",
+        "estimated_input_tokens": 401
+      },
+      {
+        "case_id": "R-SV-01",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "serve",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-SV-01/analysis_report.json",
+        "prompt_sha256": "562f477186cfe4d82a171370a2153f7a161b16ccf899eba1988dfec323dd5ce7",
+        "estimated_input_tokens": 429
+      },
+      {
+        "case_id": "R-SV-02",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "serve",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-SV-02/analysis_report.json",
+        "prompt_sha256": "abc0d095e344d0c1fa0f8e24ba62d826e95b53d1d06cf011bbb41345b3afc1e1",
+        "estimated_input_tokens": 430
+      },
+      {
+        "case_id": "R-SV-03",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "serve",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-SV-03/analysis_report.json",
+        "prompt_sha256": "e9f73b85c6ad58d6551cc93fa85b773c927bf2601ceddf1060dd0da420140bcf",
+        "estimated_input_tokens": 429
+      },
+      {
+        "case_id": "R-SV-04",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "serve",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-SV-04/analysis_report.json",
+        "prompt_sha256": "ac8d819bacb7a21a0fed11f91960a826cdd4113e294b446c0727b513243b94d3",
+        "estimated_input_tokens": 429
+      },
+      {
+        "case_id": "R-SV-05",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "serve",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-SV-05/analysis_report.json",
+        "prompt_sha256": "6000bb9f006843e715c9d185255155e2f6509ab9b561af8ac313482d5e4852a2",
+        "estimated_input_tokens": 429
+      },
+      {
+        "case_id": "R-SV-06",
+        "evidence_kind": "real_video_pipeline_output",
+        "motion": "serve",
+        "scenario": null,
+        "report_path": "experiments/offline_abc/corpus/real/R-SV-06/analysis_report.json",
+        "prompt_sha256": "8b26652179e4c6daa160e1fb9ffee82ea9ce35d11da6015be073d8f40f707703",
+        "estimated_input_tokens": 431
+      },
+      {
+        "case_id": "S-CLR-01",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "clear",
+        "scenario": "high_score_minor_issue",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-CLR-01/analysis_report.json",
+        "prompt_sha256": "354e5e06b6764f26f7152639899bdb91271cb4523c77fd517e9de95313de1c28",
+        "estimated_input_tokens": 364
+      },
+      {
+        "case_id": "S-CLR-02",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "clear",
+        "scenario": "low_score_multiple_priorities",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-CLR-02/analysis_report.json",
+        "prompt_sha256": "b99c934d4cb4380dded2175619e580fc267e73f9a67e6dd4c1881e84c34e6066",
+        "estimated_input_tokens": 370
+      },
+      {
+        "case_id": "S-CLR-03",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "clear",
+        "scenario": "insufficient_evidence_no_score",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-CLR-03/analysis_report.json",
+        "prompt_sha256": "29760fed9e048ead9d5a57e521b390cf6f6689d8b9e7307d700c43ac948d8e80",
+        "estimated_input_tokens": 353
+      },
+      {
+        "case_id": "S-FW-01",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "footwork",
+        "scenario": "high_score_single_priority",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-FW-01/analysis_report.json",
+        "prompt_sha256": "d97b36745dfe9022b689a070f3acd9b632befcebe149869f8330e1be32f59d93",
+        "estimated_input_tokens": 364
+      },
+      {
+        "case_id": "S-FW-02",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "footwork",
+        "scenario": "low_score_multiple_priorities",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-FW-02/analysis_report.json",
+        "prompt_sha256": "58f0b2de3cde79ae5a34b1c6b26893b0adba2b7d2eb77fbc565582867f9624dc",
+        "estimated_input_tokens": 372
+      },
+      {
+        "case_id": "S-FW-03",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "footwork",
+        "scenario": "low_confidence_scored",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-FW-03/analysis_report.json",
+        "prompt_sha256": "9da11a78c72f1b816f9b736c106b83129d69239aa150cd76e382d9d906f33cbe",
+        "estimated_input_tokens": 367
+      },
+      {
+        "case_id": "S-SV-01",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "serve",
+        "scenario": "high_score_no_priority",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-01/analysis_report.json",
+        "prompt_sha256": "d0e42f0fdd6e21f1b2a69dcc8e5f7a00598afa2c184aaa36b44dd64104b2726d",
+        "estimated_input_tokens": 356
+      },
+      {
+        "case_id": "S-SV-02",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "serve",
+        "scenario": "low_score_multiple_priorities",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-02/analysis_report.json",
+        "prompt_sha256": "8fcfdbf209d1571b80c337cdef9b34075ba4473c579fa8b78f8f03f441199a7f",
+        "estimated_input_tokens": 375
+      },
+      {
+        "case_id": "S-SV-03",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "serve",
+        "scenario": "medium_confidence_forbidden_visual_claim_trap",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-03/analysis_report.json",
+        "prompt_sha256": "1b839f86ee35c27491b14874c71d217f7c6e7d43d04b9d5eb1c13c365714b5fe",
+        "estimated_input_tokens": 363
+      }
+    ]
+  },
+  "network_request_count": 28,
+  "cases": [
+    {
+      "case_id": "R-CLR-01",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-01/analysis_report.json",
+      "prompt_sha256": "d4afe1521da199bec7aef1134de06634589b1639db44ffbf8d19d6e91f790c5e",
+      "input_overall_score": 62,
+      "client_wall_seconds": 2.5988,
+      "prompt_tokens": 215,
+      "candidate_tokens": 183,
+      "thought_tokens": 0,
+      "total_tokens": 398,
+      "billable_output_tokens": 183,
+      "estimated_paid_tier_cost_usd": 0.000522,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次評估顯示高遠球動作尚具基礎，但在發力與協調性上仍有進步空間。整體動作評分獲得62分，建議針對核心環節進行優化。",
+        "strength": [
+          "側身準備 (sideways_preparation)"
+        ],
+        "priority": [
+          "體重轉移 (weight_transfer)",
+          "非持拍手平衡 (non_racket_arm_balance)",
+          "揮拍流暢度 (swing_smoothness)"
+        ],
+        "drill": [],
+        "caution": "本版本使用單鏡頭2D MediaPipe特徵點評估可見的高遠球教學動作。評估結果僅衡量身體動作品質，不代表實際羽球落點或擊球結果。"
+      }
+    },
+    {
+      "case_id": "R-CLR-02",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-02/analysis_report.json",
+      "prompt_sha256": "fc679c9778c70273eca98369bb4442a6f305dc2dc9cd7c61bdabf3cffe5acaa1",
+      "input_overall_score": 58,
+      "client_wall_seconds": 1.4528,
+      "prompt_tokens": 216,
+      "candidate_tokens": 160,
+      "thought_tokens": 0,
+      "total_tokens": 376,
+      "billable_output_tokens": 160,
+      "estimated_paid_tier_cost_usd": 0.0004648,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次評估顯示擊球動作尚在發展階段，整體動作評分偏低。需加強側身準備與重心轉移，以提升擊球品質。",
+        "strength": [],
+        "priority": [
+          "側身準備 (sideways_preparation)",
+          "重心轉移 (weight_transfer)",
+          "非持拍手平衡 (non_racket_arm_balance)",
+          "揮拍流暢度 (swing_smoothness)"
+        ],
+        "drill": [],
+        "caution": "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks. The result evaluates body-motion quality, not shuttle outcome."
+      }
+    },
+    {
+      "case_id": "R-CLR-03",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-03/analysis_report.json",
+      "prompt_sha256": "1f53fb6ab4031e3dab144cbcd43e5ca028ea56f6884e4daefd608e82c94f8284",
+      "input_overall_score": 85,
+      "client_wall_seconds": 1.7648,
+      "prompt_tokens": 216,
+      "candidate_tokens": 152,
+      "thought_tokens": 0,
+      "total_tokens": 368,
+      "billable_output_tokens": 152,
+      "estimated_paid_tier_cost_usd": 0.0004448,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次高遠球動作評估顯示整體表現優良，動作流暢且具備良好的擊球基礎。評估結果反映身體動作品質，不代表實際羽球落點。",
+        "strength": [
+          "側身準備 (sideways_preparation)",
+          "體重轉移 (weight_transfer)",
+          "非持拍手平衡 (non_racket_arm_balance)",
+          "揮拍流暢度 (swing_smoothness)"
+        ],
+        "priority": [],
+        "drill": [],
+        "caution": "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks."
+      }
+    },
+    {
+      "case_id": "R-CLR-04",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-04/analysis_report.json",
+      "prompt_sha256": "4ba21604383112eeffb754373e3e700edc588160106a81de3259468fa314e359",
+      "input_overall_score": 51,
+      "client_wall_seconds": 1.6687,
+      "prompt_tokens": 216,
+      "candidate_tokens": 158,
+      "thought_tokens": 0,
+      "total_tokens": 374,
+      "billable_output_tokens": 158,
+      "estimated_paid_tier_cost_usd": 0.0004598,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次評估顯示您的擊球動作整體表現尚有進步空間。建議針對擊球時的身體準備與發力流暢度進行持續修正。",
+        "strength": [],
+        "priority": [
+          "側身準備 (sideways_preparation)",
+          "體重轉移 (weight_transfer)",
+          "非持拍手平衡 (non_racket_arm_balance)",
+          "揮拍流暢度 (swing_smoothness)"
+        ],
+        "drill": [],
+        "caution": "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks. The result evaluates body-motion quality, not shuttle outcome."
+      }
+    },
+    {
+      "case_id": "R-CLR-05",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-05/analysis_report.json",
+      "prompt_sha256": "b7c920579ff2dfa9de9d8bd99ff539990e78bba3e3c1583dc89409bbea79afc8",
+      "input_overall_score": 53,
+      "client_wall_seconds": 1.5412,
+      "prompt_tokens": 216,
+      "candidate_tokens": 165,
+      "thought_tokens": 0,
+      "total_tokens": 381,
+      "billable_output_tokens": 165,
+      "estimated_paid_tier_cost_usd": 0.0004773,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次動作評估得分53分，整體表現尚有進步空間。評估結果僅反應身體動作品質，不包含擊球結果。",
+        "strength": [],
+        "priority": [
+          "側身準備 (sideways_preparation)",
+          "體重轉移 (weight_transfer)",
+          "非持拍手平衡 (non_racket_arm_balance)",
+          "揮拍流暢度 (swing_smoothness)"
+        ],
+        "drill": [],
+        "caution": "此版本使用單鏡頭2D MediaPipe特徵點評估可見的高遠球教學動作，結果僅評估身體動作品質，不代表實際羽球落點或結果。"
+      }
+    },
+    {
+      "case_id": "R-CLR-06",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-06/analysis_report.json",
+      "prompt_sha256": "01d5663d834100501d04050159486c7983f2978d4890bad02545e1d79ac2e8c3",
+      "input_overall_score": 59,
+      "client_wall_seconds": 1.746,
+      "prompt_tokens": 215,
+      "candidate_tokens": 181,
+      "thought_tokens": 0,
+      "total_tokens": 396,
+      "billable_output_tokens": 181,
+      "estimated_paid_tier_cost_usd": 0.000517,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次高遠球動作評估已完成，整體表現尚可但仍有進步空間。評估結果反映出動作流暢度與核心發力機制的協調性需要加強。",
+        "strength": [
+          "揮拍流暢度 (swing_smoothness)"
+        ],
+        "priority": [
+          "側身準備 (sideways_preparation)",
+          "體重轉移 (weight_transfer)",
+          "非持拍手平衡 (non_racket_arm_balance)"
+        ],
+        "drill": [],
+        "caution": "此版本使用單鏡頭 2D MediaPipe 特徵點評估可見的高遠球教學動作，結果僅評估身體動作品質，不代表實際羽球落點或球質。"
+      }
+    },
+    {
+      "case_id": "R-CLR-07",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-07/analysis_report.json",
+      "prompt_sha256": "d3a491f39133538c17d2ab679c62b8a49aaa2a559cba3dee73706afa78362892",
+      "input_overall_score": 62,
+      "client_wall_seconds": 1.8526,
+      "prompt_tokens": 215,
+      "candidate_tokens": 190,
+      "thought_tokens": 0,
+      "total_tokens": 405,
+      "billable_output_tokens": 190,
+      "estimated_paid_tier_cost_usd": 0.0005395,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次評估顯示動作流暢度與擊球前側身準備表現良好。然而，在身體重心轉移與非持拍手平衡方面仍有改善空間。",
+        "strength": [
+          "側身準備動作 (sideways_preparation)",
+          "揮拍流暢度 (swing_smoothness)"
+        ],
+        "priority": [
+          "重心轉移 (weight_transfer)",
+          "非持拍手平衡 (non_racket_arm_balance)"
+        ],
+        "drill": [
+          "反覆練習原地轉體並將重心從後腳移至前腳的分解動作",
+          "進行揮拍時非持拍手固定於胸前或指向球的平衡練習"
+        ],
+        "caution": "本版本使用單鏡頭 2D MediaPipe 關鍵點評估可見的高遠球教學動作，結果僅評估身體動作品質，不代表實際羽球落點或擊球結果。"
+      }
+    },
+    {
+      "case_id": "R-CLR-08",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-08/analysis_report.json",
+      "prompt_sha256": "98a8b9a42e7c9751b29ae07cafe493b248bf5722f8e872f964669c64ebc52f64",
+      "input_overall_score": 56,
+      "client_wall_seconds": 1.4974,
+      "prompt_tokens": 219,
+      "candidate_tokens": 147,
+      "thought_tokens": 0,
+      "total_tokens": 366,
+      "billable_output_tokens": 147,
+      "estimated_paid_tier_cost_usd": 0.0004332,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次羽球高遠球動作評估顯示整體表現尚有進步空間。建議針對擊球前的準備與發力流暢度進行調整。",
+        "strength": [],
+        "priority": [
+          "側身預備動作 (sideways_preparation)",
+          "體重轉移 (weight_transfer)",
+          "非持拍手平衡 (non_racket_arm_balance)",
+          "揮拍流暢度 (swing_smoothness)"
+        ],
+        "drill": [],
+        "caution": "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks."
+      }
+    },
+    {
+      "case_id": "R-CLR-09",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-09/analysis_report.json",
+      "prompt_sha256": "340544c2bf078014901b2f1b5cfd1c59a4200e0a630051ecb94ebacba70a972c",
+      "input_overall_score": 73,
+      "client_wall_seconds": 1.6561,
+      "prompt_tokens": 218,
+      "candidate_tokens": 145,
+      "thought_tokens": 0,
+      "total_tokens": 363,
+      "billable_output_tokens": 145,
+      "estimated_paid_tier_cost_usd": 0.0004279,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次評估顯示高遠球動作流程具備基本流暢度與準備姿勢。整體動作表現獲得七十三分。",
+        "strength": [
+          "側身預備姿勢 (sideways_preparation)",
+          "揮拍動作流暢度 (swing_smoothness)"
+        ],
+        "priority": [
+          "體重轉移 (weight_transfer)",
+          "非持拍手平衡 (non_racket_arm_balance)"
+        ],
+        "drill": [],
+        "caution": "本版本使用單鏡頭 2D MediaPipe 骨幹點評估可見的高遠球教學動作，結果僅評估身體動作品質，不代表實際羽球落點或擊球結果。"
+      }
+    },
+    {
+      "case_id": "R-CLR-10",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-10/analysis_report.json",
+      "prompt_sha256": "869ad4b1523108bafe901d85afcb784d341c02223e10fa4731ebfd41255cca92",
+      "input_overall_score": 82,
+      "client_wall_seconds": 1.8229,
+      "prompt_tokens": 218,
+      "candidate_tokens": 172,
+      "thought_tokens": 0,
+      "total_tokens": 390,
+      "billable_output_tokens": 172,
+      "estimated_paid_tier_cost_usd": 0.0004954,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "整體高遠球動作評估表現良好，動作評分達到82分。擊球時的身體機制運作順暢，展現出良好的技術基礎。",
+        "strength": [
+          "側身準備 (sideways_preparation)",
+          "體重轉移 (weight_transfer)"
+        ],
+        "priority": [
+          "非持拍手平衡 (non_racket_arm_balance)",
+          "揮拍流暢度 (swing_smoothness)"
+        ],
+        "drill": [],
+        "caution": "此版本使用單鏡頭2D MediaPipe骨幹點來評估可見的高遠球教學動作。結果僅評估身體動作品質，而非羽球落點或實際結果。"
+      }
+    },
+    {
+      "case_id": "R-FW-01",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "footwork",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-FW-01/analysis_report.json",
+      "prompt_sha256": "501b4d8e54c8d8d0d15dc30ef13f42f53bfd8058764f968daa211d7dd0b65c93",
+      "input_overall_score": null,
+      "client_wall_seconds": 1.5618,
+      "prompt_tokens": 212,
+      "candidate_tokens": 114,
+      "thought_tokens": 0,
+      "total_tokens": 326,
+      "billable_output_tokens": 114,
+      "estimated_paid_tier_cost_usd": 0.0003486,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次步法評估未進行完整評分與系統信心度分析。目前的檢測結果受限於單鏡頭2D拍攝角度，無法精確判斷3D空間中的深度與實際距離。",
+        "strength": [
+          "動作完成度 (movement_completion)"
+        ],
+        "priority": [
+          "動作完成度 (movement_completion)"
+        ],
+        "drill": [],
+        "caution": "本分析基於單鏡頭2D影像，缺乏深度資訊，可能影響空間定位與實際移動距離的判讀準確度。"
+      }
+    },
+    {
+      "case_id": "R-FW-02",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "footwork",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-FW-02/analysis_report.json",
+      "prompt_sha256": "744678996cbfa48fdb75286545450eab2e30b061162f88c3dd30ad858f386348",
+      "input_overall_score": 84.756,
+      "client_wall_seconds": 1.5592,
+      "prompt_tokens": 220,
+      "candidate_tokens": 124,
+      "thought_tokens": 0,
+      "total_tokens": 344,
+      "billable_output_tokens": 124,
+      "estimated_paid_tier_cost_usd": 0.000376,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次步法評估整體表現良好，展現出高度的動作完整性。需要持續優化移動表現以提升場上效率。",
+        "strength": [
+          "動作完成度 (movement_completion)"
+        ],
+        "priority": [
+          "回位速度 (recovery_speed)"
+        ],
+        "drill": [],
+        "caution": "本分析基於單鏡頭2D拍攝，BASE_ZONE 表示回到基準區後直接轉向下一次移動，不等同精準回到原始中心。Base Zone 門檻目前仍為暫定值，需要更多影片與人工標註驗證。"
+      }
+    },
+    {
+      "case_id": "R-FW-03",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "footwork",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-FW-03/analysis_report.json",
+      "prompt_sha256": "5d42e080d7ec1aa50a55efda8c5dc9275057ab4c4f4a1e971270a078c9593b25",
+      "input_overall_score": 70.259,
+      "client_wall_seconds": 1.3861,
+      "prompt_tokens": 220,
+      "candidate_tokens": 143,
+      "thought_tokens": 0,
+      "total_tokens": 363,
+      "billable_output_tokens": 143,
+      "estimated_paid_tier_cost_usd": 0.0004235,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本系統針對您的羽球步法表現進行了綜合評估，整體得分為70.26分。評估結果顯示出您的步法有一定的完成度，但在移動後的恢復速度上仍有進步空間。",
+        "strength": [
+          "動作完成度 (movement_completion)"
+        ],
+        "priority": [
+          "回位速度 (recovery_speed)"
+        ],
+        "drill": [],
+        "caution": "基於單鏡頭2D影像分析限制，BASE_ZONE 表示回到基準區後直接轉向下一次移動，不等同精準回到原始中心。Base Zone 門檻目前仍為暫定值，需要更多影片與人工標註驗證。"
+      }
+    },
+    {
+      "case_id": "R-SV-01",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-01/analysis_report.json",
+      "prompt_sha256": "562f477186cfe4d82a171370a2153f7a161b16ccf899eba1988dfec323dd5ce7",
+      "input_overall_score": 81,
+      "client_wall_seconds": 1.4873,
+      "prompt_tokens": 217,
+      "candidate_tokens": 157,
+      "thought_tokens": 0,
+      "total_tokens": 374,
+      "billable_output_tokens": 157,
+      "estimated_paid_tier_cost_usd": 0.0004576,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "您的發球動作整體表現出色，具備良好的動作完成度與流暢度。整體動作品質獲得肯定，建議持續保持。",
+        "strength": [
+          "揮拍完整性 (swing_completeness)",
+          "身體協調性 (body_coordination)",
+          "動作流暢度 (motion_smoothness)"
+        ],
+        "priority": [
+          "準備穩定性 (preparation_stability)"
+        ],
+        "drill": [],
+        "caution": "This version evaluates a visible forehand serve teaching motion using one-camera 2D MediaPipe landmarks. The result evaluates visible body-motion quality, not shuttle outcome or official service legality."
+      }
+    },
+    {
+      "case_id": "R-SV-02",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-02/analysis_report.json",
+      "prompt_sha256": "abc0d095e344d0c1fa0f8e24ba62d826e95b53d1d06cf011bbb41345b3afc1e1",
+      "input_overall_score": 85,
+      "client_wall_seconds": 1.4139,
+      "prompt_tokens": 218,
+      "candidate_tokens": 169,
+      "thought_tokens": 0,
+      "total_tokens": 387,
+      "billable_output_tokens": 169,
+      "estimated_paid_tier_cost_usd": 0.0004879,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "整體發球動作表現優異，具備良好的穩定性與協調性。各項技術指標皆在水準之上，動作流暢且完整。",
+        "strength": [
+          "準備穩定性 (preparation_stability)",
+          "揮拍完整性 (swing_completeness)",
+          "身體協調性 (body_coordination)",
+          "動作流暢度 (motion_smoothness)"
+        ],
+        "priority": [],
+        "drill": [],
+        "caution": "本版本使用單鏡頭 2D MediaPipe 骨架點進行可見的正手發球教學動作評估，結果評估的是可見的身體動作品質，而非擊球結果或正式發球合法性。"
+      }
+    },
+    {
+      "case_id": "R-SV-03",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-03/analysis_report.json",
+      "prompt_sha256": "e9f73b85c6ad58d6551cc93fa85b773c927bf2601ceddf1060dd0da420140bcf",
+      "input_overall_score": 76,
+      "client_wall_seconds": 1.8254,
+      "prompt_tokens": 217,
+      "candidate_tokens": 162,
+      "thought_tokens": 0,
+      "total_tokens": 379,
+      "billable_output_tokens": 162,
+      "estimated_paid_tier_cost_usd": 0.0004701,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次發球動作評估顯示整體表現穩定，具備良好的動作流暢度與準備穩定性（preparation_stability、motion_smoothness）。但在揮拍完整性與身體協調性上仍有進步空間（swing_completeness、body_coordination）。",
+        "strength": [
+          "準備動作穩定性 (preparation_stability)",
+          "動作流暢度 (motion_smoothness)"
+        ],
+        "priority": [
+          "揮拍完整性 (swing_completeness)",
+          "身體協調性 (body_coordination)"
+        ],
+        "drill": [],
+        "caution": "This version evaluates a visible forehand serve teaching motion using one-camera 2D MediaPipe landmarks. The result evaluates visible body-motion quality, not shuttle outcome or official service legality."
+      }
+    },
+    {
+      "case_id": "R-SV-04",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-04/analysis_report.json",
+      "prompt_sha256": "ac8d819bacb7a21a0fed11f91960a826cdd4113e294b446c0727b513243b94d3",
+      "input_overall_score": 73,
+      "client_wall_seconds": 2.2844,
+      "prompt_tokens": 217,
+      "candidate_tokens": 170,
+      "thought_tokens": 0,
+      "total_tokens": 387,
+      "billable_output_tokens": 170,
+      "estimated_paid_tier_cost_usd": 0.0004901,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "發球動作表現出一定的準備穩定性與流暢度，整體評分達到73分。不過在揮拍完整性與身體協調性上仍有提升空間。",
+        "strength": [
+          "準備穩定性 (preparation_stability)",
+          "動作流暢度 (motion_smoothness)"
+        ],
+        "priority": [
+          "揮拍完整性 (swing_completeness)",
+          "身體協調性 (body_coordination)"
+        ],
+        "drill": [
+          "加強完整揮拍軌跡練習以提升延伸感",
+          "進行核心與下肢連動訓練以改善全身協調"
+        ],
+        "caution": "本版本使用單鏡頭2D MediaPipe特徵點來評估可見的正手發球教學動作，結果僅評估可見的身體動作品質，不代表羽球落點或官方發球合法性。"
+      }
+    },
+    {
+      "case_id": "R-SV-05",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-05/analysis_report.json",
+      "prompt_sha256": "6000bb9f006843e715c9d185255155e2f6509ab9b561af8ac313482d5e4852a2",
+      "input_overall_score": 79,
+      "client_wall_seconds": 1.7377,
+      "prompt_tokens": 217,
+      "candidate_tokens": 182,
+      "thought_tokens": 0,
+      "total_tokens": 399,
+      "billable_output_tokens": 182,
+      "estimated_paid_tier_cost_usd": 0.0005201,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次羽球發球動作整體評估表現良好，動作流暢度與完整性皆具備水準。未來可針對身體協調性持續訓練以提升發球品質。",
+        "strength": [
+          "準備穩定度 (preparation_stability)",
+          "揮拍完整性 (swing_completeness)",
+          "動作流暢度 (motion_smoothness)"
+        ],
+        "priority": [
+          "身體協調性 (body_coordination)"
+        ],
+        "drill": [],
+        "caution": "本版本使用單鏡頭 2D MediaPipe 骨架點來評估可見的正手發球教學動作。評估結果僅針對可見的身體動作品質，不代表羽球落點結果或正式發球合法性。"
+      }
+    },
+    {
+      "case_id": "R-SV-06",
+      "evidence_kind": "real_video_pipeline_output",
+      "motion": "serve",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-SV-06/analysis_report.json",
+      "prompt_sha256": "8b26652179e4c6daa160e1fb9ffee82ea9ce35d11da6015be073d8f40f707703",
+      "input_overall_score": 84,
+      "client_wall_seconds": 1.5759,
+      "prompt_tokens": 220,
+      "candidate_tokens": 161,
+      "thought_tokens": 0,
+      "total_tokens": 381,
+      "billable_output_tokens": 161,
+      "estimated_paid_tier_cost_usd": 0.0004685,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次羽球發球動作整體評估表現良好，動作流程流暢且穩定。發球準備與協調性展現出良好的肢體控制能力。",
+        "strength": [
+          "準備穩定度 (preparation_stability)",
+          "身體協調性 (body_coordination)",
+          "動作流暢度 (motion_smoothness)"
+        ],
+        "priority": [
+          "揮拍完整性 (swing_completeness)"
+        ],
+        "drill": [],
+        "caution": "本系統使用單鏡頭2D影像進行動作評估，受限於視角，可能無法完全反映三維空間中的所有細節。評估結果僅針對可見的肢體動作品質進行分析，不代表實際的球路結果或官方發球合法性判斷。"
+      }
+    },
+    {
+      "case_id": "S-CLR-01",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "clear",
+      "scenario": "high_score_minor_issue",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-CLR-01/analysis_report.json",
+      "prompt_sha256": "354e5e06b6764f26f7152639899bdb91271cb4523c77fd517e9de95313de1c28",
+      "input_overall_score": 92,
+      "client_wall_seconds": 1.3222,
+      "prompt_tokens": 203,
+      "candidate_tokens": 143,
+      "thought_tokens": 0,
+      "total_tokens": 346,
+      "billable_output_tokens": 143,
+      "estimated_paid_tier_cost_usd": 0.0004184,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "學員在擊球前的預備動作表現穩定，展現出良好的基本功。然而在後續動作中仍有提升空間，建議針對特定技術環節持續調整。",
+        "strength": [
+          "擊球準備穩定 (strengths_0)"
+        ],
+        "priority": [
+          "收拍完整性 (improvement_priorities_0)"
+        ],
+        "drill": [],
+        "caution": "基於單鏡頭 2D 姿態資料限制，未直接偵測羽球或球拍，此案例是結構化壓力測試，不是影片分析結果。"
+      }
+    },
+    {
+      "case_id": "S-CLR-02",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "clear",
+      "scenario": "low_score_multiple_priorities",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-CLR-02/analysis_report.json",
+      "prompt_sha256": "b99c934d4cb4380dded2175619e580fc267e73f9a67e6dd4c1881e84c34e6066",
+      "input_overall_score": 48,
+      "client_wall_seconds": 2.4623,
+      "prompt_tokens": 207,
+      "candidate_tokens": 141,
+      "thought_tokens": 0,
+      "total_tokens": 348,
+      "billable_output_tokens": 141,
+      "estimated_paid_tier_cost_usd": 0.0004146,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "整體表現尚可，但部分動作細節需要調整。整體評分與系統信心指數顯示目前動作仍有進步空間。",
+        "strength": [
+          "重心仍可辨識 (重心仍可辨識)"
+        ],
+        "priority": [
+          "引拍高度 (引拍高度)",
+          "身體旋轉 (身體旋轉)"
+        ],
+        "drill": [],
+        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍。此案例是結構化壓力測試，不是影片分析結果。"
+      }
+    },
+    {
+      "case_id": "S-CLR-03",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "clear",
+      "scenario": "insufficient_evidence_no_score",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-CLR-03/analysis_report.json",
+      "prompt_sha256": "29760fed9e048ead9d5a57e521b390cf6f6689d8b9e7307d700c43ac948d8e80",
+      "input_overall_score": null,
+      "client_wall_seconds": 1.5876,
+      "prompt_tokens": 197,
+      "candidate_tokens": 93,
+      "thought_tokens": 0,
+      "total_tokens": 290,
+      "billable_output_tokens": 93,
+      "estimated_paid_tier_cost_usd": 0.0002916,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次評估為結構化壓力測試，非實際影片分析結果。系統信心度偏低且證據不足。",
+        "strength": [],
+        "priority": [],
+        "drill": [],
+        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，此案例是結構化壓力測試，不是影片分析結果"
+      }
+    },
+    {
+      "case_id": "S-FW-01",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "footwork",
+      "scenario": "high_score_single_priority",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-FW-01/analysis_report.json",
+      "prompt_sha256": "d97b36745dfe9022b689a070f3acd9b632befcebe149869f8330e1be32f59d93",
+      "input_overall_score": 88,
+      "client_wall_seconds": 1.6908,
+      "prompt_tokens": 204,
+      "candidate_tokens": 140,
+      "thought_tokens": 0,
+      "total_tokens": 344,
+      "billable_output_tokens": 140,
+      "estimated_paid_tier_cost_usd": 0.0004112,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "整體步法評估表現穩健，回位節奏維持得很好。啟動反應方面仍有進一步提升的空間以應付更高強度的對抗。",
+        "strength": [
+          "回位節奏穩定 (strengths_0)"
+        ],
+        "priority": [
+          "啟動反應 (improvement_priorities_0)"
+        ],
+        "drill": [],
+        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，此案例是結構化壓力測試，不是影片分析結果"
+      }
+    },
+    {
+      "case_id": "S-FW-02",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "footwork",
+      "scenario": "low_score_multiple_priorities",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-FW-02/analysis_report.json",
+      "prompt_sha256": "58f0b2de3cde79ae5a34b1c6b26893b0adba2b7d2eb77fbc565582867f9624dc",
+      "input_overall_score": 35,
+      "client_wall_seconds": 2.0007,
+      "prompt_tokens": 205,
+      "candidate_tokens": 132,
+      "thought_tokens": 0,
+      "total_tokens": 337,
+      "billable_output_tokens": 132,
+      "estimated_paid_tier_cost_usd": 0.0003915,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "受測者的腳步移動表現整體評估為初步合格。目前僅能完成移動。",
+        "strength": [
+          "能完成移動 (strengths_0)"
+        ],
+        "priority": [
+          "回中心位置 (improvement_priorities_0)",
+          "左右平衡 (improvement_priorities_1)"
+        ],
+        "drill": [],
+        "caution": "單鏡頭 2D 姿態資料，未直接偵測羽球或球拍。此案例是結構化壓力測試，不是影片分析結果"
+      }
+    },
+    {
+      "case_id": "S-FW-03",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "footwork",
+      "scenario": "low_confidence_scored",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-FW-03/analysis_report.json",
+      "prompt_sha256": "9da11a78c72f1b816f9b736c106b83129d69239aa150cd76e382d9d906f33cbe",
+      "input_overall_score": 67,
+      "client_wall_seconds": 1.3709,
+      "prompt_tokens": 206,
+      "candidate_tokens": 125,
+      "thought_tokens": 0,
+      "total_tokens": 331,
+      "billable_output_tokens": 125,
+      "estimated_paid_tier_cost_usd": 0.0003743,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次步法評估顯示部分步序可辨識，整體表現尚可。後續建議針對特定項目進行調整。",
+        "strength": [
+          "部分步序可辨識 (部分步序可辨識)"
+        ],
+        "priority": [
+          "步幅一致性 (步幅一致性)"
+        ],
+        "drill": [],
+        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，分析結果僅供參考。"
+      }
+    },
+    {
+      "case_id": "S-SV-01",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "serve",
+      "scenario": "high_score_no_priority",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-01/analysis_report.json",
+      "prompt_sha256": "d0e42f0fdd6e21f1b2a69dcc8e5f7a00598afa2c184aaa36b44dd64104b2726d",
+      "input_overall_score": 95,
+      "client_wall_seconds": 1.6506,
+      "prompt_tokens": 199,
+      "candidate_tokens": 102,
+      "thought_tokens": 0,
+      "total_tokens": 301,
+      "billable_output_tokens": 102,
+      "estimated_paid_tier_cost_usd": 0.0003147,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "整體表現展現出良好的動作穩定性。請持續保持目前的練習節奏。",
+        "strength": [
+          "動作節奏穩定 (動作節奏穩定)"
+        ],
+        "priority": [],
+        "drill": [],
+        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，分析結果可能受限於視角與平面誤差。"
+      }
+    },
+    {
+      "case_id": "S-SV-02",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "serve",
+      "scenario": "low_score_multiple_priorities",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-02/analysis_report.json",
+      "prompt_sha256": "8fcfdbf209d1571b80c337cdef9b34075ba4473c579fa8b78f8f03f441199a7f",
+      "input_overall_score": 52,
+      "client_wall_seconds": 1.3439,
+      "prompt_tokens": 209,
+      "candidate_tokens": 117,
+      "thought_tokens": 0,
+      "total_tokens": 326,
+      "billable_output_tokens": 117,
+      "estimated_paid_tier_cost_usd": 0.0003552,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次發球動作評估已完成，整體表現尚可（綜合評分52分）。在準備姿勢階段表現穩定（準備姿勢可辨識）。",
+        "strength": [
+          "準備姿勢可辨識（strengths_0）"
+        ],
+        "priority": [
+          "擊球點穩定度（improvement_priorities_0）",
+          "重心轉移（improvement_priorities_1）"
+        ],
+        "drill": [],
+        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍"
+      }
+    },
+    {
+      "case_id": "S-SV-03",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "serve",
+      "scenario": "medium_confidence_forbidden_visual_claim_trap",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-03/analysis_report.json",
+      "prompt_sha256": "1b839f86ee35c27491b14874c71d217f7c6e7d43d04b9d5eb1c13c365714b5fe",
+      "input_overall_score": 73,
+      "client_wall_seconds": 1.4802,
+      "prompt_tokens": 201,
+      "candidate_tokens": 109,
+      "thought_tokens": 0,
+      "total_tokens": 310,
+      "billable_output_tokens": 109,
+      "estimated_paid_tier_cost_usd": 0.0003328,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "發球動作表現穩定，出手方向一致（strengths_0）。但需加強手腕控制（improvement_priorities_0），以提升整體表現。",
+        "strength": [
+          "出手方向一致（strengths_0）"
+        ],
+        "priority": [
+          "手腕控制（improvement_priorities_0）"
+        ],
+        "drill": [],
+        "caution": "本分析基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，此案例是結構化壓力測試，不是影片分析結果。"
+      }
+    }
+  ],
+  "errors": [],
+  "aggregate": {
+    "case_count": 28,
+    "completed_count": 28,
+    "mean_wall_seconds": 1.6908,
+    "p50_wall_seconds": 1.6191,
+    "p95_wall_seconds": 2.4,
+    "success_rate": 1.0,
+    "schema_types_valid_rate": 1.0,
+    "priority_grounded_rate": 1.0,
+    "total_estimated_paid_tier_cost_usd": 0.0121284
+  }
+}

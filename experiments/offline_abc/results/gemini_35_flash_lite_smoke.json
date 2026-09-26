@@ -1,0 +1,87 @@
+{
+  "benchmark": "cloud-gemini-motion-explanation",
+  "execution_evidence_kind": "cloud_api_measurement",
+  "provider": "Google Gemini API",
+  "model": "gemini-3.5-flash-lite",
+  "billing_tier_label": "free_tier_visible_in_ai_studio",
+  "cost_semantics": "paid-tier price equivalent from token usage; not an observed invoice",
+  "data_boundary": "compact structured motion JSON only; no video upload",
+  "preflight": {
+    "execution_evidence_kind": "cloud_api_dry_run_not_measurement",
+    "provider": "Google Gemini API",
+    "model": "gemini-3.5-flash-lite",
+    "case_count": 1,
+    "data_boundary": "compact structured motion JSON only; no video upload",
+    "estimated_input_tokens_upper_bound": 362,
+    "maximum_output_tokens": 320,
+    "estimated_maximum_cost_usd": 0.000909,
+    "pricing": {
+      "input_usd_per_million_tokens": 0.3,
+      "output_including_thinking_usd_per_million_tokens": 2.5,
+      "checked_on": "2026-09-26",
+      "source": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    "cases": [
+      {
+        "case_id": "S-SV-01",
+        "evidence_kind": "synthetic_structured_stress_case",
+        "motion": "serve",
+        "scenario": "high_score_no_priority",
+        "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-01/analysis_report.json",
+        "prompt_sha256": "9f402f42fc0f4f407637185f8c0a196b06b5dca8145f3900dcb3478f27cf3652",
+        "estimated_input_tokens": 362
+      }
+    ]
+  },
+  "network_request_count": 1,
+  "cases": [
+    {
+      "case_id": "S-SV-01",
+      "evidence_kind": "synthetic_structured_stress_case",
+      "motion": "serve",
+      "scenario": "high_score_no_priority",
+      "report_path": "experiments/offline_abc/corpus/synthetic/S-SV-01/analysis_report.json",
+      "prompt_sha256": "9f402f42fc0f4f407637185f8c0a196b06b5dca8145f3900dcb3478f27cf3652",
+      "input_overall_score": 95,
+      "client_wall_seconds": 1.4409,
+      "prompt_tokens": 188,
+      "candidate_tokens": 143,
+      "thought_tokens": 0,
+      "total_tokens": 331,
+      "billable_output_tokens": 143,
+      "estimated_paid_tier_cost_usd": 0.0004139,
+      "finish_reason": "STOP",
+      "checks": {
+        "json_valid": true,
+        "required_keys": true,
+        "priority_grounded": true,
+        "caution_present": true,
+        "provider_schema_types": true
+      },
+      "success": true,
+      "response": {
+        "summary": "本次發球動作評估的整體得分為95分，系統信心度高達0.99。動作表現穩定且協調性良好，展現出高水準的動作品質。",
+        "strength": [
+          "動作節奏穩定"
+        ],
+        "priority": [],
+        "drill": [
+          "持續保持穩定的發球節奏與身體平衡練習"
+        ],
+        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，且此案例是結構化壓力測試，不是影片分析結果。"
+      }
+    }
+  ],
+  "errors": [],
+  "aggregate": {
+    "case_count": 1,
+    "completed_count": 1,
+    "mean_wall_seconds": 1.4409,
+    "p50_wall_seconds": 1.4409,
+    "p95_wall_seconds": 1.4409,
+    "success_rate": 1.0,
+    "schema_types_valid_rate": 1.0,
+    "priority_grounded_rate": 1.0,
+    "total_estimated_paid_tier_cost_usd": 0.0004139
+  }
+}

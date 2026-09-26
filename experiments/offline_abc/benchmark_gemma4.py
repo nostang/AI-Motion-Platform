@@ -34,6 +34,45 @@ def _compact_report(report: dict) -> dict:
     }
 
 
+def _lean_compact_report(report: dict) -> dict:
+    """Keep coaching evidence while removing transport-irrelevant rule metadata."""
+
+    compact = _compact_report(report)
+    lean_scores = {}
+    for name, value in compact["score_breakdown"].items():
+        if isinstance(value, dict):
+            selected = {
+                key: value.get(key)
+                for key in ("score", "level", "status")
+                if value.get(key) is not None
+            }
+            lean_scores[name] = selected
+        else:
+            lean_scores[name] = value
+    compact["score_breakdown"] = lean_scores
+    compact["limitations"] = compact["limitations"][:4]
+    return compact
+
+
+def _minimal_compact_report(report: dict) -> dict:
+    """Diagnostic/common profile with only top-level coaching evidence."""
+
+    compact = _compact_report(report)
+    compact["score_breakdown"] = {}
+    compact["limitations"] = compact["limitations"][:2]
+    return compact
+
+
+def _select_compact_report(report: dict, profile: str) -> dict:
+    if profile == "full":
+        return _compact_report(report)
+    if profile == "lean":
+        return _lean_compact_report(report)
+    if profile == "minimal":
+        return _minimal_compact_report(report)
+    raise ValueError(f"Unsupported compact profile: {profile}")
+
+
 def _prompt(compact: dict, version: str = "v1") -> str:
     base = (
         "你是羽球動作分析報告的文字說明器。只能根據下列 MediaPipe 與規則引擎的結構化結果撰寫，"
@@ -47,6 +86,14 @@ def _prompt(compact: dict, version: str = "v1") -> str:
             "必須剛好使用這五個 key，不得新增、改名或省略。格式範例："
             '{"summary":"","strength":"","priority":[],"drill":[],"caution":""}。'
             "若輸入沒有優點，strength 填『無明確優點』；若沒有改善項目，priority 使用空陣列。"
+        )
+    elif version == "v3":
+        return (
+            "依JSON用繁中回羽球教練JSON，只含summary（2句）、strength、priority、drill、caution；"
+            "summary/caution為字串，strength/priority/drill為字串陣列。不改分、不假裝看見球拍/羽球、"
+            "不做醫療診斷。輸入的snake_case優點/"
+            "改善ID須原樣放在中文後括號；兩類勿互換，無項目用[]；caution須寫單鏡頭2D限制。\n"
+            + json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
         )
     else:
         raise ValueError(f"Unsupported prompt version: {version}")
@@ -183,7 +230,8 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, help="Use every completed/generated report in a corpus manifest")
     parser.add_argument("--model", default="gemma4:e2b")
     parser.add_argument("--endpoint", default="http://127.0.0.1:11434/api/generate")
-    parser.add_argument("--prompt-version", choices=("v1", "v2"), default="v1")
+    parser.add_argument("--prompt-version", choices=("v1", "v2", "v3"), default="v1")
+    parser.add_argument("--compact-profile", choices=("full", "lean", "minimal"), default="full")
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument(
         "--num-gpu",
@@ -205,7 +253,7 @@ def main() -> None:
     cases = []
     for report_path in report_paths:
         report = json.loads(report_path.read_text())
-        compact = _compact_report(report)
+        compact = _select_compact_report(report, args.compact_profile)
         metadata = corpus_metadata.get(str(report_path.resolve()), {})
         for repeat in range(args.repeats):
             raw = _call_ollama(
@@ -257,6 +305,7 @@ def main() -> None:
             "num_gpu_override": args.num_gpu,
             "corpus_manifest": str(args.manifest) if args.manifest else None,
             "prompt_version": args.prompt_version,
+            "compact_profile": args.compact_profile,
         },
         "resource": resource,
         "cases": cases,

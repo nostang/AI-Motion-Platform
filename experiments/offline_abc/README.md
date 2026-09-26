@@ -12,6 +12,7 @@
 
 - [完整實驗報告](EXPERIMENT_REPORT.zh-TW.md)
 - [A 的雲端 LLM 隔離實驗](A_CLOUD_LLM_BENCHMARK.zh-TW.md)
+- [A vs B 同條件 28 案例結論](AB_CLOUD_LOCAL_COMPARISON.zh-TW.md)
 - [B 的設備、並行與 VM 專章](B_EQUIPMENT_AND_VM.zh-TW.md)
 - [A vs B 共用 28 案例測試集](AB_BENCHMARK_CORPUS.zh-TW.md)
 - [C 的羽球訓練研究計畫](C_RESEARCH_PLAN.zh-TW.md)
@@ -24,7 +25,7 @@
 
 - **實測**：真的在這台 PoC 電腦執行並留下 JSON。
 - **估算**：用實測輸入與官方單價計算，不冒充雲端實測。
-- **尚未測得**：本輪受限於「不得建立或呼叫雲端資源」而沒有執行。
+- **尚未測得**：尚未執行或沒有可信紀錄；目前主要是完整影片上傳、Cloud Run、正式帳單與人工盲評。
 
 Gemma 只負責文字解說，不替換或修改版本化評分。YOLOv12 是離線研究，不參與目前正式評分。所有大型資料集、模型、虛擬環境與訓練產物都留在 Git 忽略目錄；小型 JSON 摘要與證據圖保留版本。
 
@@ -105,11 +106,37 @@ experiments/offline_abc/.venv-yolo/bin/python \
   --manifest experiments/offline_abc/results/ab_corpus_manifest.json \
   --output experiments/offline_abc/results/gemini_35_flash_lite_28_case_preflight.json
 
-# 12. 重新產生所有證據圖
+# 12. A：隔離專案的正式 28 案例（需要獨立測試金鑰；4.5 秒間隔遵守 15 RPM）
+.venv/bin/python experiments/offline_abc/benchmark_gemini_corpus.py \
+  --manifest experiments/offline_abc/results/ab_corpus_manifest.json \
+  --compact-profile minimal --prompt-version v3 \
+  --minimum-request-interval-seconds 4.5 --execute \
+  --output experiments/offline_abc/results/gemini_35_flash_lite_28_case_minimal_v3.json
+
+# 13. B：用與 A 完全相同的最小輸入與 v3 提示詞
+.venv/bin/python experiments/offline_abc/benchmark_gemma4.py \
+  --manifest experiments/offline_abc/results/ab_corpus_manifest.json \
+  --compact-profile minimal --prompt-version v3 --repeats 1 \
+  --output experiments/offline_abc/results/gemma4_28_case_minimal_v3.json
+
+# 14. 分別跑十項自動檢查（A、B 各跑一次）
+.venv/bin/python experiments/offline_abc/evaluate_llm_corpus.py \
+  --input experiments/offline_abc/results/gemini_35_flash_lite_28_case_minimal_v3.json \
+  --output experiments/offline_abc/results/gemini_35_flash_lite_28_case_minimal_v3_quality.json \
+  --review-csv experiments/offline_abc/results/gemini_35_flash_lite_28_case_minimal_v3_review.csv
+
+# 15. 建立隱藏提供者的 56 列人工盲評表
+.venv/bin/python experiments/offline_abc/build_blind_ab_review.py \
+  --a-run experiments/offline_abc/results/gemini_35_flash_lite_28_case_minimal_v3.json \
+  --b-run experiments/offline_abc/results/gemma4_28_case_minimal_v3.json \
+  --review-csv experiments/offline_abc/results/ab_28_case_blind_human_review.csv \
+  --mapping-json experiments/offline_abc/results/ab_28_case_blind_mapping.json
+
+# 16. 重新產生所有證據圖
 MPLCONFIGDIR=/tmp/ai-motion-mpl .venv/bin/python \
   experiments/offline_abc/render_evidence.py
 ```
 
 ## 安全邊界
 
-本實驗沒有建立 VM、沒有部署 Cloud Run、沒有呼叫正式 API，也沒有使用正式 Cloud SQL、bucket、queue、secret、service account、流量或 IAM。A 的新工具預設為零網路 dry-run，只有 `--execute` 加上獨立 `GEMINI_API_KEY` 才會呼叫 Gemini。PoC 的隔離保護仍由 `src/poc_isolation.py` 與 `tests/test_poc_resource_isolation.py` 驗證。
+本實驗沒有建立 VM、沒有部署 Cloud Run，也沒有使用正式 Cloud SQL、bucket、queue、secret、service account、流量或 IAM。唯一雲端動作是使用獨立 Free tier 測試專案呼叫 Gemini API；沒有使用或接觸羽球＋1正式資源。工具預設為零網路 dry-run，只有 `--execute` 加上獨立 `GEMINI_API_KEY` 才會呼叫 Gemini。PoC 的隔離保護仍由 `src/poc_isolation.py` 與 `tests/test_poc_resource_isolation.py` 驗證。
