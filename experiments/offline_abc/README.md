@@ -139,4 +139,4 @@ MPLCONFIGDIR=/tmp/ai-motion-mpl .venv/bin/python \
 
 ## 安全邊界
 
-本實驗沒有建立 VM、沒有部署 Cloud Run，也沒有使用正式 Cloud SQL、bucket、queue、secret、service account、流量或 IAM。唯一雲端動作是使用獨立 Free tier 測試專案呼叫 Gemini API；沒有使用或接觸羽球＋1正式資源。工具預設為零網路 dry-run，只有 `--execute` 加上獨立 `GEMINI_API_KEY` 才會呼叫 Gemini。PoC 的隔離保護仍由 `src/poc_isolation.py` 與 `tests/test_poc_resource_isolation.py` 驗證。
+本實驗沒有建立 VM、沒有部署 Cloud Run，也沒有使用正式 Cloud SQL、bucket、queue、secret、流量或自訂 IAM。唯一雲端動作是使用獨立 Free tier 測試專案呼叫 Gemini API；Google AI Studio 為 key 自動綁定同名服務帳戶。實驗完成後 API key 已刪除並確認清單為空，服務帳戶仍留待另行確認是否移除。全程沒有使用或接觸羽球＋1正式資源。工具預設為零網路 dry-run，只有 `--execute` 加上獨立 `GEMINI_API_KEY` 才會呼叫 Gemini。PoC 的隔離保護仍由 `src/poc_isolation.py` 與 `tests/test_poc_resource_isolation.py` 驗證。

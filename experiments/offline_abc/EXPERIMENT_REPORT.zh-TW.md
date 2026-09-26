@@ -246,7 +246,7 @@ C 還沒有真實羽球標註資料與可用精度，而且即使成功，它解
 - A/B 的 28 案例已完成同條件自動 contract/grounding 檢查；56 份人工教練品質盲評仍待填寫。
 - A 的 LLM API 已在隔離 Free tier 專案實測；完整雲端 MediaPipe、儲存與服務帳單尚未實測。US$0.0121284 是 paid-tier 單價等值，不是帳單。
 - C 只有 16 張合成圖片與 1 epoch，特意只驗流程，不驗準確度。
-- 沒有建立任何雲端 VM、Cloud Run、Cloud SQL、bucket、queue、secret 或 service account，也沒有接觸羽球＋1正式資源；只有隔離專案的 Gemini API 呼叫。
+- 沒有建立雲端 VM、Cloud Run、Cloud SQL、bucket、queue、secret 或自訂 IAM，也沒有接觸羽球＋1正式資源；只有隔離專案的 Gemini API 呼叫。AI Studio 自動綁定同名服務帳戶；API key 已於收尾刪除，服務帳戶留待另行確認是否移除。
 
 ## 9. 公開來源
 

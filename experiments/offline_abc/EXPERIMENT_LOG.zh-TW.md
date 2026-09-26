@@ -637,17 +637,36 @@ A、B 的速度接近，因此不能把「比較快」當成主結論。真正�
 
 - 每次執行後確認 `GEMINI_API_KEY` 已從終端環境移除。
 - 結果檔只留 prompt hash、token usage、延遲、輸出與費用等值，不留 key、帳號、影片或絕對路徑。
-- 沒有建立 VM、Cloud Run、Cloud SQL、bucket、queue、secret、service account 或 IAM。
+- 沒有建立 VM、Cloud Run、Cloud SQL、bucket、queue、secret 或自訂 IAM。收尾檢查發現 AI Studio 為 key 自動綁定同名服務帳戶；它位於隔離專案，並非羽球＋1資源。
 - 沒有讀改 `/Users/ivesmi/Documents/badminton-plus-one`；使用者未追蹤檔 `scripts/offline_demo_server.py` 仍不在本實驗範圍。
 
 ### 結果
 
 - 羽球＋1正式功能與資源未受影響。
-- 尚待使用者確認後，在 Google AI Studio 刪除或輪替臨時測試 key。
+- 2026-09-27 已取得使用者確認並刪除臨時測試 key；Google Cloud 憑證頁確認 API 金鑰清單為空。
+- 同名服務帳戶仍列在隔離專案；因刪除服務帳戶是另一個外部破壞性操作，沒有擴大解讀原本只針對 API key 的確認。
 
 ### 心得
 
 完成結果不等於安全工作結束。臨時金鑰應在證據產出與重跑需求結束後撤銷；因刪除是不可逆的外部操作，應明確確認目標後再做。
+
+## 24-1. 臨時 API key 撤銷證據
+
+### 實際步驟
+
+- 使用者確認刪除 `AI Motion PoC 28 Case Test` 臨時 API key。
+- AI Studio 金鑰頁發生清單錯誤後，改到同一隔離專案的 Google Cloud「API 和服務 → 憑證」頁確認目標。
+- 只刪除已確認的 API key，沒有刪除同頁列出的服務帳戶。
+
+### 結果
+
+- 刪除流程完成後，API 金鑰表顯示「沒有可顯示的 API 金鑰」。
+- 頁面說明已刪除憑證在 30 天內可從「已刪除的憑證」頁還原。
+- AI Studio 自動綁定的同名服務帳戶仍存在於隔離專案，等待另外確認。
+
+### 心得
+
+雲端主控台揭露了預先檢查沒看見的資源：建立 AI Studio key 可能同時出現 bound service account。安全報告不能只寫「我沒有手動建立」，而要記錄專案實際存在什麼；同時也不能把刪除 key 的許可擴大成刪除另一個資源。
 
 ## 25. 最終驗證與交付整理
 
