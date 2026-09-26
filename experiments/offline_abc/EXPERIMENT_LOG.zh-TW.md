@@ -452,3 +452,76 @@ GPU 不是可行性的必要條件，但對互動等待很有價值。由於兩�
 ### 心得
 
 這輪最有價值的不是把成功率做成 100%，而是留下可重現的反例：v1 的結構錯誤與 v2 的語意錯誤。它們會讓後續 A 使用完全相同案例與檢查規則，不會因為換成雲端模型就降低標準。
+
+## 16. A：確認隔離邊界與可用憑證
+
+### 實際步驟
+
+- 只檢查環境變數名稱是否存在，不顯示任何值。
+- 搜尋 PoC 是否已有雲端 LLM 串接；沒有讀取或使用羽球+1正式資源。
+- 確認 `GEMINI_API_KEY`、`GOOGLE_API_KEY`、`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`GOOGLE_CLOUD_PROJECT`、`GOOGLE_APPLICATION_CREDENTIALS` 均未設定。
+- `.env` 只有 `DATABASE_URL`；它不是 LLM 金鑰，因此沒有嘗試使用。
+
+### 結果
+
+- 沒有可用的獨立雲端 LLM 測試金鑰。
+- 沒有呼叫雲端、沒有登入、沒有建立專案，也沒有接觸資料庫內容。
+
+### 心得
+
+「電腦裡有某種憑證」不等於可以拿來做另一個實驗。要證明 A 又不影響羽球+1，最重要的是把測試金鑰、預算與資料來源分開；缺少這個條件時應先完成零網路準備，而不是借用正式設定。
+
+## 17. A：建立零網路乾跑與費用閘門
+
+### 實際步驟
+
+- 新增 `benchmark_gemini_corpus.py`，預設只做 dry-run。
+- 固定只讀 A/B 共用的 28 案例精簡 JSON，不送影片或檔案路徑。
+- 使用 provider-native JSON schema 限制五個輸出欄位。
+- 加入 US$0.05 預估費用 cap、獨立金鑰要求、固定 API host、無自動重試與 400/401/403 立即停止。
+- 加入 request schema、資料邊界、費用估算與 thinking token 計費測試。
+
+### 結果
+
+- 28 案例全部進入乾跑計畫。
+- API 請求 0 次，實際費用 US$0。
+- 保守 input 上限 18,630 tokens、output 上限 8,960 tokens。
+- 依 2026-09-26 Gemini 3.5 Flash-Lite 公開單價，整批最高估計 US$0.027989，低於預設 cap。
+- 將舊的 Gemini 2.5 Flash-Lite 成本情境更新為目前模型與單價；10,000 次/月的透明估算由 US$2.216 更新為約 US$7.2307。
+- 新增的離線實驗測試 10/10 通過。
+- 依原始 JSON 產生零網路乾跑證據畫面，明確標示不是雲端效能實測。
+
+### 心得
+
+乾跑不是 A 的效能證據，但它先回答三個風險：到底會送什麼、最多花多少、沒有金鑰時會不會誤送。下一個有效證據必須是先跑一筆純模擬 smoke test，再決定是否讓 19 份真實影片衍生的結構資料進入 paid 隔離測試專案。
+
+### 證據
+
+[`A_CLOUD_LLM_BENCHMARK.zh-TW.md`](A_CLOUD_LLM_BENCHMARK.zh-TW.md) 與 [`results/gemini_35_flash_lite_28_case_preflight.json`](results/gemini_35_flash_lite_28_case_preflight.json)
+
+### 畫面
+
+![A 的 28 案例零網路乾跑畫面](assets/a_cloud_preflight_screen.png)
+
+## 18. A 乾跑階段驗證
+
+### 實際步驟
+
+- 先從專案根目錄直接執行 pytest，確認測試收集範圍。
+- 發現它會把隔離下載的 YOLOv12 上游 repository 測試一起收進主環境；該環境未安裝 PyTorch，因此在第三方測試收集階段停止。
+- 改用主 PoC 自己的 `tests/` 目錄重跑，並另外執行前端 Node 測試。
+- 重跑 A 成本估算、所有證據圖、JSON 格式與 Python 語法檢查。
+- 目視檢查 `a_cloud_preflight_screen.png` 的數值、標題與「不是雲端效能實測」標示。
+
+### 結果
+
+- 主 PoC Python：244 passed、2 skipped。
+- 前端 Node：5 passed、0 failed。
+- A 離線實驗單元測試包含在上述結果內，10/10 通過。
+- 根目錄 pytest 的停止原因是第三方 YOLOv12 測試需要其隔離環境的 PyTorch，不是主 PoC 回歸失敗。
+- `scripts/offline_demo_server.py` 仍未讀改、未 stage。
+- 沒有雲端請求、沒有費用、沒有改動羽球+1正式專案。
+
+### 心得
+
+研究用 repository 與主系統共用工作目錄時，測試範圍必須明確。這次保留了「寬範圍收集為何停止」的紀錄，再用主 PoC 的正式測試範圍驗證功能，避免把缺少研究依賴誤報成產品壞掉，也避免反過來隱藏真正的回歸。

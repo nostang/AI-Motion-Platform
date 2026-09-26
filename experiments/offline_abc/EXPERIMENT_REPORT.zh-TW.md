@@ -66,11 +66,11 @@ MediaPipe 的邊界也很清楚：單鏡頭 2D 骨架適合身體關節、動作
 ### A 目前有哪些證據
 
 - **實測**：相同 MediaPipe 核心處理 16.217 秒影片平均 5.3651 秒，三次分數一致。
-- **估算**：用 B 實際平均 414.333 input tokens、199.333 output tokens，套入 2026-09-26 Gemini 2.5 Flash-Lite 公開單價（input US$0.10/1M、output US$0.40/1M）。
+- **估算**：用 B 實際平均 414.333 input tokens、199.333 output tokens，套入 2026-09-26 Gemini 3.5 Flash-Lite 公開 standard paid tier 單價（input US$0.30/1M、output 含 thinking US$2.50/1M）。
 - **估算**：Cloud Run 以 1 vCPU、依本機峰值 RSS 換算 0.3603 GiB、執行 5.3651 秒，套入公開 CPU/RAM 單價。
-- **情境結果**：LLM 約 US$0.00012117/次，運算約 US$0.00010044/次，合計約 US$0.00022160/次；10,000 次/月約 US$2.216。
+- **情境結果**：LLM 約 US$0.00062263/次，運算約 US$0.00010044/次，合計約 US$0.00072307/次；10,000 次/月約 US$7.2307。
 
-這個 US$2.216 **不是雲端帳單預測**。它沒有包含 Storage、網路、資料庫、logging、重試、稅金，也假設雲端執行時間等於這台 Mac 的本機時間。它的用途只是讓各成本成分可計算。原始估算在 [`results/option_a_cost_estimate.json`](results/option_a_cost_estimate.json)，公式在 [`estimate_option_a.py`](estimate_option_a.py)。
+這個 US$7.2307 **不是雲端帳單預測**。它沒有包含 Storage、網路、資料庫、logging、重試、稅金，也假設雲端執行時間等於這台 Mac 的本機時間。它的用途只是讓各成本成分可計算。原始估算在 [`results/option_a_cost_estimate.json`](results/option_a_cost_estimate.json)，公式在 [`estimate_option_a.py`](estimate_option_a.py)。
 
 ### A 尚未測得
 
@@ -80,6 +80,19 @@ MediaPipe 的邊界也很清楚：單鏡頭 2D 骨架適合身體關節、動作
 - 真正的儲存、資料庫、監控與網路帳單。
 
 因此本報告選 A 的理由是部署與維運結構最符合產品條件，不是因為已證明雲端 LLM 一定比 Gemma 4 準確。
+
+### A 的 28 案例隔離乾跑
+
+已新增預設零網路的 Gemini 測試工具，固定只讀與 B 相同的 28 份精簡結構化 JSON，不讀資料庫、不上傳影片、不部署服務。2026-09-26 依當時官方建議改以 `gemini-3.5-flash-lite` 作為下一輪比較模型，乾跑結果如下：
+
+- 28 案例全部可排入測試；實際 API 請求 0、費用 US$0。
+- 保守估計 input 上限 18,630 tokens、output 上限 8,960 tokens。
+- 依 input US$0.30/1M、output（含 thinking）US$2.50/1M，整批最高估計 US$0.027989。
+- 工具預設費用 cap 為 US$0.05，且沒有 `--execute` 與獨立 `GEMINI_API_KEY` 不會連網。
+
+這仍不是 A 的雲端效能或品質結果；目前環境沒有獨立測試金鑰，因此沒有冒用羽球+1設定或正式憑證。完整邊界與後續步驟見 [A 的雲端 LLM 隔離實驗](A_CLOUD_LLM_BENCHMARK.zh-TW.md)。
+
+![A 的 28 案例零網路乾跑畫面](assets/a_cloud_preflight_screen.png)
 
 ## 5. B：地端 MediaPipe + 地端 Gemma 4
 

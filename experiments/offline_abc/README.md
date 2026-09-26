@@ -11,6 +11,7 @@
 ## 先看這些
 
 - [完整實驗報告](EXPERIMENT_REPORT.zh-TW.md)
+- [A 的雲端 LLM 隔離實驗](A_CLOUD_LLM_BENCHMARK.zh-TW.md)
 - [B 的設備、並行與 VM 專章](B_EQUIPMENT_AND_VM.zh-TW.md)
 - [A vs B 共用 28 案例測試集](AB_BENCHMARK_CORPUS.zh-TW.md)
 - [C 的羽球訓練研究計畫](C_RESEARCH_PLAN.zh-TW.md)
@@ -99,11 +100,16 @@ experiments/offline_abc/.venv-yolo/bin/python \
   --monthly-analyses 10000 \
   --output experiments/offline_abc/results/option_a_cost_estimate.json
 
-# 11. 重新產生所有證據圖
+# 11. A：零網路乾跑；預設不會呼叫 API
+.venv/bin/python experiments/offline_abc/benchmark_gemini_corpus.py \
+  --manifest experiments/offline_abc/results/ab_corpus_manifest.json \
+  --output experiments/offline_abc/results/gemini_35_flash_lite_28_case_preflight.json
+
+# 12. 重新產生所有證據圖
 MPLCONFIGDIR=/tmp/ai-motion-mpl .venv/bin/python \
   experiments/offline_abc/render_evidence.py
 ```
 
 ## 安全邊界
 
-本實驗沒有建立 VM、沒有部署 Cloud Run、沒有呼叫正式 API，也沒有使用正式 Cloud SQL、bucket、queue、secret、service account、流量或 IAM。PoC 的隔離保護仍由 `src/poc_isolation.py` 與 `tests/test_poc_resource_isolation.py` 驗證。
+本實驗沒有建立 VM、沒有部署 Cloud Run、沒有呼叫正式 API，也沒有使用正式 Cloud SQL、bucket、queue、secret、service account、流量或 IAM。A 的新工具預設為零網路 dry-run，只有 `--execute` 加上獨立 `GEMINI_API_KEY` 才會呼叫 Gemini。PoC 的隔離保護仍由 `src/poc_isolation.py` 與 `tests/test_poc_resource_isolation.py` 驗證。

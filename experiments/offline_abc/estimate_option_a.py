@@ -9,8 +9,8 @@ import statistics
 from pathlib import Path
 
 
-DEFAULT_INPUT_USD_PER_MILLION = 0.10
-DEFAULT_OUTPUT_USD_PER_MILLION = 0.40
+DEFAULT_INPUT_USD_PER_MILLION = 0.30
+DEFAULT_OUTPUT_USD_PER_MILLION = 2.50
 DEFAULT_CPU_USD_PER_SECOND = 0.000018
 DEFAULT_MEMORY_GIB_USD_PER_SECOND = 0.000002
 
@@ -49,8 +49,8 @@ def calculate_estimate(
             "local_mediapipe_peak_rss_mb": float(mediapipe["runs"][0]["peak_rss_mb"]),
         },
         "unit_prices_usd": {
-            "gemini_2_5_flash_lite_input_per_million_tokens": input_usd_per_million,
-            "gemini_2_5_flash_lite_output_per_million_tokens": output_usd_per_million,
+            "gemini_3_5_flash_lite_input_per_million_tokens": input_usd_per_million,
+            "gemini_3_5_flash_lite_output_including_thinking_per_million_tokens": output_usd_per_million,
             "cloud_run_cpu_per_vcpu_second": cpu_usd_per_second,
             "cloud_run_memory_per_gib_second": memory_gib_usd_per_second,
         },

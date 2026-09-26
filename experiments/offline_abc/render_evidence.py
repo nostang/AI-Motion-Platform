@@ -78,6 +78,43 @@ def option_a() -> None:
     plt.close(fig)
 
 
+def option_a_preflight() -> None:
+    plan = _json("gemini_35_flash_lite_28_case_preflight.json")
+    pricing = plan["pricing"]
+    terminal_text = f"""$ python benchmark_gemini_corpus.py --manifest ... --output ...
+
+mode: DRY RUN (default)
+provider: {plan['provider']}
+model: {plan['model']}
+cases: {plan['case_count']} = 19 real-video pipeline reports + 9 synthetic JSON cases
+data boundary: compact structured motion JSON only
+video uploads: 0
+network requests: {plan['network_request_count']}
+actual cost: US${plan['actual_cost_usd']:.2f}
+
+estimated input upper bound: {plan['estimated_input_tokens_upper_bound']:,} tokens
+maximum output: {plan['maximum_output_tokens']:,} tokens
+price snapshot: input ${pricing['input_usd_per_million_tokens']:.2f}/1M,
+                output ${pricing['output_including_thinking_usd_per_million_tokens']:.2f}/1M
+estimated maximum total: US${plan['estimated_maximum_cost_usd']:.6f}
+
+result: no cloud call was made
+next: isolated GEMINI_API_KEY -> one synthetic smoke test -> 28-case run"""
+    fig = plt.figure(figsize=(14, 8), facecolor="#111827")
+    fig.text(0.04, 0.94, "A 雲端 LLM｜28 案例零網路乾跑畫面", fontproperties=FONT, fontsize=20, color="white")
+    fig.text(0.04, 0.865, terminal_text, fontproperties=MONO, fontsize=13, color="#D1FAE5", va="top", linespacing=1.35)
+    fig.text(
+        0.04,
+        0.035,
+        "原始證據：results/gemini_35_flash_lite_28_case_preflight.json｜乾跑不是雲端效能實測",
+        fontproperties=FONT,
+        fontsize=11,
+        color="#93C5FD",
+    )
+    fig.savefig(ASSETS / "a_cloud_preflight_screen.png", dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
 def option_b() -> None:
     gpu = _json("gemma4_three_cases.json")
     cpu = _json("gemma4_cpu_only.json")
@@ -343,6 +380,7 @@ def decision() -> None:
 def main() -> None:
     ASSETS.mkdir(parents=True, exist_ok=True)
     option_a()
+    option_a_preflight()
     option_b()
     option_b_corpus()
     option_c()

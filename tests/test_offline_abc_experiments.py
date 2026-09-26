@@ -95,6 +95,53 @@ def test_option_a_estimate_is_explicitly_not_a_measurement():
     assert result["scenario"]["combined_usd_per_month"] > 0
 
 
+def test_gemini_preflight_is_zero_network_and_cost_capped(tmp_path):
+    gemini = _load("benchmark_gemini_corpus")
+    assert gemini._request_payload("hello")["generationConfig"]["responseMimeType"] == "application/json"
+    assert gemini._request_payload("hello")["generationConfig"]["responseJsonSchema"] == gemini.OUTPUT_SCHEMA
+    assert set(gemini.OUTPUT_SCHEMA["required"]) == gemini.REQUIRED_KEYS
+
+    cases = [
+        {
+            "case_id": "S-SV-01",
+            "evidence_kind": "synthetic_structured_stress_case",
+            "motion": "serve",
+            "scenario": "smoke",
+            "report_path": str(tmp_path / "report.json"),
+            "prompt_sha256": "0" * 64,
+            "estimated_input_tokens": 500,
+        }
+    ]
+    plan = gemini._preflight(cases, gemini.DEFAULT_MODEL)
+    assert plan["execution_evidence_kind"] == "cloud_api_dry_run_not_measurement"
+    assert plan["data_boundary"].endswith("no video upload")
+    assert plan["estimated_maximum_cost_usd"] < 0.01
+
+
+def test_gemini_schema_and_usage_account_for_thinking_tokens():
+    gemini = _load("benchmark_gemini_corpus")
+    response = {
+        "summary": "摘要",
+        "strength": ["優點"],
+        "priority": ["改善"],
+        "drill": ["練習"],
+        "caution": "單鏡頭2D限制",
+    }
+    assert gemini._schema_types_valid(response)
+    assert not gemini._schema_types_valid({**response, "strength": "優點"})
+    usage = gemini._usage(
+        {
+            "usageMetadata": {
+                "promptTokenCount": 100,
+                "candidatesTokenCount": 50,
+                "thoughtsTokenCount": 25,
+                "totalTokenCount": 175,
+            }
+        }
+    )
+    assert usage["billable_output_tokens"] == 75
+
+
 def test_ab_corpus_has_separate_real_and_synthetic_evidence(tmp_path):
     corpus = _load("build_ab_benchmark_corpus")
     clear_video = tmp_path / "dataset" / "clear" / "videos" / "CL_001.mov"
