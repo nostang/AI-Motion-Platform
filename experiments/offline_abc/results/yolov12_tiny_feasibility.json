@@ -1,0 +1,55 @@
+{
+  "benchmark": "official-yolov12-tiny-single-class-feasibility",
+  "claim_scope": "pipeline_feasibility_only_not_model_accuracy",
+  "source": {
+    "remote": "https://github.com/sunsmarterjie/yolov12.git",
+    "commit": "2abab7153a065fb2925e8088e9ca2b19016ab7d6"
+  },
+  "runtime": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.11.16",
+    "torch": "2.14.0",
+    "ultralytics_from_official_repo": "8.3.63",
+    "device": "mps"
+  },
+  "dataset": {
+    "kind": "deterministic_synthetic_rectangles",
+    "classes": 1,
+    "train_images": 12,
+    "validation_images": 4,
+    "image_size": 160
+  },
+  "training": {
+    "epochs": 1,
+    "wall_seconds": 26.9749,
+    "model_size_bytes": 5381802,
+    "peak_process_rss_mb": 952.28,
+    "metrics": {
+      "metrics/precision(B)": 0.0,
+      "metrics/recall(B)": 0.0,
+      "metrics/mAP50(B)": 0.0,
+      "metrics/mAP50-95(B)": 0.0,
+      "fitness": 0.0
+    }
+  },
+  "validation": {
+    "map50": 0.0,
+    "map50_95": 0.0,
+    "precision": 0.0,
+    "recall": 0.0
+  },
+  "inference": {
+    "sample": "val_000.jpg",
+    "repeat_count": 5,
+    "mean_wall_seconds": 0.005915,
+    "min_wall_seconds": 0.005486,
+    "max_wall_seconds": 0.006328,
+    "prediction_counts": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

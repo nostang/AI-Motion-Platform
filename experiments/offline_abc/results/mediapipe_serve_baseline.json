@@ -1,0 +1,51 @@
+{
+  "benchmark": "local-mediapipe-existing-pipeline",
+  "case_id": "ma_120f8334b8094f5f",
+  "motion": "serve",
+  "video": {
+    "width": 1750,
+    "height": 954,
+    "fps": 42.117,
+    "frames": 683,
+    "duration_seconds": 16.217,
+    "size_bytes": 18737870
+  },
+  "runtime": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.14",
+    "opencv": "5.0.0",
+    "model_file": "pose_landmarker_lite.task"
+  },
+  "runs": [
+    {
+      "wall_seconds": 5.6885,
+      "cpu_seconds": 9.374,
+      "peak_rss_mb": 368.94,
+      "evaluation_status": "EVALUATED",
+      "overall_score": 87,
+      "system_confidence": 1.0
+    },
+    {
+      "wall_seconds": 5.4291,
+      "cpu_seconds": 9.2928,
+      "peak_rss_mb": 368.94,
+      "evaluation_status": "EVALUATED",
+      "overall_score": 87,
+      "system_confidence": 1.0
+    },
+    {
+      "wall_seconds": 4.9778,
+      "cpu_seconds": 8.8579,
+      "peak_rss_mb": 368.94,
+      "evaluation_status": "EVALUATED",
+      "overall_score": 87,
+      "system_confidence": 1.0
+    }
+  ],
+  "aggregate": {
+    "repeat_count": 3,
+    "mean_wall_seconds": 5.3651,
+    "mean_realtime_factor": 0.3308,
+    "mean_processed_fps": 127.303
+  }
+}
