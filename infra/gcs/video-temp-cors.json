@@ -1,0 +1,22 @@
+[
+  {
+    "origin": [
+      "https://pa1chill.com",
+      "https://www.pa1chill.com",
+      "https://ai-motion-1051941896828.asia-east1.run.app",
+      "https://badminton-web-1051941896828.asia-east1.run.app",
+      "https://badminton-web-lwvgtj65aa-de.a.run.app",
+      "http://127.0.0.1:8000",
+      "http://localhost:8000",
+      "http://127.0.0.1:4173",
+      "http://localhost:4173"
+    ],
+    "method": [
+      "PUT"
+    ],
+    "responseHeader": [
+      "Content-Type"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

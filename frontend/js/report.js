@@ -650,18 +650,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     return item;
   }
 
-  function createCoachV2Item(title, description, meta = "") {
+  function createCoachV2Item(title, description, meta = "", metaPlacement = "detail") {
     const item = document.createElement("li");
+    const headingRow = document.createElement("div");
     const heading = document.createElement("strong");
     const copy = document.createElement("span");
+    headingRow.className = "coach-v2-item-heading";
     heading.textContent = title;
     copy.textContent = description;
-    item.append(heading, copy);
+    headingRow.appendChild(heading);
     if (meta) {
       const detail = document.createElement("small");
       detail.textContent = meta;
-      item.appendChild(detail);
+      if (metaPlacement === "score") {
+        detail.className = "coach-v2-score";
+        headingRow.appendChild(detail);
+      } else {
+        detail.className = "coach-v2-detail";
+        item.append(headingRow, copy, detail);
+        return item;
+      }
     }
+    item.append(headingRow, copy);
     return item;
   }
 
@@ -679,7 +689,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       elements.coachV2Strengths.appendChild(createCoachV2Item(
         item.label || formatMetric(item.metric),
         item.message || "本次表現相對穩定。",
-        `${valueOrDash(item.score)} / ${valueOrDash(item.max_score)}`
+        `${valueOrDash(item.score)} / ${valueOrDash(item.max_score)}`,
+        "score"
       ));
     });
     if (!strengths.length) {
@@ -693,7 +704,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       elements.coachV2Priorities.appendChild(createCoachV2Item(
         item.label || formatMetric(item.metric),
         item.message || "建議列為近期練習重點。",
-        `${valueOrDash(item.score)} / ${valueOrDash(item.max_score)}`
+        `${valueOrDash(item.score)} / ${valueOrDash(item.max_score)}`,
+        "score"
       ));
     });
     if (!priorities.length) {

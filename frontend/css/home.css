@@ -1010,11 +1010,78 @@ body.camera-open { overflow: hidden; }
   opacity: 0.78;
 }
 
-.video-preprocess-dialog video {
-  width: 100%;
-  max-height: 46vh;
+.video-preprocess-video-wrap {
+  position: relative;
+  overflow: hidden;
   border-radius: 14px;
   background: #000;
+}
+
+.video-preprocess-dialog video {
+  display: block;
+  width: 100%;
+  max-height: 46vh;
+  background: #000;
+}
+
+.video-preprocess-processing {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 9px;
+  padding: 24px;
+  color: #fff;
+  text-align: center;
+  background: rgba(5, 15, 10, .82);
+  backdrop-filter: blur(5px);
+}
+
+.video-preprocess-processing[hidden] {
+  display: none;
+}
+
+.video-preprocess-processing strong {
+  font-size: clamp(20px, 4vw, 28px);
+  letter-spacing: .04em;
+}
+
+.video-preprocess-processing small {
+  min-height: 1.4em;
+  color: rgba(255, 255, 255, .82);
+  font-size: 13px;
+}
+
+.video-preprocess-spinner {
+  width: 38px;
+  height: 38px;
+  border: 4px solid rgba(255, 255, 255, .25);
+  border-top-color: #7bffab;
+  border-radius: 50%;
+  animation: video-preprocess-spin .8s linear infinite;
+}
+
+.video-preprocess-processing-track {
+  width: min(280px, 74vw);
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .2);
+}
+
+.video-preprocess-processing-track > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: #7bffab;
+  transition: width .12s linear;
+}
+
+@keyframes video-preprocess-spin {
+  to { transform: rotate(360deg); }
 }
 
 .video-preprocess-meta,
@@ -1132,22 +1199,24 @@ body.camera-open { overflow: hidden; }
 .video-segment-preview-button {
   width: 100%;
   min-height: 44px;
-  margin-top: 12px;
+  margin: 0;
 }
 
 .video-preprocess-range {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(84px, .72fr);
   gap: 12px;
   margin-top: 16px;
 }
 
-.video-preprocess-range label {
+.video-preprocess-range label,
+.video-preprocess-preview-control {
   display: grid;
   gap: 7px;
 }
 
-.video-preprocess-range span {
+.video-preprocess-range span,
+.video-preprocess-preview-control > span {
   font-size: 13px;
   opacity: 0.72;
 }
@@ -1180,8 +1249,17 @@ body.camera-open { overflow: hidden; }
     border-radius: 18px;
   }
 
-  .video-preprocess-range,
   .video-preprocess-actions {
     grid-template-columns: 1fr;
+  }
+
+  .video-preprocess-range {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(76px, .72fr);
+    gap: 8px;
+  }
+
+  .video-preprocess-range input,
+  .video-segment-preview-button {
+    padding-inline: 8px;
   }
 }

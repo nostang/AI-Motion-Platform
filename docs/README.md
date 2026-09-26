@@ -6,6 +6,7 @@ guides, release notes, and calibration evidence.
 ## Start here
 
 - [Platform contract](PLATFORM_CONTRACT.md)
+- [Ability +1 motion sync (2026-09-26)](SYNC_FROM_ABILITY_PLUS_ONE_20260926.md)
 - [API contract v2](API_CONTRACT_V2.md)
 - [Web integration guide](web_integration/README.md)
 - [Motion specification index](Specification/README.md)
@@ -41,6 +42,8 @@ The [`calibration/`](calibration/) directory contains calibration contracts,
 review rubrics, validation matrices, retained system results, and isolated
 experiments. Body Stability V2 exploratory notes are grouped under
 [`calibration/experiments/body-stability-v2/`](calibration/experiments/body-stability-v2/README.md).
+Local MediaPipe, Gemma 4, and YOLOv12 comparison work is isolated under
+[`../experiments/offline_abc/`](../experiments/offline_abc/README.md).
 
 ## Releases and archive
 

@@ -42,7 +42,7 @@ def footwork_report(
 
 
 def history_item(
-    assessment_id: str,
+    assessment_id: int,
     *,
     overall_score: float,
     report: dict,
@@ -94,7 +94,7 @@ def test_progress_api_returns_v2_dimensions_and_highlights(
 ):
     history = [
         history_item(
-            "ma_old",
+            1002,
             overall_score=80.0,
             report=footwork_report(
                 recovery=18.0,
@@ -105,7 +105,7 @@ def test_progress_api_returns_v2_dimensions_and_highlights(
             created_at="2026-08-01T00:00:00+00:00",
         ),
         history_item(
-            "ma_new",
+            1004,
             overall_score=84.5,
             report=footwork_report(
                 recovery=21.0,
@@ -172,7 +172,7 @@ def test_progress_api_does_not_interpret_version_mismatch(
 ):
     history = [
         history_item(
-            "ma_old",
+            1002,
             overall_score=80.0,
             report=footwork_report(
                 recovery=None,
@@ -183,7 +183,7 @@ def test_progress_api_does_not_interpret_version_mismatch(
             rule_version="footwork-calibration-v1.2",
         ),
         history_item(
-            "ma_new",
+            1004,
             overall_score=84.0,
             report=footwork_report(
                 recovery=None,
@@ -241,7 +241,7 @@ def test_progress_api_returns_409_when_history_is_insufficient(
 ):
     history = [
         history_item(
-            "ma_only",
+            1012,
             overall_score=84.0,
             report=footwork_report(
                 body=19.756,

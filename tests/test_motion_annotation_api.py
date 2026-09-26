@@ -20,27 +20,28 @@ import src.api.app as api_module
 class FakeRepository:
     def __init__(self, root: Path) -> None:
         self.root = root
-        self.tasks: dict[str, dict] = {}
-        self.status_updates: list[tuple[str, dict]] = []
+        self.tasks: dict[int, dict] = {}
+        self.status_updates: list[tuple[int, dict]] = []
         self.created_analyses: list[dict] = []
 
-    def task_dir(self, assessment_id: str) -> Path:
-        return self.root / assessment_id
+    def task_dir(self, assessment_id: int) -> Path:
+        return self.root / str(assessment_id)
 
     def get_analysis(
         self,
-        assessment_id: str,
+        assessment_id: int,
     ) -> dict | None:
         return self.tasks.get(assessment_id)
 
     def user_exists(self, user_id: int) -> bool:
         return user_id == 1
 
+    def allocate_analysis_id(self) -> int:
+        return 1100 + len(self.created_analyses)
+
     def create_analysis(self, **kwargs) -> None:
         self.created_analyses.append(kwargs)
-        assessment_id = kwargs[
-            "external_analysis_id"
-        ]
+        assessment_id = kwargs["analysis_id"]
         self.tasks[assessment_id] = {
             "assessment_id": assessment_id,
             "assessment_type": kwargs[
@@ -57,7 +58,7 @@ class FakeRepository:
 
     def update_status(
         self,
-        assessment_id: str,
+        assessment_id: int,
         **kwargs,
     ) -> None:
         self.status_updates.append(
@@ -77,11 +78,11 @@ class FakeRepository:
 
 class FakeService:
     def __init__(self) -> None:
-        self.calls: list[tuple[str, bool]] = []
+        self.calls: list[tuple[int, bool]] = []
 
     def process(
         self,
-        assessment_id: str,
+        assessment_id: int,
         use_annotation: bool = False,
     ) -> None:
         self.calls.append(
@@ -130,7 +131,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
 
     def create_task(
         self,
-        assessment_id: str = "ma_test",
+        assessment_id: int = 1001,
         *,
         status: str = "uploaded",
     ) -> Path:
@@ -156,7 +157,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
 
     def put_annotation(
         self,
-        assessment_id: str = "ma_test",
+        assessment_id: int = 1001,
         *,
         start_ms: int = 1000,
         end_ms: int = 5000,
@@ -200,7 +201,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
         )
 
         annotation_path = (
-            self.repository.task_dir("ma_test")
+            self.repository.task_dir(1001)
             / "human_annotation.json"
         )
         self.assertTrue(annotation_path.is_file())
@@ -218,7 +219,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
         get_response = self.client.get(
             (
                 "/api/v1/motion-assessments/"
-                "ma_test/annotation"
+                "1001/annotation"
             )
         )
         self.assertEqual(
@@ -285,7 +286,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
         response = self.client.post(
             (
                 "/api/v1/motion-assessments/"
-                "ma_test/analyze-annotation"
+                "1001/analyze-annotation"
             )
         )
 
@@ -309,7 +310,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
         response = self.client.post(
             (
                 "/api/v1/motion-assessments/"
-                "ma_test/analyze-annotation"
+                "1001/analyze-annotation"
             )
         )
 
@@ -321,7 +322,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
         )
         self.assertEqual(
             self.service.calls,
-            [("ma_test", True)],
+            [(1001, True)],
         )
         self.assertTrue(
             any(
@@ -397,7 +398,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
     ) -> None:
         self.create_task(status="uploaded")
         self.assertEqual(self.put_annotation().status_code, 200)
-        output = self.repository.task_dir("ma_test") / "output"
+        output = self.repository.task_dir(1001) / "output"
         output.mkdir()
         (output / "serve_assessment.json").write_text(
             json.dumps({
@@ -424,18 +425,20 @@ class MotionAnnotationApiTests(unittest.TestCase):
             }),
             encoding="utf-8",
         )
-        self.repository.tasks["ma_test"]["status"] = "completed"
+        self.repository.tasks[1001]["status"] = "completed"
 
-        response = self.client.get(
-            "/api/v1/internal/motion-assessments/ma_test/engineer-debug"
-        )
+        with patch.dict(os.environ, {"INTERNAL_API_KEY": "test-key"}):
+            response = self.client.get(
+                "/api/v1/internal/motion-assessments/1001/engineer-debug",
+                headers={"X-Internal-Api-Key": "test-key"},
+            )
         self.assertEqual(response.status_code, 200)
         data = response.json()["data"]
         self.assertEqual(data["visibility"], "INTERNAL")
         self.assertEqual(data["active_side"]["effective_source"], "MANUAL")
         self.assertEqual(data["internal_motion_window"]["window"]["start_ms"], 1200)
 
-        openapi = self.client.get("/openapi.json").json()
+        openapi = api_module.app.openapi()
         self.assertNotIn(
             "/api/v1/internal/motion-assessments/{assessment_id}/engineer-debug",
             openapi["paths"],
@@ -443,7 +446,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
 
     def test_status_exposes_additive_input_validation_failure(self) -> None:
         self.create_task(status="failed")
-        self.repository.tasks["ma_test"].update({
+        self.repository.tasks[1001].update({
             "current_stage": "input_validation",
             "error_message": (
                 "未偵測到可分析的人體動作，請重新錄製或上傳。"
@@ -451,7 +454,7 @@ class MotionAnnotationApiTests(unittest.TestCase):
         })
 
         response = self.client.get(
-            "/api/v1/motion-assessments/ma_test"
+            "/api/v1/motion-assessments/1001"
         )
 
         self.assertEqual(response.status_code, 200)

@@ -36,7 +36,7 @@ def footwork_report(
 
 
 def history_item(
-    assessment_id: str,
+    assessment_id: int,
     *,
     overall_score: float,
     report: dict,
@@ -62,13 +62,13 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v1_overall_comparison_remains_compatible(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report=footwork_report(),
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.5,
                 report=footwork_report(),
                 created_at="2026-08-18T00:00:00+00:00",
@@ -84,7 +84,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v2_extracts_footwork_dimensions(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report=footwork_report(
                     recovery=18.0,
@@ -95,7 +95,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.5,
                 report=footwork_report(
                     recovery=21.0,
@@ -118,7 +118,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v2_compares_dimension_scores(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report=footwork_report(
                     recovery=18.0,
@@ -127,7 +127,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.5,
                 report=footwork_report(
                     recovery=21.0,
@@ -167,13 +167,13 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v2_preserves_continuous_score_and_fair_level(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report=footwork_report(body=18.4),
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.5,
                 report=footwork_report(
                     body=19.756,
@@ -200,13 +200,13 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v2_missing_dimension_is_not_interpreted(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report=footwork_report(body=None, body_level=None),
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.5,
                 report=footwork_report(body=19.756),
                 created_at="2026-08-18T00:00:00+00:00",
@@ -230,14 +230,14 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v2_version_mismatch_does_not_interpret_dimension_delta(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report=footwork_report(body=18.4),
                 created_at="2026-08-01T00:00:00+00:00",
                 rule_version="footwork-calibration-v1.2",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.5,
                 report=footwork_report(body=19.756),
                 created_at="2026-08-18T00:00:00+00:00",
@@ -365,7 +365,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v2_highlights_largest_improvement(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report={
                     "skill_score": {
@@ -384,7 +384,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.5,
                 report={
                     "skill_score": {
@@ -420,7 +420,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v2_highlights_largest_decline(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=82.0,
                 report={
                     "skill_score": {
@@ -439,7 +439,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=80.0,
                 report={
                     "skill_score": {
@@ -475,7 +475,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v2_unchanged_dimension_is_not_a_highlight(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report={
                     "skill_score": {
@@ -489,7 +489,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=80.0,
                 report={
                     "skill_score": {
@@ -516,7 +516,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
     def test_v2_version_mismatch_dimensions_are_not_highlighted(self) -> None:
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report={
                     "skill_score": {
@@ -531,7 +531,7 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
                 rule_version="footwork-calibration-v1.2",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.0,
                 report={
                     "skill_score": {
@@ -608,13 +608,13 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
 
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=65.0,
                 report=old_report,
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.78,
                 report=new_report,
                 created_at="2026-08-18T00:00:00+00:00",
@@ -679,13 +679,13 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
 
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=65.0,
                 report=old_report,
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=84.78,
                 report=new_report,
                 created_at="2026-08-18T00:00:00+00:00",
@@ -737,13 +737,13 @@ class ProgressEngineV2ContractTests(unittest.TestCase):
 
         history = [
             history_item(
-                "ma_old",
+                1002,
                 overall_score=80.0,
                 report=old_report,
                 created_at="2026-08-01T00:00:00+00:00",
             ),
             history_item(
-                "ma_new",
+                1004,
                 overall_score=85.0,
                 report=new_report,
                 created_at="2026-08-18T00:00:00+00:00",

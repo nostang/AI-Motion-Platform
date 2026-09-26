@@ -12,7 +12,11 @@ class FakeRepository:
             return []
         return [
             {
-                "assessment_id": f"ma_{motion_type}_{index}",
+                "assessment_id": {
+                    "footwork": 1200,
+                    "serve": 1300,
+                    "clear": 1400,
+                }[motion_type] + index,
                 "motion_type": motion_type,
                 "overall_score": 70 + index,
                 "report": {

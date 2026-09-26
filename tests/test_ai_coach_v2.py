@@ -31,7 +31,7 @@ def _history(*scores):
 
 def _clear_report():
     return {
-        "assessment_id": "ma_clear",
+        "assessment_id": 1010,
         "assessment_type": "clear",
         "summary": _summary(85),
         "score_breakdown": {
@@ -67,7 +67,7 @@ def _clear_report():
 
 def _serve_report():
     return {
-        "assessment_id": "ma_serve",
+        "assessment_id": 1009,
         "assessment_type": "serve",
         "summary": _summary(79),
         "score_breakdown": {
@@ -102,7 +102,7 @@ def _serve_report():
 
 def _footwork_report():
     return {
-        "assessment_id": "ma_footwork",
+        "assessment_id": 1011,
         "assessment_type": "footwork",
         "summary": _summary(84.6),
         "skill_score": {
@@ -184,6 +184,38 @@ def test_training_plan_only_references_supported_priority_metrics():
 
 
 @pytest.mark.parametrize(
+    ("report_factory", "expected_priority_copy", "expected_next_focus"),
+    [
+        (
+            _clear_report,
+            "先減少中途停頓",
+            "以固定節奏完成整段揮拍",
+        ),
+        (
+            _serve_report,
+            "先分解動作",
+            "身體與手臂是否能連續帶動",
+        ),
+        (
+            _footwork_report,
+            "先縮短停頓",
+            "每次移動後都能回到一致的準備位置",
+        ),
+    ],
+)
+def test_coaching_copy_is_specific_to_motion_and_priority(
+    report_factory,
+    expected_priority_copy,
+    expected_next_focus,
+):
+    result = build_ai_coach_v2(report_factory(), _history(70, 76, 82))
+
+    assert expected_priority_copy in result["priorities"][0]["message"]
+    assert expected_next_focus in result["next_focus"]["message"]
+    assert result["version"] == "ai-coach-v2.1"
+
+
+@pytest.mark.parametrize(
     ("scores", "status"),
     [
         ((70, 74, 79), "UPWARD"),
@@ -197,6 +229,16 @@ def test_recent_trend_conservative_rules(scores, status):
 
     assert result["status"] == status
     assert result["window_size"] == min(3, len(scores))
+
+
+def test_recent_trend_explains_the_actual_score_change():
+    upward = build_recent_trend(_history(70, 74, 79))
+    stable = build_recent_trend(_history(80, 81, 81))
+
+    assert "由 70 到 79" in upward["message"]
+    assert "上升 9 分" in upward["message"]
+    assert "由 80 到 81" in stable["message"]
+    assert "變化 1 分" in stable["message"]
 
 
 def test_output_contains_no_unsupported_claims():

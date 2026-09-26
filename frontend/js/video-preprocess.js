@@ -25,7 +25,18 @@
           影片超過 30 秒，請選擇要讓 AI 分析的動作片段。原始影片不會被修改。
         </p>
 
-        <video id="videoPreprocessPreview" controls playsinline muted></video>
+        <div class="video-preprocess-video-wrap" id="videoPreprocessVideoWrap">
+          <video id="videoPreprocessPreview" controls playsinline muted></video>
+          <div class="video-preprocess-processing" id="videoPreprocessProcessing"
+            role="status" aria-live="polite" hidden>
+            <span class="video-preprocess-spinner" aria-hidden="true"></span>
+            <strong>影片裁剪中</strong>
+            <small id="videoPreprocessProcessingDetail">正在準備影片片段…</small>
+            <span class="video-preprocess-processing-track" aria-hidden="true">
+              <span id="videoPreprocessProcessingBar"></span>
+            </span>
+          </div>
+        </div>
 
         <div class="video-preprocess-meta" id="videoPreprocessMeta"></div>
 
@@ -59,12 +70,14 @@
             <span>結束時間</span>
             <input id="videoPreprocessEnd" type="number" min="0" step="0.1" value="30">
           </label>
+          <div class="video-preprocess-preview-control">
+            <span>預覽</span>
+            <button class="video-segment-preview-button secondary-button"
+              id="videoSegmentPreviewButton" type="button" aria-label="預覽分析片段">
+              ▶ 播放
+            </button>
+          </div>
         </div>
-
-        <button class="video-segment-preview-button secondary-button"
-          id="videoSegmentPreviewButton" type="button">
-          ▶ 預覽分析片段
-        </button>
 
         <div class="video-preprocess-status" id="videoPreprocessStatus"></div>
 
@@ -227,6 +240,7 @@
     });
 
     let finished = false;
+    let lastProgressUpdate = 0;
 
     function finish() {
       if (finished) return;
@@ -236,6 +250,7 @@
       try { recorder.stop(); } catch (_) {}
 
       stream.getTracks().forEach((track) => track.stop());
+      onStatus?.(null, 1);
     }
 
     function drawFrame() {
@@ -244,6 +259,16 @@
       try {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
       } catch (_) {}
+
+      const progress = Math.min(
+        1,
+        Math.max(0, (video.currentTime - start) / (end - start))
+      );
+      const now = performance.now();
+      if (now - lastProgressUpdate >= 120 || progress >= 1) {
+        lastProgressUpdate = now;
+        onStatus?.(null, progress);
+      }
 
       if (video.currentTime >= end - 0.03 || video.ended) {
         finish();
@@ -259,7 +284,8 @@
 
     onStatus?.(
       `本機裁剪中：${start.toFixed(1)}s → ${end.toFixed(1)}s\n`
-      + "請保持頁面在前景。"
+      + "請保持頁面在前景。",
+      0
     );
 
     recorder.start(250);
@@ -328,6 +354,9 @@
     const timelineStart = document.getElementById("videoSegmentTimelineStart");
     const timelineEnd = document.getElementById("videoSegmentTimelineEnd");
     const previewButton = document.getElementById("videoSegmentPreviewButton");
+    const processing = document.getElementById("videoPreprocessProcessing");
+    const processingDetail = document.getElementById("videoPreprocessProcessingDetail");
+    const processingBar = document.getElementById("videoPreprocessProcessingBar");
 
     if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
 
@@ -426,12 +455,35 @@
       + `${(file.size / 1024 / 1024).toFixed(2)} MB`;
 
     status.textContent = "影片只在目前瀏覽器中讀取，尚未上傳.";
+    processing.hidden = true;
+    processingDetail.textContent = "正在準備影片片段…";
+    processingBar.style.width = "0%";
     modal.hidden = false;
 
     return new Promise((resolve) => {
       let settled = false;
 
       let previewStopHandler = null;
+
+      const setProcessing = (active, detail, progress = 0) => {
+        processing.hidden = !active;
+        processingDetail.textContent = detail || "正在準備影片片段…";
+        processingBar.style.width = `${Math.round(progress * 100)}%`;
+        preview.parentElement.setAttribute("aria-busy", String(active));
+
+        [
+          confirm,
+          cancel,
+          close,
+          startInput,
+          endInput,
+          startRange,
+          endRange,
+          previewButton
+        ].forEach((control) => {
+          control.disabled = active;
+        });
+      };
 
       const stopSegmentPreview = () => {
         if (previewStopHandler) {
@@ -547,17 +599,25 @@
           return;
         }
 
-        confirm.disabled = true;
-        cancel.disabled = true;
-        close.disabled = true;
+        setProcessing(
+          true,
+          `正在處理 ${start.toFixed(1)}s → ${end.toFixed(1)}s`,
+          0
+        );
 
         try {
           const blob = await renderTrimmedBlob(
             preview,
             start,
             end,
-            (message) => {
-              status.textContent = message;
+            (message, progress) => {
+              if (message) status.textContent = message;
+              if (Number.isFinite(progress)) {
+                const percent = Math.round(progress * 100);
+                processingBar.style.width = `${percent}%`;
+                processingDetail.textContent =
+                  `${percent}% · 請保持頁面在前景`;
+              }
             }
           );
 
@@ -580,15 +640,15 @@
 
           status.textContent =
             `裁剪完成 · ${(trimmedFile.size / 1024 / 1024).toFixed(2)} MB`;
+          processingDetail.textContent = "裁剪完成";
+          processingBar.style.width = "100%";
 
           finish(trimmedFile);
         } catch (error) {
           console.error("[VIDEO_PREPROCESS]", error);
           status.textContent = error.message || "本機裁剪失敗";
         } finally {
-          confirm.disabled = false;
-          cancel.disabled = false;
-          close.disabled = false;
+          setProcessing(false);
         }
       };
 

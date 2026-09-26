@@ -30,7 +30,7 @@ test("polling exposes the friendly retryable input-validation failure", async ()
   require("../../frontend/js/api.js");
 
   await assert.rejects(
-    window.AIMotionAPI.pollAssessment("ma_validation"),
+    window.AIMotionAPI.pollAssessment(1015),
     (error) => {
       assert.equal(error.code, "INPUT_VALIDATION_FAILED");
       assert.equal(error.retryable, true);

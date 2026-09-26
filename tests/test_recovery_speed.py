@@ -10,7 +10,7 @@ from src.report.report_builder import ReportBuilder
 def assessment_fixture(times):
     return {
         "schema_version": "1.1",
-        "assessment_id": "fa_test",
+        "assessment_id": 20006,
         "engine_version": "0.5.1",
         "config_version": "footwork-calibration-v1",
         "assessment_type": "footwork",

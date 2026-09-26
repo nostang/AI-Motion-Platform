@@ -150,7 +150,7 @@ def upload_assessment(
 
 
 def wait_for_completion(
-    assessment_id: str,
+    assessment_id: int,
 ) -> dict:
     deadline = time.time() + POLL_TIMEOUT_SECONDS
 

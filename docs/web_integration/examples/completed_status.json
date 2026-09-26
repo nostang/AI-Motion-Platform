@@ -1,7 +1,7 @@
 {
   "success": true,
   "data": {
-    "assessment_id": "ma_a76a255f00964514",
+    "assessment_id": 1021,
     "assessment_type": "serve",
     "status": "completed",
     "progress": 100,
@@ -10,7 +10,7 @@
     "updated_at": "2026-08-10T13:15:22.636059+08:00",
     "completed_at": "2026-08-10T13:15:22.636067+08:00",
     "failure": null,
-    "report_url": "/api/v1/motion-assessments/ma_a76a255f00964514/report"
+    "report_url": "/api/v1/motion-assessments/1021/report"
   },
   "error": null
 }

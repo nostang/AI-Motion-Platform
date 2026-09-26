@@ -77,19 +77,19 @@ class KeyframeStorageService:
             self._storage_client = storage.Client()
         return self._storage_client
 
-    def _object_name(self, assessment_id: str, filename: str) -> str:
+    def _object_name(self, assessment_id: int, filename: str) -> str:
         return (
             f"{KEYFRAME_OBJECT_PREFIX}/{self._assessment_id(assessment_id)}/"
             f"keyframes/{filename}"
         )
 
-    def _sequence_object_name(self, assessment_id: str, filename: str) -> str:
+    def _sequence_object_name(self, assessment_id: int, filename: str) -> str:
         return (
             f"{KEYFRAME_OBJECT_PREFIX}/{self._assessment_id(assessment_id)}/"
             f"{MOTION_SEQUENCE_OBJECT_PREFIX}/{filename}"
         )
 
-    def _reach_grid_object_name(self, assessment_id: str, filename: str) -> str:
+    def _reach_grid_object_name(self, assessment_id: int, filename: str) -> str:
         return (
             f"{KEYFRAME_OBJECT_PREFIX}/{self._assessment_id(assessment_id)}/"
             f"{REACH_GRID_OBJECT_PREFIX}/{filename}"
@@ -101,7 +101,7 @@ class KeyframeStorageService:
 
     def persist(
         self,
-        assessment_id: str,
+        assessment_id: int,
         source_dir: Path,
         manifest: Mapping[str, Any],
     ) -> dict[str, Any]:
@@ -199,7 +199,7 @@ class KeyframeStorageService:
         )
         return durable
 
-    def load_manifest(self, assessment_id: str) -> dict[str, Any] | None:
+    def load_manifest(self, assessment_id: int) -> dict[str, Any] | None:
         object_name = self._object_name(assessment_id, "manifest.json")
         try:
             payload = self._blob(object_name).download_as_bytes()
@@ -210,7 +210,7 @@ class KeyframeStorageService:
 
     def download_keyframe(
         self,
-        assessment_id: str,
+        assessment_id: int,
         stage: str,
     ) -> bytes:
         stage = self._stage(stage)
@@ -222,7 +222,7 @@ class KeyframeStorageService:
 
     def persist_sequence(
         self,
-        assessment_id: str,
+        assessment_id: int,
         source_dir: Path,
         manifest: Mapping[str, Any],
     ) -> dict[str, Any]:
@@ -322,7 +322,7 @@ class KeyframeStorageService:
 
     def load_sequence_manifest(
         self,
-        assessment_id: str,
+        assessment_id: int,
     ) -> dict[str, Any] | None:
         object_name = self._sequence_object_name(assessment_id, "manifest.json")
         try:
@@ -334,7 +334,7 @@ class KeyframeStorageService:
 
     def download_sequence_frame(
         self,
-        assessment_id: str,
+        assessment_id: int,
         index: int,
     ) -> bytes:
         index = self._sequence_index(index)
@@ -349,7 +349,7 @@ class KeyframeStorageService:
 
     def persist_reach_grid(
         self,
-        assessment_id: str,
+        assessment_id: int,
         source_dir: Path,
         manifest: Mapping[str, Any],
     ) -> dict[str, Any]:
@@ -449,7 +449,7 @@ class KeyframeStorageService:
 
     def load_reach_grid_manifest(
         self,
-        assessment_id: str,
+        assessment_id: int,
     ) -> dict[str, Any] | None:
         object_name = self._reach_grid_object_name(
             assessment_id,
@@ -464,7 +464,7 @@ class KeyframeStorageService:
 
     def download_reach_grid_frame(
         self,
-        assessment_id: str,
+        assessment_id: int,
         key: str,
     ) -> bytes:
         key = self._reach_grid_key(key)

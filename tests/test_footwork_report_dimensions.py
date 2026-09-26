@@ -18,7 +18,7 @@ def assessment_fixture() -> dict:
 
     return {
         "schema_version": "1.4",
-        "assessment_id": "fa_dimension_contract",
+        "assessment_id": 20005,
         "assessment_type": "footwork",
         "engine_version": "0.5.1",
         "config_version": "footwork-calibration-v1",

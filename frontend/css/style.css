@@ -57,6 +57,9 @@ button { font: inherit; cursor: pointer; }
 .coach-v2-block h3 { margin: 0 0 13px; color: var(--court-deep); font-size: 18px; }
 .coach-v2-block ul, .coach-v2-block ol { display: grid; gap: 10px; margin: 0; padding-left: 20px; }
 .coach-v2-block li strong, .coach-v2-block li span, .coach-v2-block li small { display: block; }
+.coach-v2-item-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.coach-v2-item-heading > strong { min-width: 0; }
+.coach-v2-block li .coach-v2-score { flex: 0 0 auto; margin: 0; color: var(--court); font-weight: 900; white-space: nowrap; }
 .coach-v2-block li span { margin-top: 4px; color: var(--muted); line-height: 1.55; }
 .coach-v2-block li small { margin-top: 5px; color: var(--court); font-weight: 900; }
 .coach-v2-training { grid-column: 1 / -1; border-left: 8px solid var(--lime); }

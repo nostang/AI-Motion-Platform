@@ -17,7 +17,10 @@ from typing import Any, Mapping, Protocol
 
 
 class VideoAnalysisRepository(Protocol):
-    def task_dir(self, external_analysis_id: str) -> Path:
+    def task_dir(self, analysis_id: int) -> Path:
+        ...
+
+    def allocate_analysis_id(self) -> int:
         ...
 
     def user_exists(self, user_id: int) -> bool:
@@ -27,7 +30,7 @@ class VideoAnalysisRepository(Protocol):
         self,
         *,
         user_id: int,
-        external_analysis_id: str,
+        analysis_id: int,
         video_url: str,
         analysis_type: str,
         processing_status: str,
@@ -38,9 +41,31 @@ class VideoAnalysisRepository(Protocol):
     ) -> None:
         ...
 
+    def get_active_analysis(
+        self,
+        user_id: int,
+    ) -> dict[str, Any] | None:
+        ...
+
+    def expire_stale_analyses(
+        self,
+        user_id: int,
+        *,
+        max_age_minutes: int = 30,
+    ) -> list[int]:
+        ...
+
+    def expire_stale_assessment(
+        self,
+        analysis_id: int,
+        *,
+        max_age_minutes: int = 30,
+    ) -> bool:
+        ...
+
     def update_status(
         self,
-        external_analysis_id: str,
+        analysis_id: int,
         *,
         processing_status: str,
         progress: int,
@@ -53,26 +78,26 @@ class VideoAnalysisRepository(Protocol):
 
     def save_report(
         self,
-        external_analysis_id: str,
+        analysis_id: int,
         report: Mapping[str, Any],
     ) -> None:
         ...
 
     def clear_video_reference(
         self,
-        external_analysis_id: str,
+        analysis_id: int,
     ) -> None:
         ...
 
     def get_analysis(
         self,
-        external_analysis_id: str,
+        analysis_id: int,
     ) -> dict[str, Any] | None:
         ...
 
     def get_report(
         self,
-        external_analysis_id: str,
+        analysis_id: int,
         analysis_type: str | None = None,
     ) -> dict[str, Any] | None:
         ...

@@ -12,9 +12,9 @@
 
 ## User Flow
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## API Dependencies
 
@@ -53,11 +53,11 @@
 
 - 不自行計算 Backend 的分數、等級或 Coach。
 - 不直接讀取 Backend filesystem。
-- 
+-
 
 ## Acceptance Criteria
 
-- [ ] 
+- [ ]
 - [ ] `null`、空資料與失敗狀態已測試。
 - [ ] Keyboard、手機版與 Loading 狀態已測試。
 - [ ] API request／response 已用 Network panel 驗證。

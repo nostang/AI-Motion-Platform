@@ -117,7 +117,7 @@ def sanitize_footwork_reach_grid(artifact: Any) -> dict[str, Any]:
 
 def add_footwork_reach_grid_references(
     grid: dict[str, Any],
-    assessment_id: str,
+    assessment_id: int,
     manifest: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     if grid.get("status") not in {"READY", "PARTIAL"}:

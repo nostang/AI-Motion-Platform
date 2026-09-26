@@ -91,7 +91,7 @@ def test_motion_history_preserves_report_metrics_json(
 
     rows = [
         {
-            "external_analysis_id": "ma_test",
+            "analysis_id": 101,
             "analysis_type": "footwork",
             "overall_score": 84.783,
             "metrics_json": report,
@@ -124,7 +124,7 @@ def test_motion_history_preserves_report_metrics_json(
 
     item = history[0]
 
-    assert item["assessment_id"] == "ma_test"
+    assert item["assessment_id"] == 101
     assert item["motion_type"] == "footwork"
     assert item["assessment_type"] == "footwork"
     assert item["overall_score"] == 84.783

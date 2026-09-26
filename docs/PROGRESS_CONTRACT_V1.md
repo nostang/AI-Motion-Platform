@@ -33,11 +33,11 @@ CUSTOM
   "motion_type": "footwork",
   "comparison_mode": "PREVIOUS",
   "current": {
-    "assessment_id": "ma_current",
+    "assessment_id": 1013,
     "score": 81.0
   },
   "reference": {
-    "assessment_id": "ma_previous",
+    "assessment_id": 1014,
     "score": 77.0
   },
   "change": 4.0,

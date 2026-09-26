@@ -32,7 +32,7 @@ def utc_now() -> str:
 
 
 def _persist_clear_keyframes(
-    assessment_id: str,
+    assessment_id: int,
     video_path: Path,
     output_dir: Path,
 ) -> dict | None:
@@ -108,7 +108,7 @@ def _persist_clear_keyframes(
 
 
 def _persist_serve_motion_sequence(
-    assessment_id: str,
+    assessment_id: int,
     video_path: Path,
     output_dir: Path,
 ) -> dict | None:
@@ -147,7 +147,7 @@ def _persist_serve_motion_sequence(
 
 
 def _persist_footwork_reach_grid(
-    assessment_id: str,
+    assessment_id: int,
     video_path: Path,
     output_dir: Path,
 ) -> dict | None:
@@ -191,7 +191,7 @@ class MotionAssessmentService:
 
     def process(
         self,
-        assessment_id: str,
+        assessment_id: int,
         use_annotation: bool = False,
     ) -> None:
         task = self.repository.get_analysis(assessment_id)
@@ -282,6 +282,8 @@ class MotionAssessmentService:
 
             result = analyzer.run(context)
             report = result["analysis_report"]
+            # Public and persisted reports use the database BIGINT identifier.
+            report["assessment_id"] = assessment_id
 
             if assessment_type == "clear":
                 try:

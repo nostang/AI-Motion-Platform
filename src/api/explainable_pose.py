@@ -197,7 +197,7 @@ def sanitize_explainable_pose(
 
 def add_keyframe_references(
     visualization: dict[str, Any],
-    assessment_id: str,
+    assessment_id: int,
     manifest: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     """Add presentation-safe image references without exposing Storage paths."""
@@ -379,7 +379,7 @@ def sanitize_motion_sequence(
 
 def add_motion_sequence_references(
     sequence: dict[str, Any],
-    assessment_id: str,
+    assessment_id: int,
     manifest: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     if sequence.get("status") != "READY":

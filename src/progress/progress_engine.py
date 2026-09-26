@@ -12,7 +12,7 @@ class ProgressEngine:
         history: Iterable[Mapping[str, Any]],
         *,
         mode: str = "PREVIOUS",
-        reference_assessment_id: str | None = None,
+        reference_assessment_id: int | None = None,
     ) -> dict[str, Any]:
         items = [dict(x) for x in history if isinstance(x, Mapping)]
         if not items:
@@ -400,7 +400,7 @@ class ProgressEngine:
         items: list[dict[str, Any]],
         *,
         mode: str,
-        reference_assessment_id: str | None,
+        reference_assessment_id: int | None,
     ) -> dict[str, Any] | None:
         current = items[-1]
         candidates = [

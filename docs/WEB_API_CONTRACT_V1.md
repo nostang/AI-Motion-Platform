@@ -135,7 +135,7 @@ GET /api/v1/motion-assessments/{assessment_id}/result
 {
   "success": true,
   "data": {
-    "assessment_id": "ma_c1a053ad4f4d4385",
+    "assessment_id": 1023,
     "motion_type": "footwork",
     "status": "READY",
     "score": 77.0,
@@ -273,7 +273,7 @@ Context。
 
 ``` json
 {
-  "assessment_id": "ma_c1a053ad4f4d4385",
+  "assessment_id": 1023,
   "motion_type": "footwork",
   "label": "步法",
   "score": 77.0,

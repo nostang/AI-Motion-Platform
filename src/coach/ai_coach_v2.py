@@ -11,7 +11,7 @@ from math import isfinite
 from typing import Any, Mapping, Sequence
 
 
-VERSION = "ai-coach-v2.0"
+VERSION = "ai-coach-v2.1"
 
 MOTION_METRICS: dict[str, tuple[str, ...]] = {
     "footwork": (
@@ -49,6 +49,74 @@ METRIC_LABELS = {
     "weight_transfer": "重心轉移",
     "non_racket_arm_balance": "非持拍手平衡",
     "swing_smoothness": "揮拍流暢度",
+}
+
+COACHING_COPY: dict[str, dict[str, str]] = {
+    "movement_completion": {
+        "strength": "這次各方向的移動完成度相對穩定，大部分指定動作都有完整呈現。",
+        "priority": "這次有部分移動尚未完整呈現。先放慢節奏，確認每次出發、到位與回位都做完。",
+        "next_focus": "下次先不追求速度，確認每個方向都完成「出發、到位、回位」。",
+    },
+    "recovery_speed": {
+        "strength": "每次移動後回到準備位置的節奏相對穩定，可以繼續維持。",
+        "priority": "回位是這次較需要加強的環節。先縮短停頓，再逐步提高連續移動速度。",
+        "next_focus": "下次只觀察回位，確認每次移動後都能回到一致的準備位置。",
+    },
+    "direction_coverage": {
+        "strength": "這次指定方向的覆蓋較完整，沒有明顯集中在少數方向。",
+        "priority": "這次部分指定方向的覆蓋較不足。先逐方向完成，再練習連續串接。",
+        "next_focus": "下次先確認每個指定方向都完整做一次，再增加速度。",
+    },
+    "motion_quality": {
+        "strength": "連續位移的整體節奏相對穩定，動作之間的銜接較完整。",
+        "priority": "連續位移時的節奏仍有改善空間。先降低速度，讓每一步的銜接更一致。",
+        "next_focus": "下次以固定速度完成整段步法，觀察動作銜接是否更一致。",
+    },
+    "body_stability": {
+        "strength": "移動過程中的身體穩定度相對良好，可以在加快節奏時繼續維持。",
+        "priority": "移動時的身體穩定度是這次較弱的一項。先用慢速練習，減少軀幹晃動。",
+        "next_focus": "下次以慢速完成，觀察移動過程中軀幹是否能維持穩定。",
+    },
+    "preparation_stability": {
+        "strength": "發球前的準備姿勢相對穩定，能作為後續動作的一致起點。",
+        "priority": "發球前的準備姿勢仍不夠一致。先固定站姿與起始位置，再開始揮拍。",
+        "next_focus": "下次每一球先停在相同的準備姿勢，再開始完整動作。",
+    },
+    "swing_completeness": {
+        "strength": "這次揮拍路徑的完整性相對穩定，動作前後段都有呈現。",
+        "priority": "這次部分揮拍沒有完整做完。先用慢速完成整段路徑，再逐步加快。",
+        "next_focus": "下次先確認每次揮拍的準備、帶動與收尾都有完整做完。",
+    },
+    "body_coordination": {
+        "strength": "身體與手臂的動作銜接相對協調，可以繼續維持相同節奏。",
+        "priority": "身體與手臂的銜接是這次較需要練習的項目。先分解動作，再連成完整發球。",
+        "next_focus": "下次用較慢速度完成，觀察身體與手臂是否能連續帶動。",
+    },
+    "motion_smoothness": {
+        "strength": "整段發球的動作節奏相對流暢，前後段銜接較一致。",
+        "priority": "發球動作的連續性仍有改善空間。先減少中途停頓，再逐步恢復速度。",
+        "next_focus": "下次以固定節奏完成整段發球，避免在中途停住。",
+    },
+    "sideways_preparation": {
+        "strength": "高遠球前的側身準備相對完整，能穩定進入後續揮拍。",
+        "priority": "側身準備是這次較需要加強的環節。先完成轉身與站穩，再接續揮拍。",
+        "next_focus": "下次先確認側身準備完成，再開始後續揮拍動作。",
+    },
+    "weight_transfer": {
+        "strength": "準備到揮拍之間的重心轉移相對穩定，動作銜接較完整。",
+        "priority": "重心轉移是這次較需要優先練習的項目。先分段確認準備與揮拍之間的移動。",
+        "next_focus": "下次放慢動作，觀察準備到揮拍之間的重心轉移是否連續。",
+    },
+    "non_racket_arm_balance": {
+        "strength": "非持拍手在動作中的平衡作用相對穩定，可以繼續維持。",
+        "priority": "非持拍手的平衡是這次較弱的一項。先慢速完成，留意雙側動作是否協調。",
+        "next_focus": "下次放慢揮拍，觀察非持拍手是否能在整段動作中協助平衡。",
+    },
+    "swing_smoothness": {
+        "strength": "整段高遠球揮拍的節奏相對流暢，動作銜接較一致。",
+        "priority": "高遠球揮拍的流暢度仍有改善空間。先減少中途停頓，再逐步提高速度。",
+        "next_focus": "下次以固定節奏完成整段揮拍，觀察前後段能否連續銜接。",
+    },
 }
 
 RULE_METRICS = {
@@ -311,6 +379,7 @@ def _select_metrics(
 
     def presentation(metric: str, kind: str) -> dict[str, Any]:
         item = dimensions[metric]
+        copy = COACHING_COPY[metric]
         evidence_sources = ["score_breakdown"]
         if kind == "strength" and metric in declared_strengths:
             evidence_sources.append("highlights.strengths")
@@ -326,11 +395,7 @@ def _select_metrics(
             "score": item["score"],
             "max_score": item["max_score"],
             "level": item["level"],
-            "message": (
-                f"{item['label']}是本次相對穩定的項目。"
-                if kind == "strength"
-                else f"{item['label']}是目前較值得優先練習的項目。"
-            ),
+            "message": copy[kind],
             "evidence_sources": evidence_sources,
         }
 
@@ -382,15 +447,24 @@ def build_recent_trend(history_series: Mapping[str, Any] | None) -> dict[str, An
 
     recent = valid_scores[-3:]
     change = round(recent[-1] - recent[0], 1)
+    start_score = f"{recent[0]:g}"
+    end_score = f"{recent[-1]:g}"
+    change_text = f"{abs(change):g}"
     if change >= 3.0:
         status = "UPWARD"
-        message = "近期整體呈上升趨勢。"
+        message = f"近 3 次總分由 {start_score} 到 {end_score}，上升 {change_text} 分。"
     elif change <= -3.0:
         status = "DOWNWARD"
-        message = "近期分數有下降，建議重新確認主要弱項。"
+        message = (
+            f"近 3 次總分由 {start_score} 到 {end_score}，下降 {change_text} 分；"
+            "建議先回到本次優先項目練習。"
+        )
     else:
         status = "STABLE"
-        message = "近期整體較穩定。"
+        message = (
+            f"近 3 次總分由 {start_score} 到 {end_score}，變化 {change_text} 分，"
+            "目前整體較穩定。"
+        )
     return {
         "status": status,
         "sample_count": len(valid_scores),
@@ -447,7 +521,7 @@ def build_ai_coach_v2(
         next_focus = {
             "metric": priority["metric"],
             "label": priority["label"],
-            "message": f"下次測驗優先觀察{priority['label']}是否更穩定。",
+            "message": COACHING_COPY[priority["metric"]]["next_focus"],
         }
 
     result = {

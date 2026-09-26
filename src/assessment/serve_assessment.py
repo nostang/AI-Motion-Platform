@@ -6,7 +6,6 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
 
 def _level_lower(
@@ -154,7 +153,7 @@ class ServeAssessmentBuilder:
 
         return {
             "schema_version": "0.2",
-            "assessment_id": f"sa_{uuid4().hex[:16]}",
+            "assessment_id": None,
             "assessment_type": "serve",
             "serve_type": "forehand",
             "test_mode": "FOREHAND_SERVE_TEACHING",

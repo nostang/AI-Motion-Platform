@@ -39,48 +39,48 @@ def test_history_trend_filters_invalid_results_and_sorts_full_history():
     histories = {
         "footwork": [
             _item(
-                "ma_new",
+                1004,
                 "footwork",
                 84.5,
                 "2026-08-03T00:00:00+00:00",
                 completed_at="2026-08-03T00:05:00+00:00",
             ),
             _item(
-                "ma_old",
+                1002,
                 "footwork",
                 78,
                 "2026-08-01T00:00:00+00:00",
                 completed_at="2026-08-01T00:05:00+00:00",
             ),
             _item(
-                "ma_middle",
+                1003,
                 "footwork",
                 81,
                 "2026-08-02T00:00:00+00:00",
             ),
             _item(
-                "ma_failed",
+                1005,
                 "footwork",
                 99,
                 "2026-08-04T00:00:00+00:00",
                 status="failed",
             ),
             _item(
-                "ma_not_evaluated",
+                1006,
                 "footwork",
                 90,
                 "2026-08-05T00:00:00+00:00",
                 report=_report(90, evaluation_status="NOT_EVALUATED"),
             ),
             _item(
-                "ma_incomplete",
+                1007,
                 "footwork",
                 88,
                 "2026-08-06T00:00:00+00:00",
                 report=_report(88, completed=False),
             ),
             _item(
-                "ma_no_score",
+                1008,
                 "footwork",
                 None,
                 "2026-08-07T00:00:00+00:00",
@@ -88,7 +88,7 @@ def test_history_trend_filters_invalid_results_and_sorts_full_history():
         ],
         "serve": [
             _item(
-                "ma_serve",
+                1009,
                 "serve",
                 79,
                 "2026-08-01T00:00:00+00:00",
@@ -102,9 +102,9 @@ def test_history_trend_filters_invalid_results_and_sorts_full_history():
     footwork = result["motions"][0]
     assert footwork["status"] == "READY"
     assert [point["assessment_id"] for point in footwork["points"]] == [
-        "ma_old",
-        "ma_middle",
-        "ma_new",
+        1002,
+        1003,
+        1004,
     ]
     assert [point["overall_score"] for point in footwork["points"]] == [
         78.0,
@@ -130,7 +130,7 @@ def test_history_trend_supports_result_summary_score_shape():
     histories = {
         "clear": [
             _item(
-                "ma_clear",
+                1010,
                 "clear",
                 86,
                 "2026-08-18T00:00:00Z",

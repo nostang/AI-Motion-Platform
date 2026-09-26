@@ -6,7 +6,7 @@
   "records": [
     {
       "sample_id": "SV_001",
-      "assessment_id": "ma_e25909584f4842df",
+      "assessment_id": 1017,
       "actual_motion_type": "BACKHAND_SERVE",
       "performance_mode": "NATURAL",
       "calibration_eligibility": "EXCLUDED",
@@ -21,7 +21,7 @@
     },
     {
       "sample_id": "SV_002",
-      "assessment_id": "ma_34f43492936e4ad4",
+      "assessment_id": 1018,
       "actual_motion_type": "FOREHAND_SERVE",
       "performance_mode": "INSTRUCTIONAL_MOSTLY_CONTINUOUS",
       "calibration_eligibility": "INCLUDED",
@@ -36,7 +36,7 @@
     },
     {
       "sample_id": "SV_003",
-      "assessment_id": "ma_bf5caad1a661418a",
+      "assessment_id": 1019,
       "actual_motion_type": "FOREHAND_SERVE",
       "performance_mode": "EDITED_MULTI_ANGLE",
       "calibration_eligibility": "EXCLUDED",
@@ -51,7 +51,7 @@
     },
     {
       "sample_id": "SV_004",
-      "assessment_id": "ma_3a8e8bd9d1054333",
+      "assessment_id": 1020,
       "actual_motion_type": "FOREHAND_SERVE",
       "performance_mode": "EDITED_REPLAY",
       "calibration_eligibility": "CONDITIONAL",
@@ -66,7 +66,7 @@
     },
     {
       "sample_id": "SV_005",
-      "assessment_id": "ma_a76a255f00964514",
+      "assessment_id": 1021,
       "actual_motion_type": "FOREHAND_SERVE",
       "performance_mode": "SLOW_MOTION",
       "calibration_eligibility": "CONDITIONAL",
@@ -81,7 +81,7 @@
     },
     {
       "sample_id": "SV_006",
-      "assessment_id": "ma_c9146dec232e45de",
+      "assessment_id": 1022,
       "actual_motion_type": "FOREHAND_SERVE",
       "performance_mode": "SLOW_MOTION",
       "calibration_eligibility": "CONDITIONAL",

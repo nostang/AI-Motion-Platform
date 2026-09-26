@@ -7,14 +7,14 @@ from pathlib import Path
 from datetime import timedelta
 import os
 from pathlib import PurePosixPath
-from uuid import uuid4
+from secrets import token_hex
 
 import google.auth
 from google.auth import impersonated_credentials
 from google.cloud import storage
 
 
-DEFAULT_BUCKET = "your-private-video-bucket"
+DEFAULT_BUCKET = "ai-motion-platform-ivesmi-video-temp"
 VIDEO_UPLOAD_BUCKET_ENV = "VIDEO_UPLOAD_BUCKET"
 UPLOAD_OBJECT_PREFIX = "uploads"
 ALLOWED_CONTENT_TYPES = frozenset({
@@ -77,7 +77,7 @@ class StorageUploadService:
             suffix = expected_suffix
 
         object_name = (
-            f"{UPLOAD_OBJECT_PREFIX}/{uuid4().hex}/source{suffix}"
+            f"{UPLOAD_OBJECT_PREFIX}/{token_hex(16)}/source{suffix}"
         )
 
         source_credentials, _ = google.auth.default()

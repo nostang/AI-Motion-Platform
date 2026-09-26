@@ -4,15 +4,18 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import json
 import os
 from pathlib import Path
-from uuid import uuid4
+import re
+import secrets
+import shutil
 
 import cv2
+import jwt
 from dotenv import load_dotenv
-from fastapi import BackgroundTasks, FastAPI, File, Form, Request, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
@@ -37,9 +40,16 @@ from src.api.footwork_reach_grid import (
     load_footwork_reach_grid,
     sanitize_footwork_reach_grid,
 )
-from src.api.postgres_repository import PostgresVideoAnalysisRepository
+from src.api.postgres_repository import (
+    InsufficientGooPointsError,
+    PostgresVideoAnalysisRepository,
+)
 from src.api.service import MotionAssessmentService
 from src.api.storage_upload import StorageUploadService
+from src.api.task_queue import (
+    MotionTaskQueue,
+    TaskQueueConfigurationError,
+)
 from src.api.video_normalization import (
     VideoNormalizationError,
     normalize_for_analysis,
@@ -62,6 +72,7 @@ from src.report.summary_progress_builder import build_summary_progress
 from src.report.ai_summary_builder import build_ai_summary
 from src.config import PROJECT_ROOT
 from src.motion import registered_motion_types
+from src.poc_isolation import validate_poc_resource_isolation
 
 
 load_dotenv(PROJECT_ROOT / ".env")
@@ -83,11 +94,14 @@ if not DATABASE_URL:
         "例如：postgresql://ivesmi@localhost:5432/ai_motion"
     )
 
+validate_poc_resource_isolation(os.environ)
+
 repository = PostgresVideoAnalysisRepository(
     DATABASE_URL,
     PROJECT_ROOT / "api_data" / "motion_assessments",
 )
 service = MotionAssessmentService(repository)
+task_queue = MotionTaskQueue.from_environment()
 
 competency_engine = CompetencyEngine.from_file(
     PROJECT_ROOT / "src/config_data/competency_engine_rules.json"
@@ -106,27 +120,291 @@ progress_engine = ProgressEngine()
 app = FastAPI(
     title="AI Motion API",
     version="2.6.0",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
 
-local_cors_origins = [
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-    "http://127.0.0.1:8080",
-    "http://localhost:8080",
-]
-configured_cors_origins = [
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "ai-motion"}
+
+
+class InternalUserSyncRequest(BaseModel):
+    user_id: int = Field(gt=0)
+    line_user_id: str | None = None
+    display_name: str | None = None
+
+
+class InternalWalletCreditRequest(BaseModel):
+    user_id: int = Field(gt=0)
+    amount: int = Field(gt=0, le=1_000_000)
+    transaction_type: str = Field(pattern="^(topup|reward|adjustment)$")
+    reference_type: str = Field(min_length=1, max_length=30)
+    reference_id: str = Field(min_length=1, max_length=100)
+    idempotency_key: str = Field(min_length=8, max_length=180)
+    metadata: dict = Field(default_factory=dict)
+
+
+class InternalEventRewardRequest(BaseModel):
+    user_id: int = Field(gt=0)
+    registration_id: int = Field(gt=0)
+    event_id: int = Field(gt=0)
+    event_ended_at: datetime
+
+
+class InternalAnalysisEntitlementRequest(BaseModel):
+    user_id: int = Field(gt=0)
+    payment_order_id: str = Field(min_length=8, max_length=100)
+    analysis_type: str = Field(pattern="^(footwork|serve|clear)$")
+    amount_twd: int = Field(gt=0, le=1_000_000)
+
+
+@app.post(f"{API_PREFIX}/internal/users/sync")
+def sync_internal_user(
+    payload: InternalUserSyncRequest,
+    x_internal_api_key: str | None = Header(default=None, alias="X-Internal-Api-Key"),
+):
+    expected = os.environ.get("INTERNAL_API_KEY", "")
+    if not expected or not x_internal_api_key or not secrets.compare_digest(expected, x_internal_api_key):
+        raise HTTPException(status_code=401, detail="Invalid internal API key")
+    repository.upsert_user(payload.user_id, payload.line_user_id, payload.display_name)
+    return {"status": "ok", "user_id": payload.user_id}
+
+
+@app.post(f"{API_PREFIX}/internal/wallet/credits")
+def credit_internal_wallet(
+    payload: InternalWalletCreditRequest,
+    x_internal_api_key: str | None = Header(default=None, alias="X-Internal-Api-Key"),
+):
+    if not _internal_key_is_valid(x_internal_api_key):
+        raise HTTPException(status_code=401, detail="Invalid internal API key")
+    if not repository.user_exists(payload.user_id):
+        return failure(404, "USER_NOT_FOUND", "找不到指定的使用者。")
+    result = repository.credit_wallet(
+        user_id=payload.user_id,
+        amount=payload.amount,
+        transaction_type=payload.transaction_type,
+        reference_type=payload.reference_type,
+        reference_id=payload.reference_id,
+        idempotency_key=payload.idempotency_key,
+        metadata=payload.metadata,
+    )
+    return envelope(result)
+
+
+@app.post(f"{API_PREFIX}/internal/wallet/event-rewards")
+def grant_internal_event_reward(
+    payload: InternalEventRewardRequest,
+    x_internal_api_key: str | None = Header(default=None, alias="X-Internal-Api-Key"),
+):
+    if not _internal_key_is_valid(x_internal_api_key):
+        raise HTTPException(status_code=401, detail="Invalid internal API key")
+    if not repository.user_exists(payload.user_id):
+        return failure(404, "USER_NOT_FOUND", "找不到指定的使用者。")
+    result = repository.grant_event_reward(
+        user_id=payload.user_id,
+        registration_id=payload.registration_id,
+        event_id=payload.event_id,
+        event_ended_at=payload.event_ended_at,
+    )
+    return envelope(result)
+
+
+@app.post(f"{API_PREFIX}/internal/analysis-entitlements")
+def grant_internal_analysis_entitlement(
+    payload: InternalAnalysisEntitlementRequest,
+    x_internal_api_key: str | None = Header(default=None, alias="X-Internal-Api-Key"),
+):
+    if not _internal_key_is_valid(x_internal_api_key):
+        raise HTTPException(status_code=401, detail="Invalid internal API key")
+    if not repository.user_exists(payload.user_id):
+        return failure(404, "USER_NOT_FOUND", "找不到指定的使用者。")
+    try:
+        result = repository.grant_analysis_entitlement(
+            user_id=payload.user_id,
+            payment_order_id=payload.payment_order_id,
+            analysis_type=payload.analysis_type,
+            amount_twd=payload.amount_twd,
+        )
+    except ValueError as exc:
+        return failure(409, "ENTITLEMENT_CONFLICT", str(exc))
+    return envelope(result)
+
+
+@app.get(f"{API_PREFIX}/internal/admin/wallet-usage")
+def internal_admin_wallet_usage(
+    from_date: date,
+    to_date: date,
+    x_internal_api_key: str | None = Header(default=None, alias="X-Internal-Api-Key"),
+):
+    if not _internal_key_is_valid(x_internal_api_key):
+        raise HTTPException(status_code=401, detail="Invalid internal API key")
+    if to_date < from_date or (to_date - from_date).days > 366:
+        return failure(422, "INVALID_REPORT_PERIOD", "報表日期範圍必須介於 1 到 367 天。")
+    rows = repository.get_admin_wallet_usage_report(from_date, to_date)
+    return envelope({
+        "period_start": from_date.isoformat(),
+        "period_end": to_date.isoformat(),
+        "members": rows,
+    })
+
+APP_ENV = os.environ.get("APP_ENV", "development").strip().lower()
+REQUIRE_PUBLIC_AUTH = (
+    APP_ENV == "production"
+    or os.environ.get("REQUIRE_PUBLIC_AUTH", "false").strip().lower()
+    in {"1", "true", "yes", "on"}
+)
+CORS_ALLOWED_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get("CORS_ORIGINS", "").split(",")
+    for origin in os.environ.get(
+        "CORS_ALLOWED_ORIGINS",
+        "http://127.0.0.1:5173,http://localhost:5173",
+    ).split(",")
     if origin.strip()
 ]
+CORS_ALLOWED_ORIGIN_REGEX = os.environ.get("CORS_ALLOWED_ORIGIN_REGEX") or None
+if APP_ENV == "development" and not CORS_ALLOWED_ORIGIN_REGEX:
+    CORS_ALLOWED_ORIGIN_REGEX = r"https://.*\.trycloudflare\.com"
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=local_cors_origins + configured_cors_origins,
+    allow_origins=CORS_ALLOWED_ORIGINS,
+    allow_origin_regex=CORS_ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def _authenticated_user_id(
+    authorization: str | None,
+    x_user_id: str | None,
+) -> int | None:
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ").strip()
+        secret = os.environ.get("APP_JWT_SECRET", "")
+        if not secret:
+            raise HTTPException(status_code=503, detail="Authentication is not configured")
+        try:
+            claims = jwt.decode(
+                token,
+                secret,
+                algorithms=["HS256"],
+                issuer="badminton-event-poc",
+            )
+            return int(claims["sub"])
+        except (jwt.PyJWTError, KeyError, TypeError, ValueError):
+            raise HTTPException(status_code=401, detail="登入已失效，請重新登入")
+    if APP_ENV == "development" and x_user_id:
+        try:
+            return int(x_user_id)
+        except ValueError:
+            raise HTTPException(status_code=401, detail="使用者識別格式錯誤")
+    return None
+
+
+def _require_matching_user(
+    claimed_user_id: int,
+    authorization: str | None,
+    x_user_id: str | None,
+) -> int:
+    authenticated = _authenticated_user_id(authorization, x_user_id)
+    if authenticated is None:
+        if REQUIRE_PUBLIC_AUTH:
+            raise HTTPException(status_code=401, detail="需要登入")
+        return claimed_user_id
+    if authenticated != claimed_user_id:
+        raise HTTPException(status_code=403, detail="不可使用其他會員的能力＋1點數")
+    return authenticated
+
+
+def _require_authenticated_user(
+    authorization: str | None,
+    x_user_id: str | None,
+) -> int | None:
+    authenticated = _authenticated_user_id(authorization, x_user_id)
+    if authenticated is None and REQUIRE_PUBLIC_AUTH:
+        raise HTTPException(status_code=401, detail="需要登入")
+    return authenticated
+
+
+def _require_assessment_owner(assessment_id: int, authenticated_user_id: int) -> None:
+    task = repository.get_analysis(assessment_id)
+    if task is None:
+        return
+    try:
+        owner_user_id = int(task.get("user_id"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=403, detail="分析任務缺少有效擁有者")
+    if owner_user_id != authenticated_user_id:
+        raise HTTPException(status_code=403, detail="不可存取其他會員的分析任務")
+
+
+@app.middleware("http")
+async def enforce_public_api_ownership(request: Request, call_next):
+    """Fail closed on every public Motion API path in production."""
+    path = request.url.path
+    if (
+        not REQUIRE_PUBLIC_AUTH
+        or not path.startswith(f"{API_PREFIX}/")
+        or path.startswith(f"{API_PREFIX}/internal/")
+    ):
+        return await call_next(request)
+
+    try:
+        authenticated_user_id = _require_authenticated_user(
+            request.headers.get("authorization"),
+            request.headers.get("x-user-id"),
+        )
+        assert authenticated_user_id is not None
+
+        user_match = re.match(rf"^{API_PREFIX}/users/(\d+)(?:/|$)", path)
+        if user_match and int(user_match.group(1)) != authenticated_user_id:
+            raise HTTPException(status_code=403, detail="不可存取其他會員的能力＋1資料")
+
+        assessment_match = re.match(
+            rf"^{API_PREFIX}/motion-assessments/(\d+)(?:/|$)",
+            path,
+        )
+        if assessment_match:
+            _require_assessment_owner(
+                int(assessment_match.group(1)),
+                authenticated_user_id,
+            )
+    except HTTPException as exc:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    return await call_next(request)
+
+
+@app.get(f"{API_PREFIX}/users/{{user_id}}/wallet")
+def get_user_wallet(
+    user_id: int,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+):
+    _require_matching_user(user_id, authorization, x_user_id)
+    if not repository.user_exists(user_id):
+        return failure(404, "USER_NOT_FOUND", "找不到指定的使用者。")
+    return envelope(repository.get_wallet(user_id))
+
+
+@app.get(f"{API_PREFIX}/users/{{user_id}}/wallet/analysis-quote")
+def get_analysis_quote(
+    user_id: int,
+    assessment_type: str,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
+):
+    _require_matching_user(user_id, authorization, x_user_id)
+    normalized_type = assessment_type.strip().lower()
+    if normalized_type not in SUPPORTED_ASSESSMENT_TYPES:
+        return failure(400, "INVALID_ASSESSMENT_TYPE", "不支援指定的動作分析。")
+    if not repository.user_exists(user_id):
+        return failure(404, "USER_NOT_FOUND", "找不到指定的使用者。")
+    return envelope(repository.quote_analysis(user_id, normalized_type))
 
 
 class VideoUploadUrlRequest(BaseModel):
@@ -140,11 +418,17 @@ class StorageMotionAssessmentRequest(BaseModel):
     user_id: int = Field(gt=0)
 
 
+class MotionWorkerRequest(BaseModel):
+    assessment_id: int = Field(gt=0)
+    job_type: str = Field(min_length=1, max_length=30)
+    object_name: str | None = Field(default=None, max_length=500)
+
+
 class CompetencyProfileRequest(BaseModel):
     player_id: str = Field(min_length=1, max_length=100)
-    footwork_assessment_id: str = Field(min_length=1)
-    serve_assessment_id: str = Field(min_length=1)
-    clear_assessment_id: str = Field(min_length=1)
+    footwork_assessment_id: int = Field(gt=0)
+    serve_assessment_id: int = Field(gt=0)
+    clear_assessment_id: int = Field(gt=0)
 
 
 class MotionAnnotationRequest(BaseModel):
@@ -251,7 +535,7 @@ def _video_duration_seconds(path: Path) -> float:
 
 
 def _public_report(
-    assessment_id: str,
+    assessment_id: int,
     expected_type: str,
 ) -> tuple[dict | None, JSONResponse | None]:
     task = repository.get_analysis(assessment_id)
@@ -323,8 +607,12 @@ def _public_report(
 )
 def create_video_upload_url(
     request: VideoUploadUrlRequest,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
 ):
     """Create a short-lived V4 PUT URL for the temporary video bucket."""
+    if REQUIRE_PUBLIC_AUTH and _authenticated_user_id(authorization, x_user_id) is None:
+        raise HTTPException(status_code=401, detail="需要登入")
     try:
         ticket = StorageUploadService().create_upload_ticket(
             filename=request.filename,
@@ -349,7 +637,7 @@ def create_video_upload_url(
 
 
 def _fail_storage_assessment(
-    assessment_id: str,
+    assessment_id: int,
     message: str,
 ) -> None:
     repository.update_status(
@@ -364,7 +652,7 @@ def _fail_storage_assessment(
 
 
 def _process_storage_assessment(
-    assessment_id: str,
+    assessment_id: int,
     object_name: str,
     local_video_path: str,
 ) -> None:
@@ -463,6 +751,134 @@ def _process_storage_assessment(
         )
 
 
+def _internal_key_is_valid(value: str | None) -> bool:
+    expected = os.environ.get("INTERNAL_API_KEY", "")
+    return bool(
+        expected
+        and value
+        and secrets.compare_digest(expected, value)
+    )
+
+
+def _queue_or_run_locally(
+    *,
+    background_tasks: BackgroundTasks,
+    assessment_id: int,
+    job_type: str,
+    object_name: str | None = None,
+    local_video_path: str | None = None,
+) -> None:
+    """Enqueue production work; retain an explicit local-only fallback."""
+
+    if task_queue.enabled:
+        task_queue.enqueue(
+            assessment_id=assessment_id,
+            job_type=job_type,
+            object_name=object_name,
+        )
+        return
+
+    if APP_ENV == "production":
+        raise TaskQueueConfigurationError(
+            "正式環境尚未設定 AI Motion 工作佇列。"
+        )
+
+    if job_type == "storage" and object_name and local_video_path:
+        background_tasks.add_task(
+            _process_storage_assessment,
+            assessment_id,
+            object_name,
+            local_video_path,
+        )
+        return
+
+    if job_type == "annotation":
+        background_tasks.add_task(
+            service.process,
+            assessment_id,
+            True,
+        )
+        return
+
+    raise TaskQueueConfigurationError(
+        "無法建立本機 AI Motion 背景工作。"
+    )
+
+
+@app.post(
+    f"{API_PREFIX}/internal/motion-assessments/process",
+)
+def process_queued_motion_assessment(
+    request: MotionWorkerRequest,
+    x_internal_api_key: str | None = Header(
+        default=None,
+        alias="X-Internal-Api-Key",
+    ),
+):
+    """Cloud Tasks worker. Its HTTP request owns CPU until work completes."""
+
+    if not _internal_key_is_valid(x_internal_api_key):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid internal API key",
+        )
+
+    existing = repository.get_analysis(request.assessment_id)
+    if existing is None:
+        return failure(
+            404,
+            "ASSESSMENT_NOT_FOUND",
+            "找不到指定的分析任務。",
+            {"assessment_id": request.assessment_id},
+        )
+
+    if existing.get("status") == "completed":
+        return envelope(
+            {
+                "assessment_id": request.assessment_id,
+                "status": "completed",
+                "idempotent": True,
+            }
+        )
+
+    if request.job_type == "storage":
+        if not request.object_name:
+            return failure(
+                400,
+                "STORAGE_OBJECT_REQUIRED",
+                "Storage 分析工作缺少影片位置。",
+            )
+        stored_video = StorageUploadService().get_video_object(
+            request.object_name
+        )
+        local_video_path = repository.task_dir(
+            request.assessment_id
+        ) / f"source{stored_video.suffix}"
+        local_video_path.parent.mkdir(parents=True, exist_ok=True)
+        _process_storage_assessment(
+            request.assessment_id,
+            stored_video.object_name,
+            str(local_video_path),
+        )
+    elif request.job_type == "annotation":
+        service.process(request.assessment_id, True)
+    else:
+        return failure(
+            400,
+            "INVALID_JOB_TYPE",
+            "不支援指定的 AI Motion 工作類型。",
+            {"job_type": request.job_type},
+        )
+
+    result = repository.get_analysis(request.assessment_id)
+    return envelope(
+        {
+            "assessment_id": request.assessment_id,
+            "status": result.get("status") if result else "failed",
+        }
+    )
+
+
 @app.post(
     f"{API_PREFIX}/motion-assessments/from-storage",
     status_code=202,
@@ -470,9 +886,12 @@ def _process_storage_assessment(
 def create_motion_assessment_from_storage(
     request: StorageMotionAssessmentRequest,
     background_tasks: BackgroundTasks,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
 ):
     """Create a direct-analysis task from an object previously uploaded to Storage."""
     normalized_type = request.assessment_type.strip().lower()
+    _require_matching_user(request.user_id, authorization, x_user_id)
 
     if not repository.user_exists(request.user_id):
         return failure(
@@ -480,6 +899,35 @@ def create_motion_assessment_from_storage(
             "USER_NOT_FOUND",
             "找不到指定的使用者。",
             {"user_id": request.user_id},
+        )
+
+    expire_stale = getattr(
+        repository,
+        "expire_stale_analyses",
+        None,
+    )
+    if callable(expire_stale):
+        expire_stale(request.user_id, max_age_minutes=30)
+
+    get_active = getattr(
+        repository,
+        "get_active_analysis",
+        None,
+    )
+    active = get_active(request.user_id) if callable(get_active) else None
+    if active is not None:
+        return failure(
+            409,
+            "ACTIVE_ASSESSMENT_EXISTS",
+            "你已有一支影片正在分析，完成或失敗後才能再次上傳。",
+            {
+                "assessment_id": active.get("assessment_id"),
+                "assessment_type": active.get("assessment_type"),
+                "status": active.get("status"),
+                "progress": active.get("progress"),
+                "current_stage": active.get("current_stage"),
+                "created_at": active.get("created_at"),
+            },
         )
 
     if normalized_type not in SUPPORTED_ASSESSMENT_TYPES:
@@ -542,7 +990,7 @@ def create_motion_assessment_from_storage(
             },
         )
 
-    assessment_id = f"ma_{uuid4().hex[:16]}"
+    assessment_id = repository.allocate_analysis_id()
     directory = repository.task_dir(assessment_id)
     directory.mkdir(parents=True, exist_ok=True)
 
@@ -554,24 +1002,49 @@ def create_motion_assessment_from_storage(
     # Keep the existing DB schema and service contract unchanged.
     # The pipeline still receives a local path after the Storage object
     # is materialized by the background worker.
-    repository.create_analysis(
-        user_id=request.user_id,
-        external_analysis_id=assessment_id,
-        video_url=str(local_video_path),
-        analysis_type=normalized_type,
-        processing_status="uploaded",
-        progress=0,
-        current_stage="storage_ready",
-        created_at=now,
-        updated_at=now,
-    )
+    try:
+        charge = repository.create_analysis(
+            user_id=request.user_id,
+            analysis_id=assessment_id,
+            video_url=str(local_video_path),
+            analysis_type=normalized_type,
+            # Keep the production CHECK constraint unchanged.  The existing
+            # "uploaded" status represents a durable job waiting for dispatch;
+            # current_stage carries the more specific queue state for the UI.
+            processing_status="uploaded",
+            progress=1,
+            current_stage="queued",
+            created_at=now,
+            updated_at=now,
+        ) or {}
+    except InsufficientGooPointsError as exc:
+        shutil.rmtree(directory, ignore_errors=True)
+        return failure(
+            402,
+            "INSUFFICIENT_GOO_POINTS",
+            "Goo 點不足，請先儲值後再繼續。",
+            {"balance": exc.balance, "required_points": exc.required},
+        )
 
-    background_tasks.add_task(
-        _process_storage_assessment,
-        assessment_id,
-        stored_video.object_name,
-        str(local_video_path),
-    )
+    try:
+        _queue_or_run_locally(
+            background_tasks=background_tasks,
+            assessment_id=assessment_id,
+            job_type="storage",
+            object_name=stored_video.object_name,
+            local_video_path=str(local_video_path),
+        )
+    except Exception as exc:
+        _fail_storage_assessment(
+            assessment_id,
+            "雲端分析工作暫時無法建立，請稍後重試。",
+        )
+        return failure(
+            503,
+            "ANALYSIS_QUEUE_UNAVAILABLE",
+            "雲端分析工作暫時無法建立，請稍後重試。",
+            {"reason": type(exc).__name__},
+        )
 
     return envelope(
         {
@@ -579,6 +1052,7 @@ def create_motion_assessment_from_storage(
             "assessment_type": normalized_type,
             "status": "uploaded",
             "upload_source": "cloud_storage",
+            "billing": charge,
             "created_at": now,
             "status_url": (
                 f"{API_PREFIX}/motion-assessments/"
@@ -604,8 +1078,11 @@ async def create_motion_assessment(
     client_recorded_at: str | None = Form(None),
     notes: str | None = Form(None),
     defer_analysis: bool = Form(False),
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
 ):
     normalized_type = assessment_type.strip().lower()
+    _require_matching_user(user_id, authorization, x_user_id)
 
     if not repository.user_exists(user_id):
         return failure(
@@ -613,6 +1090,34 @@ async def create_motion_assessment(
             "USER_NOT_FOUND",
             "找不到指定的使用者。",
             {"user_id": user_id},
+        )
+
+    expire_stale = getattr(
+        repository,
+        "expire_stale_analyses",
+        None,
+    )
+    if callable(expire_stale):
+        expire_stale(user_id, max_age_minutes=30)
+
+    get_active = getattr(
+        repository,
+        "get_active_analysis",
+        None,
+    )
+    active = get_active(user_id) if callable(get_active) else None
+    if active is not None:
+        return failure(
+            409,
+            "ACTIVE_ASSESSMENT_EXISTS",
+            "你已有一支影片正在分析，完成或失敗後才能再次上傳。",
+            {
+                "assessment_id": active.get("assessment_id"),
+                "assessment_type": active.get("assessment_type"),
+                "status": active.get("status"),
+                "progress": active.get("progress"),
+                "current_stage": active.get("current_stage"),
+            },
         )
 
     if normalized_type not in SUPPORTED_ASSESSMENT_TYPES:
@@ -639,7 +1144,7 @@ async def create_motion_assessment(
             "僅支援 .mp4 與 .mov 影片。",
         )
 
-    assessment_id = f"ma_{uuid4().hex[:16]}"
+    assessment_id = repository.allocate_analysis_id()
     directory = repository.task_dir(
         assessment_id
     )
@@ -762,17 +1267,26 @@ async def create_motion_assessment(
 
     now = utc_now()
 
-    repository.create_analysis(
-        user_id=user_id,
-        external_analysis_id=assessment_id,
-        video_url=str(analysis_video_path),
-        analysis_type=normalized_type,
-        processing_status="uploaded",
-        progress=0,
-        current_stage="uploaded",
-        created_at=now,
-        updated_at=now,
-    )
+    try:
+        charge = repository.create_analysis(
+            user_id=user_id,
+            analysis_id=assessment_id,
+            video_url=str(analysis_video_path),
+            analysis_type=normalized_type,
+            processing_status="uploaded",
+            progress=0,
+            current_stage="uploaded",
+            created_at=now,
+            updated_at=now,
+        ) or {}
+    except InsufficientGooPointsError as exc:
+        shutil.rmtree(directory, ignore_errors=True)
+        return failure(
+            402,
+            "INSUFFICIENT_GOO_POINTS",
+            "Goo 點不足，請先儲值後再繼續。",
+            {"balance": exc.balance, "required_points": exc.required},
+        )
 
     if not defer_analysis:
         background_tasks.add_task(
@@ -786,6 +1300,7 @@ async def create_motion_assessment(
             "assessment_type": normalized_type,
             "status": "uploaded",
             "analysis_deferred": defer_analysis,
+            "billing": charge,
             "created_at": now,
             "status_url": (
                 f"{API_PREFIX}/motion-assessments/"
@@ -800,7 +1315,7 @@ async def create_motion_assessment(
 
 
 def _assessment_source_video(
-    assessment_id: str,
+    assessment_id: int,
 ) -> Path | None:
     directory = repository.task_dir(
         assessment_id
@@ -820,7 +1335,7 @@ def _assessment_source_video(
     "{assessment_id}/video"
 )
 def get_motion_assessment_video(
-    assessment_id: str,
+    assessment_id: int,
 ):
     task = repository.get_analysis(
         assessment_id
@@ -863,7 +1378,7 @@ def get_motion_assessment_video(
     "{assessment_id}/annotation"
 )
 def get_motion_assessment_annotation(
-    assessment_id: str,
+    assessment_id: int,
 ):
     task = repository.get_analysis(
         assessment_id
@@ -912,7 +1427,7 @@ def get_motion_assessment_annotation(
     "{assessment_id}/annotation"
 )
 def put_motion_assessment_annotation(
-    assessment_id: str,
+    assessment_id: int,
     request: MotionAnnotationRequest,
 ):
     task = repository.get_analysis(
@@ -1057,7 +1572,7 @@ def put_motion_assessment_annotation(
     status_code=202,
 )
 def analyze_motion_assessment_annotation(
-    assessment_id: str,
+    assessment_id: int,
     background_tasks: BackgroundTasks,
 ):
     task = repository.get_analysis(
@@ -1115,11 +1630,28 @@ def analyze_motion_assessment_annotation(
         error_message=None,
     )
 
-    background_tasks.add_task(
-        service.process,
-        assessment_id,
-        True,
-    )
+    try:
+        _queue_or_run_locally(
+            background_tasks=background_tasks,
+            assessment_id=assessment_id,
+            job_type="annotation",
+        )
+    except Exception as exc:
+        repository.update_status(
+            assessment_id,
+            processing_status="failed",
+            progress=100,
+            current_stage="queue",
+            updated_at=utc_now(),
+            completed_at=utc_now(),
+            error_message="雲端分析工作暫時無法建立，請稍後重試。",
+        )
+        return failure(
+            503,
+            "ANALYSIS_QUEUE_UNAVAILABLE",
+            "雲端分析工作暫時無法建立，請稍後重試。",
+            {"reason": type(exc).__name__},
+        )
 
     return envelope(
         {
@@ -1144,8 +1676,19 @@ def analyze_motion_assessment_annotation(
     "{assessment_id}"
 )
 def get_motion_assessment(
-    assessment_id: str,
+    assessment_id: int,
 ):
+    expire_stale = getattr(
+        repository,
+        "expire_stale_assessment",
+        None,
+    )
+    if callable(expire_stale):
+        expire_stale(
+            assessment_id,
+            max_age_minutes=30,
+        )
+
     task = repository.get_analysis(
         assessment_id
     )
@@ -1202,7 +1745,7 @@ def get_motion_assessment(
     "{assessment_id}/report"
 )
 def get_motion_assessment_report(
-    assessment_id: str,
+    assessment_id: int,
 ):
     task = repository.get_analysis(
         assessment_id
@@ -1266,7 +1809,7 @@ def get_motion_assessment_report(
     "{assessment_id}/coach-v2"
 )
 def get_motion_assessment_coach_v2(
-    assessment_id: str,
+    assessment_id: int,
 ):
     """Return additive coaching presentation without changing Report JSON."""
 
@@ -1343,7 +1886,7 @@ def get_motion_assessment_coach_v2(
     "{assessment_id}/visualization"
 )
 def get_motion_assessment_visualization(
-    assessment_id: str,
+    assessment_id: int,
 ):
     """Return task-scoped display data without changing the report contract."""
 
@@ -1461,7 +2004,7 @@ def get_motion_assessment_visualization(
     "{assessment_id}/visualization/sequence/{index}"
 )
 def get_motion_assessment_visualization_sequence_frame(
-    assessment_id: str,
+    assessment_id: int,
     index: int,
 ):
     task = repository.get_analysis(assessment_id)
@@ -1515,7 +2058,7 @@ def get_motion_assessment_visualization_sequence_frame(
     "{assessment_id}/visualization/reach-grid/{cell_key}"
 )
 def get_motion_assessment_visualization_reach_grid_frame(
-    assessment_id: str,
+    assessment_id: int,
     cell_key: str,
 ):
     task = repository.get_analysis(assessment_id)
@@ -1571,7 +2114,7 @@ def get_motion_assessment_visualization_reach_grid_frame(
     "{assessment_id}/visualization/keyframes/{stage}"
 )
 def get_motion_assessment_visualization_keyframe(
-    assessment_id: str,
+    assessment_id: int,
     stage: str,
 ):
     task = repository.get_analysis(assessment_id)
@@ -1650,9 +2193,15 @@ def get_motion_assessment_visualization_keyframe(
     include_in_schema=False,
 )
 def get_motion_assessment_engineer_debug(
-    assessment_id: str,
+    assessment_id: int,
+    x_internal_api_key: str | None = Header(
+        default=None,
+        alias="X-Internal-Api-Key",
+    ),
 ):
     """Return internal evidence; intentionally excluded from public OpenAPI."""
+    if not _internal_key_is_valid(x_internal_api_key):
+        raise HTTPException(status_code=401, detail="Invalid internal API key")
     task = repository.get_analysis(assessment_id)
     if task is None:
         return failure(
@@ -1699,7 +2248,7 @@ def get_motion_assessment_engineer_debug(
     "{assessment_id}/result"
 )
 def get_motion_assessment_result(
-    assessment_id: str,
+    assessment_id: int,
 ):
     task = repository.get_analysis(
         assessment_id
@@ -1746,7 +2295,7 @@ def get_motion_assessment_result(
 
     result = build_user_result(report)
 
-    # Public/Web API always uses the external ma_ assessment ID.
+    # Public/Web API uses the production BIGINT analysis identifier.
     result["assessment_id"] = assessment_id
 
     return envelope(result)
@@ -1767,6 +2316,14 @@ def list_user_motion_assessments(
             "找不到指定的使用者。",
             {"user_id": user_id},
         )
+
+    expire_stale = getattr(
+        repository,
+        "expire_stale_analyses",
+        None,
+    )
+    if callable(expire_stale):
+        expire_stale(user_id, max_age_minutes=30)
 
     analyses = repository.list_by_user(
         user_id,
@@ -1982,7 +2539,19 @@ def _build_profile_from_request(
 )
 def create_competency_profile(
     request: CompetencyProfileRequest,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
 ):
+    authenticated = _require_authenticated_user(authorization, x_user_id)
+    if authenticated is not None:
+        for assessment_id in (
+            request.footwork_assessment_id,
+            request.serve_assessment_id,
+            request.clear_assessment_id,
+        ):
+            _require_assessment_owner(assessment_id, authenticated)
+        if request.player_id.isdigit() and int(request.player_id) != authenticated:
+            raise HTTPException(status_code=403, detail="不可建立其他會員的能力檔案")
     profile, error = (
         _build_profile_from_request(request)
     )
@@ -1998,7 +2567,19 @@ def create_competency_profile(
 )
 def create_competency_profile_report(
     request: CompetencyProfileRequest,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
 ):
+    authenticated = _require_authenticated_user(authorization, x_user_id)
+    if authenticated is not None:
+        for assessment_id in (
+            request.footwork_assessment_id,
+            request.serve_assessment_id,
+            request.clear_assessment_id,
+        ):
+            _require_assessment_owner(assessment_id, authenticated)
+        if request.player_id.isdigit() and int(request.player_id) != authenticated:
+            raise HTTPException(status_code=403, detail="不可建立其他會員的能力報告")
     profile, error = (
         _build_profile_from_request(request)
     )
@@ -2194,7 +2775,7 @@ def get_user_progress(
     user_id: int,
     motion_type: str,
     mode: str = "PREVIOUS",
-    reference_assessment_id: str | None = None,
+    reference_assessment_id: int | None = None,
 ):
     if not repository.user_exists(user_id):
         return failure(

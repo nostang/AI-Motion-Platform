@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
+import uuid
 
 from src.assessment.body_stability import evaluate_body_stability
 from src.assessment.direction_coverage import evaluate_direction_coverage
@@ -76,7 +76,10 @@ class FootworkAssessmentBuilder:
         self.calibration_snapshot = calibration_snapshot
         self.clip_pre_roll_ms = max(0, clip_pre_roll_ms)
         self.clip_post_roll_ms = max(0, clip_post_roll_ms)
-        self.assessment_id = f"fa_{uuid4().hex[:16]}"
+        # The four engine artifacts must share a non-empty ID before pipeline
+        # validation runs.  The API replaces the public report ID with the
+        # PostgreSQL BIGINT after the engine has completed.
+        self.assessment_id = f"fa_{uuid.uuid4().hex[:16]}"
         self.events: list[FootworkEventRecord] = []
 
     def add_completed_event(

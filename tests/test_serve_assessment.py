@@ -8,7 +8,9 @@ from src.assessment.serve_assessment import ServeAssessmentBuilder
 class ServeAssessmentTests(unittest.TestCase):
     def setUp(self):
         path = Path(__file__).resolve().parents[1] / "src" / "config_data" / "serve_calibration.json"
-        self.builder = ServeAssessmentBuilder(json.loads(path.read_text()))
+        self.builder = ServeAssessmentBuilder(
+            json.loads(path.read_text(encoding="utf-8"))
+        )
 
     def test_builds_evaluated_assessment(self):
         features = {

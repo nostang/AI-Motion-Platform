@@ -27,7 +27,7 @@ class EngineerDebugTests(unittest.TestCase):
 
     def build(self, motion_type: str) -> dict:
         return build_engineer_debug(
-            assessment_id="ma_test",
+            assessment_id=1001,
             motion_type=motion_type,
             task={"status": "completed"},
             task_dir=self.root,

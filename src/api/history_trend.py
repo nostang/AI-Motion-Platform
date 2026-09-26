@@ -61,7 +61,7 @@ def _series(
     motion_type: str,
     history: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
-    sortable: list[tuple[float, str, dict[str, Any]]] = []
+    sortable: list[tuple[float, int, dict[str, Any]]] = []
     for item in history:
         if not isinstance(item, Mapping):
             continue
@@ -73,14 +73,16 @@ def _series(
         ).strip().lower()
         if item_motion != motion_type:
             continue
-        assessment_id = str(item.get("assessment_id") or "").strip()
+        assessment_id = item.get("assessment_id")
         score = _score(item.get("overall_score"))
         report_score = _report_score(item.get("report"))
         created = _timestamp(item.get("created_at"))
         completed = _timestamp(item.get("completed_at"))
         effective = completed or created
         if (
-            not assessment_id
+            isinstance(assessment_id, bool)
+            or not isinstance(assessment_id, int)
+            or assessment_id <= 0
             or score is None
             or report_score is None
             or effective is None

@@ -126,9 +126,9 @@ Query：`mode` 預設 `PREVIOUS`；`reference_assessment_id` 可選。用於指�
 ```json
 {
   "player_id": "1",
-  "footwork_assessment_id": "ma_footwork",
-  "serve_assessment_id": "ma_serve",
-  "clear_assessment_id": "ma_clear"
+  "footwork_assessment_id": 1011,
+  "serve_assessment_id": 1009,
+  "clear_assessment_id": 1010
 }
 ```
 

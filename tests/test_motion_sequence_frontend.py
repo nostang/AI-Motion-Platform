@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import os
 import subprocess
 
 
@@ -14,7 +15,7 @@ PLAYER_JS = PROJECT_ROOT / "frontend" / "js" / "motion-sequence-player.js"
 def test_motion_sequence_player_behavior_with_node():
     result = subprocess.run(
         [
-            "node",
+            os.environ.get("NODE_BINARY", "node"),
             "--test",
             str(PROJECT_ROOT / "tests" / "js" / "test_motion_sequence_player.js"),
         ],
@@ -22,6 +23,8 @@ def test_motion_sequence_player_behavior_with_node():
         check=False,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     assert result.returncode == 0, result.stdout + result.stderr
 

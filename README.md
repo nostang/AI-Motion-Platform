@@ -27,6 +27,13 @@ FastAPI, MediaPipe Pose, OpenCV, PostgreSQL, and vanilla JavaScript.
 > here is a portfolio preview; full analysis requires separately configured
 > PostgreSQL and private Cloud Storage services.
 
+> **Repository isolation:** This repository is an independent AI Motion PoC.
+> It is not the deployment source for Badminton Plus One's
+> `badminton-motion-api`. Local and future standalone environments must use
+> dedicated database, Storage, task-queue, service-account, and secret
+> resources. A startup guard rejects known Badminton Plus One production
+> resource identifiers.
+
 ## Overview
 
 Pose landmarks alone do not tell an athlete what to improve. AI Motion Platform
@@ -229,12 +236,16 @@ python -m pytest -q
 Current result:
 
 ```text
-216 passed, 18 subtests passed
+234 passed, 2 skipped
 ```
 
 The versioned regression set covers Footwork, Forehand Serve, and High Clear.
 Large source videos, generated reports, uploads, local databases, `.env` files,
 and virtual environments are intentionally excluded from Git.
+
+The current Motion engine and contracts were synchronized from the Ability +1
+module on 2026-09-26. See the
+[sync and isolation record](docs/SYNC_FROM_ABILITY_PLUS_ONE_20260926.md).
 
 ## Current version
 

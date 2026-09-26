@@ -555,7 +555,7 @@ def _detail_rows(
 
 def build_engineer_debug(
     *,
-    assessment_id: str,
+    assessment_id: int,
     motion_type: str,
     task: Mapping[str, Any],
     task_dir: Path,

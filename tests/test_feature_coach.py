@@ -59,7 +59,7 @@ class FeatureCoachIntegrationTests(unittest.TestCase):
         ]
         assessment = {
             "schema_version": "1.4",
-            "assessment_id": "fa_test",
+            "assessment_id": 20006,
             "assessment_type": "footwork",
             "engine_version": "test",
             "config_version": "test",

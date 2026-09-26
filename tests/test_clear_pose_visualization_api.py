@@ -25,26 +25,26 @@ class FakeKeyframeStorage:
         self.reach_grid_manifest = reach_grid_manifest
         self.reach_grid_images = reach_grid_images or {}
 
-    def load_manifest(self, assessment_id: str):
+    def load_manifest(self, assessment_id: int):
         return deepcopy(self.manifest)
 
-    def download_keyframe(self, assessment_id: str, stage: str):
+    def download_keyframe(self, assessment_id: int, stage: str):
         if stage not in self.images:
             raise FileNotFoundError(stage)
         return self.images[stage]
 
-    def load_sequence_manifest(self, assessment_id: str):
+    def load_sequence_manifest(self, assessment_id: int):
         return deepcopy(self.sequence_manifest)
 
-    def download_sequence_frame(self, assessment_id: str, index: int):
+    def download_sequence_frame(self, assessment_id: int, index: int):
         if index not in self.sequence_images:
             raise FileNotFoundError(index)
         return self.sequence_images[index]
 
-    def load_reach_grid_manifest(self, assessment_id: str):
+    def load_reach_grid_manifest(self, assessment_id: int):
         return deepcopy(self.reach_grid_manifest)
 
-    def download_reach_grid_frame(self, assessment_id: str, key: str):
+    def download_reach_grid_frame(self, assessment_id: int, key: str):
         if key not in self.reach_grid_images:
             raise FileNotFoundError(key)
         return self.reach_grid_images[key]
@@ -64,48 +64,48 @@ class FakeRepository:
     def __init__(self, root: Path):
         self.root = root
         self.tasks = {
-            "ready-clear": {
-                "assessment_id": "ready-clear",
+            2001: {
+                "assessment_id": 2001,
                 "assessment_type": "clear",
                 "status": "completed",
             },
-            "missing-clear": {
-                "assessment_id": "missing-clear",
+            2002: {
+                "assessment_id": 2002,
                 "assessment_type": "clear",
                 "status": "completed",
             },
-            "pending-clear": {
-                "assessment_id": "pending-clear",
+            2003: {
+                "assessment_id": 2003,
                 "assessment_type": "clear",
                 "status": "processing",
             },
-            "serve": {
-                "assessment_id": "serve",
+            2005: {
+                "assessment_id": 2005,
                 "assessment_type": "serve",
                 "status": "completed",
             },
-            "footwork": {
-                "assessment_id": "footwork",
+            2004: {
+                "assessment_id": 2004,
                 "assessment_type": "footwork",
                 "status": "completed",
             },
         }
         self.report = {
-            "assessment_id": "engine-clear-001",
+            "assessment_id": 2001,
             "motion_type": "clear",
             "summary": {"overall_score": 82},
         }
 
-    def get_analysis(self, assessment_id: str):
+    def get_analysis(self, assessment_id: int):
         return self.tasks.get(assessment_id)
 
-    def get_report(self, assessment_id: str, *, analysis_type=None):
-        if assessment_id == "ready-clear" and analysis_type == "clear":
+    def get_report(self, assessment_id: int, *, analysis_type=None):
+        if assessment_id == 2001 and analysis_type == "clear":
             return deepcopy(self.report)
         return None
 
-    def task_dir(self, assessment_id: str) -> Path:
-        return self.root / assessment_id
+    def task_dir(self, assessment_id: int) -> Path:
+        return self.root / str(assessment_id)
 
 
 def _artifact() -> dict:
@@ -245,7 +245,7 @@ def _reach_grid_artifact() -> dict:
 def _client(monkeypatch, tmp_path, storage=None):
     repository = FakeRepository(tmp_path)
     artifact_path = (
-        repository.task_dir("ready-clear")
+        repository.task_dir(2001)
         / "output"
         / "clear_pose_visualization.json"
     )
@@ -259,7 +259,7 @@ def _client(monkeypatch, tmp_path, storage=None):
 
 def test_ready_clear_visualization_is_sanitized(monkeypatch, tmp_path):
     response = _client(monkeypatch, tmp_path).get(
-        "/api/v1/motion-assessments/ready-clear/visualization"
+        "/api/v1/motion-assessments/2001/visualization"
     )
 
     assert response.status_code == 200
@@ -288,10 +288,10 @@ def test_visualization_states_are_safe(monkeypatch, tmp_path):
     client = _client(monkeypatch, tmp_path)
 
     cases = (
-        ("missing-clear", 200, "NOT_READY"),
-        ("pending-clear", 200, "NOT_READY"),
-        ("serve", 200, "NOT_AVAILABLE"),
-        ("unknown", 404, None),
+        (2002, 200, "NOT_READY"),
+        (2003, 200, "NOT_READY"),
+        (2005, 200, "NOT_AVAILABLE"),
+        (2999, 404, None),
     )
     for assessment_id, status_code, state in cases:
         response = client.get(
@@ -306,14 +306,14 @@ def test_visualization_states_are_safe(monkeypatch, tmp_path):
 
 def test_existing_report_contract_is_unchanged(monkeypatch, tmp_path):
     response = _client(monkeypatch, tmp_path).get(
-        "/api/v1/motion-assessments/ready-clear/report"
+        "/api/v1/motion-assessments/2001/report"
     )
 
     assert response.status_code == 200
     report = response.json()["data"]
-    assert report["assessment_id"] == "ready-clear"
+    assert report["assessment_id"] == 2001
     assert report["summary"] == {"overall_score": 82}
-    assert report["meta"]["engine_assessment_id"] == "engine-clear-001"
+    assert report["meta"]["engine_assessment_id"] == 2001
     assert "visualization" not in report
     assert "snapshots" not in report
 
@@ -336,7 +336,7 @@ def test_visualization_adds_controlled_keyframe_urls_and_serves_jpeg(monkeypatch
     )
     client = _client(monkeypatch, tmp_path, storage)
 
-    response = client.get("/api/v1/motion-assessments/ready-clear/visualization")
+    response = client.get("/api/v1/motion-assessments/2001/visualization")
     assert response.status_code == 200
     snapshots = response.json()["data"]["snapshots"]
     assert all(item["keyframe"]["status"] == "READY" for item in snapshots)
@@ -360,13 +360,13 @@ def test_visualization_falls_back_to_durable_pose_when_task_files_are_gone(monke
     })
     client = _client(monkeypatch, tmp_path, storage)
     artifact_path = (
-        api_module.repository.task_dir("ready-clear")
+        api_module.repository.task_dir(2001)
         / "output"
         / "clear_pose_visualization.json"
     )
-    shutil.rmtree(api_module.repository.task_dir("ready-clear"))
+    shutil.rmtree(api_module.repository.task_dir(2001))
 
-    response = client.get("/api/v1/motion-assessments/ready-clear/visualization")
+    response = client.get("/api/v1/motion-assessments/2001/visualization")
 
     assert response.status_code == 200
     assert response.json()["data"]["status"] == "READY"
@@ -378,7 +378,7 @@ def test_keyframe_failures_are_safe_404(monkeypatch, tmp_path):
     client = _client(monkeypatch, tmp_path, storage)
 
     response = client.get(
-        "/api/v1/motion-assessments/ready-clear/visualization/keyframes/swing"
+        "/api/v1/motion-assessments/2001/visualization/keyframes/swing"
     )
 
     assert response.status_code == 404
@@ -403,13 +403,13 @@ def test_sequence_is_additive_private_and_controlled(monkeypatch, tmp_path):
     )
     client = _client(monkeypatch, tmp_path, storage)
     sequence_path = (
-        api_module.repository.task_dir("ready-clear")
+        api_module.repository.task_dir(2001)
         / "output"
         / "clear_motion_sequence.json"
     )
     sequence_path.write_text(json.dumps(_sequence_artifact()), encoding="utf-8")
 
-    response = client.get("/api/v1/motion-assessments/ready-clear/visualization")
+    response = client.get("/api/v1/motion-assessments/2001/visualization")
 
     assert response.status_code == 200
     sequence = response.json()["data"]["sequence"]
@@ -439,9 +439,9 @@ def test_sequence_durable_fallback_survives_local_task_removal(monkeypatch, tmp_
         }
     )
     client = _client(monkeypatch, tmp_path, storage)
-    shutil.rmtree(api_module.repository.task_dir("ready-clear"))
+    shutil.rmtree(api_module.repository.task_dir(2001))
 
-    response = client.get("/api/v1/motion-assessments/ready-clear/visualization")
+    response = client.get("/api/v1/motion-assessments/2001/visualization")
 
     assert response.status_code == 200
     sequence = response.json()["data"]["sequence"]
@@ -467,7 +467,7 @@ def test_serve_sequence_is_additive_and_uses_controlled_images(monkeypatch, tmp_
     )
     client = _client(monkeypatch, tmp_path, storage)
     sequence_path = (
-        api_module.repository.task_dir("serve")
+        api_module.repository.task_dir(2005)
         / "output"
         / "serve_motion_sequence.json"
     )
@@ -477,7 +477,7 @@ def test_serve_sequence_is_additive_and_uses_controlled_images(monkeypatch, tmp_
         encoding="utf-8",
     )
 
-    response = client.get("/api/v1/motion-assessments/serve/visualization")
+    response = client.get("/api/v1/motion-assessments/2005/visualization")
 
     assert response.status_code == 200
     data = response.json()["data"]
@@ -513,7 +513,7 @@ def test_serve_sequence_durable_fallback_does_not_need_local_task_files(
     )
     client = _client(monkeypatch, tmp_path, storage)
 
-    response = client.get("/api/v1/motion-assessments/serve/visualization")
+    response = client.get("/api/v1/motion-assessments/2005/visualization")
 
     assert response.status_code == 200
     sequence = response.json()["data"]["sequence"]
@@ -545,14 +545,14 @@ def test_footwork_reach_grid_is_partial_private_and_controlled(monkeypatch, tmp_
     )
     client = _client(monkeypatch, tmp_path, storage)
     grid_path = (
-        api_module.repository.task_dir("footwork")
+        api_module.repository.task_dir(2004)
         / "output"
         / "footwork_reach_grid.json"
     )
     grid_path.parent.mkdir(parents=True)
     grid_path.write_text(json.dumps(artifact), encoding="utf-8")
 
-    response = client.get("/api/v1/motion-assessments/footwork/visualization")
+    response = client.get("/api/v1/motion-assessments/2004/visualization")
 
     assert response.status_code == 200
     data = response.json()["data"]
@@ -595,7 +595,7 @@ def test_footwork_reach_grid_uses_durable_copy_after_local_task_disappears(
     )
     client = _client(monkeypatch, tmp_path, storage)
 
-    response = client.get("/api/v1/motion-assessments/footwork/visualization")
+    response = client.get("/api/v1/motion-assessments/2004/visualization")
 
     assert response.status_code == 200
     assert response.json()["data"]["reach_grid"]["status"] == "PARTIAL"

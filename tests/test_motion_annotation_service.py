@@ -18,12 +18,12 @@ class FakeRepository:
         self.status_updates = []
         self.saved_report = None
 
-    def task_dir(self, assessment_id: str) -> Path:
-        path = self.root / assessment_id
+    def task_dir(self, assessment_id: int) -> Path:
+        path = self.root / str(assessment_id)
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def get_analysis(self, assessment_id: str):
+    def get_analysis(self, assessment_id: int):
         return {
             "assessment_id": assessment_id,
             "assessment_type": "serve",
@@ -35,7 +35,7 @@ class FakeRepository:
 
     def update_status(
         self,
-        assessment_id: str,
+        assessment_id: int,
         **values,
     ) -> None:
         self.status_updates.append(
@@ -44,7 +44,7 @@ class FakeRepository:
 
     def save_report(
         self,
-        assessment_id: str,
+        assessment_id: int,
         report,
     ) -> None:
         self.saved_report = report
@@ -86,7 +86,7 @@ class MotionAnnotationServiceTests(
         racket_side: str,
     ) -> None:
         path = (
-            self.repository.task_dir("ma_test")
+            self.repository.task_dir(1001)
             / "human_annotation.json"
         )
         path.write_text(
@@ -113,7 +113,7 @@ class MotionAnnotationServiceTests(
             return_value=self.analyzer,
         ):
             self.service.process(
-                "ma_test",
+                1001,
                 use_annotation=True,
             )
 
@@ -154,7 +154,7 @@ class MotionAnnotationServiceTests(
             return_value=self.analyzer,
         ):
             self.service.process(
-                "ma_test",
+                1001,
                 use_annotation=True,
             )
 
@@ -173,7 +173,7 @@ class MotionAnnotationServiceTests(
         )
 
     def test_clear_keyframe_failure_does_not_fail_assessment(self) -> None:
-        video_path = self.repository.task_dir("ma_test") / "source.mov"
+        video_path = self.repository.task_dir(1001) / "source.mov"
         self.repository.get_analysis = lambda assessment_id: {
             "assessment_id": assessment_id,
             "assessment_type": "clear",
@@ -190,7 +190,7 @@ class MotionAnnotationServiceTests(
                 side_effect=RuntimeError("presentation only"),
             ),
         ):
-            self.service.process("ma_test")
+            self.service.process(1001)
 
         self.assertIsNotNone(self.repository.saved_report)
         self.assertEqual(
@@ -209,7 +209,7 @@ class MotionAnnotationServiceTests(
                 side_effect=RuntimeError("presentation only"),
             ),
         ):
-            self.service.process("ma_test")
+            self.service.process(1001)
 
         self.assertIsNotNone(self.repository.saved_report)
         self.assertEqual(
@@ -237,7 +237,7 @@ class MotionAnnotationServiceTests(
                 "src.api.service._persist_footwork_reach_grid"
             ) as reach_grid_persist,
         ):
-            self.service.process("ma_test")
+            self.service.process(1001)
 
         clear_persist.assert_not_called()
         serve_persist.assert_not_called()
@@ -260,7 +260,7 @@ class MotionAnnotationServiceTests(
                 side_effect=RuntimeError("presentation only"),
             ),
         ):
-            self.service.process("ma_test")
+            self.service.process(1001)
 
         self.assertIsNotNone(self.repository.saved_report)
         self.assertEqual(
@@ -287,7 +287,7 @@ class MotionAnnotationServiceTests(
             "src.api.service.get_motion_analyzer",
             return_value=rejecting_analyzer,
         ):
-            self.service.process("ma_test")
+            self.service.process(1001)
 
         final = self.repository.status_updates[-1][1]
         self.assertIsNone(self.repository.saved_report)

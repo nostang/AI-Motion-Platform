@@ -1,8 +1,9 @@
 # AI Motion Platform API Contract V2
 
-Version: `2.0`
+Version: `2.1`
 Backend API Version: `FastAPI 2.0.0`
 Base Path: `/api/v1`
+Last verified: `2026-09-07`（current source working tree; not deployed）
 
 ## 1. Purpose
 
@@ -119,12 +120,12 @@ HTTP `202 Accepted`
 {
   "success": true,
   "data": {
-    "assessment_id": "ma_xxxxxxxxxxxxxxxx",
+    "assessment_id": 1016,
     "assessment_type": "serve",
     "status": "uploaded",
     "created_at": "2026-08-07T00:00:00+00:00",
-    "status_url": "/api/v1/motion-assessments/ma_xxxxxxxxxxxxxxxx",
-    "report_url": "/api/v1/motion-assessments/ma_xxxxxxxxxxxxxxxx/report"
+    "status_url": "/api/v1/motion-assessments/1016",
+    "report_url": "/api/v1/motion-assessments/1016/report"
   },
   "error": null
 }
@@ -154,7 +155,7 @@ Returns processing status.
 {
   "success": true,
   "data": {
-    "assessment_id": "ma_xxxxxxxxxxxxxxxx",
+    "assessment_id": 1016,
     "assessment_type": "serve",
     "status": "completed",
     "progress": 100,
@@ -163,7 +164,7 @@ Returns processing status.
     "updated_at": "2026-08-07T00:00:05+00:00",
     "completed_at": "2026-08-07T00:00:05+00:00",
     "failure": null,
-    "report_url": "/api/v1/motion-assessments/ma_xxxxxxxxxxxxxxxx/report"
+    "report_url": "/api/v1/motion-assessments/1016/report"
   },
   "error": null
 }
@@ -211,7 +212,7 @@ Typical summary:
 The public `assessment_id` is always the API ID:
 
 ```text
-ma_...
+1001
 ```
 
 The original internal engine assessment ID is preserved under:
@@ -258,7 +259,7 @@ Default:
     "count": 2,
     "items": [
       {
-        "assessment_id": "ma_xxxxxxxxxxxxxxxx",
+        "assessment_id": 1016,
         "assessment_type": "serve",
         "status": "completed",
         "overall_score": 74.0,
@@ -327,9 +328,9 @@ This endpoint requires three completed assessment IDs.
 ```json
 {
   "player_id": "demo_player",
-  "footwork_assessment_id": "ma_...",
-  "serve_assessment_id": "ma_...",
-  "clear_assessment_id": "ma_..."
+  "footwork_assessment_id": 1001,
+  "serve_assessment_id": 1001,
+  "clear_assessment_id": 1001
 }
 ```
 
@@ -394,21 +395,21 @@ The client does not need to provide assessment IDs.
           "status": "AVAILABLE",
           "overall_score": 77.0,
           "coach_status": "NEEDS_REVIEW",
-          "assessment_id": "ma_..."
+          "assessment_id": 1001
         },
         "serve": {
           "motion_type": "serve",
           "status": "AVAILABLE",
           "overall_score": 74.0,
           "coach_status": "PASS",
-          "assessment_id": "ma_..."
+          "assessment_id": 1001
         },
         "clear": {
           "motion_type": "clear",
           "status": "AVAILABLE",
           "overall_score": 86.0,
           "coach_status": "PASS",
-          "assessment_id": "ma_..."
+          "assessment_id": 1001
         }
       },
       "overall_score": null
@@ -494,7 +495,7 @@ No request body is required.
         "motion_type": "clear",
         "score": 86.0,
         "coach_status": "PASS",
-        "assessment_id": "ma_..."
+        "assessment_id": 1001
       }
     ],
     "improvement_priorities": [
@@ -502,13 +503,13 @@ No request body is required.
         "motion_type": "footwork",
         "score": 77.0,
         "coach_status": "NEEDS_REVIEW",
-        "assessment_id": "ma_..."
+        "assessment_id": 1001
       },
       {
         "motion_type": "serve",
         "score": 74.0,
         "coach_status": "PASS",
-        "assessment_id": "ma_..."
+        "assessment_id": 1001
       }
     ],
     "training_recommendations": [
@@ -519,7 +520,7 @@ No request body is required.
         "source": {
           "score": 77.0,
           "coach_status": "NEEDS_REVIEW",
-          "assessment_id": "ma_..."
+          "assessment_id": 1001
         }
       }
     ],
@@ -575,13 +576,13 @@ The AI module expects an existing user before a video analysis can be created.
 Primary application identifier:
 
 ```text
-video_analyses.external_analysis_id
+video_analyses.analysis_id
 ```
 
 Format:
 
 ```text
-ma_...
+positive BIGINT
 ```
 
 The complete motion report is persisted in:
@@ -596,7 +597,7 @@ Frequently consumed structured columns include:
 
 ```text
 user_id
-external_analysis_id
+analysis_id
 analysis_type
 processing_status
 progress
@@ -612,7 +613,29 @@ completed_at
 
 ---
 
-# 9. Integration Responsibility
+# 9. Internal Admin Wallet Usage
+
+## GET `/api/v1/internal/admin/wallet-usage`
+
+Internal-only aggregation for the Event admin console. Requires a valid
+`X-Internal-Api-Key`; browser clients must not call this route directly.
+
+Query parameters:
+
+```text
+from_date=YYYY-MM-DD
+to_date=YYYY-MM-DD
+```
+
+The range is inclusive and limited to 367 days. The response reports each member's current
+wallet balance and reserved points, lifetime Goo consumption, and selected-period consumption.
+Consumption counts only negative `analysis_debit` ledger entries; it does not treat purchased
+currency, event fees, or positive wallet credits as Goo consumption. Period boundaries are
+inclusive calendar dates in `Asia/Taipei`, independent of the database session timezone.
+
+---
+
+# 10. Integration Responsibility
 
 ## AI Motion Backend
 
@@ -643,7 +666,7 @@ Clients should not duplicate backend scoring or competency rules.
 
 ---
 
-# 10. Environment
+# 11. Environment
 
 Local development uses:
 
@@ -661,7 +684,7 @@ When moving to Cloud SQL, the application contract remains unchanged; only the d
 
 ---
 
-# 11. E2E Validation
+# 12. E2E Validation
 
 Run:
 
