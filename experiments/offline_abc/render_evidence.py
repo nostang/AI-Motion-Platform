@@ -151,6 +151,95 @@ def option_b() -> None:
     plt.close(fig)
 
 
+def option_b_corpus() -> None:
+    manifest = _json("ab_corpus_manifest.json")
+    run = _json("gemma4_28_case_corpus.json")
+    quality = _json("gemma4_28_case_quality.json")
+    concurrency = _json("gemma4_concurrency_1_2_4.json")
+
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10), facecolor="white")
+    fig.suptitle("方案 B｜28 案例擴充實驗：真實、模擬、品質與並行", fontproperties=FONT, fontsize=22, color=NAVY)
+
+    real_counts = [
+        sum(case["motion"] == motion for case in manifest["real_cases"])
+        for motion in ("clear", "footwork", "serve")
+    ]
+    synthetic_counts = [
+        sum(case["motion"] == motion for case in manifest["synthetic_cases"])
+        for motion in ("clear", "footwork", "serve")
+    ]
+    labels = ["高遠球", "步法", "發球"]
+    x = list(range(3))
+    axes[0, 0].bar(x, real_counts, color=BLUE, label="真實影片流程")
+    axes[0, 0].bar(x, synthetic_counts, bottom=real_counts, color=ORANGE, label="模擬壓力 JSON")
+    axes[0, 0].set_xticks(x, labels, fontproperties=FONT)
+    axes[0, 0].set_title("測試集組成：19 真實 + 9 模擬", fontproperties=FONT, fontsize=14)
+    axes[0, 0].legend(prop=FONT)
+    axes[0, 0].grid(axis="y", alpha=0.2)
+    for index, (real, synthetic) in enumerate(zip(real_counts, synthetic_counts)):
+        axes[0, 0].text(index, real + synthetic + 0.15, str(real + synthetic), ha="center")
+
+    quality_labels = ["JSON\n可解析", "欄位完整", "自動九項\n全部通過", "人工內容\n盲評"]
+    quality_values = [
+        run["aggregate"]["json_valid_rate"] * 100,
+        run["aggregate"]["required_keys_rate"] * 100,
+        quality["overall"]["automatic_all_checks_pass_rate"] * 100,
+        0,
+    ]
+    quality_colors = [TEAL, TEAL, ORANGE, "#CBD5E1"]
+    bars = axes[0, 1].bar(quality_labels, quality_values, color=quality_colors)
+    axes[0, 1].set_ylim(0, 110)
+    axes[0, 1].set_title("一次輸出結果（人工評分仍待做）", fontproperties=FONT, fontsize=14)
+    axes[0, 1].set_xticks(range(4), quality_labels, fontproperties=FONT)
+    axes[0, 1].grid(axis="y", alpha=0.2)
+    for index, (bar, value) in enumerate(zip(bars, quality_values)):
+        label = f"{value:.1f}%" if index < 3 else "待評"
+        axes[0, 1].text(
+            bar.get_x() + bar.get_width() / 2,
+            value + 2,
+            label,
+            ha="center",
+            fontproperties=FONT if index == 3 else None,
+        )
+
+    levels = concurrency["levels"]
+    concurrency_labels = [str(level["concurrency"]) for level in levels]
+    p95 = [level["aggregate"]["p95_request_wall_seconds"] for level in levels]
+    throughput = [level["aggregate"]["mean_requests_per_second"] for level in levels]
+    latency_bars = axes[1, 0].bar(concurrency_labels, p95, color=BLUE, width=0.55)
+    axes[1, 0].set_xlabel("同時請求數", fontproperties=FONT)
+    axes[1, 0].set_ylabel("p95 延遲（秒）", fontproperties=FONT, color=BLUE)
+    axes[1, 0].set_title("請求增加只讓等待變長，吞吐幾乎不變", fontproperties=FONT, fontsize=14)
+    axes[1, 0].grid(axis="y", alpha=0.2)
+    throughput_axis = axes[1, 0].twinx()
+    throughput_axis.plot(concurrency_labels, throughput, color=RED, marker="o", linewidth=2.5)
+    throughput_axis.set_ylabel("總吞吐（requests/s）", fontproperties=FONT, color=RED)
+    throughput_axis.set_ylim(0, max(throughput) * 1.45)
+    for bar, value in zip(latency_bars, p95):
+        axes[1, 0].text(bar.get_x() + bar.get_width() / 2, value + 0.12, f"{value:.2f}s", ha="center")
+    for index, value in enumerate(throughput):
+        throughput_axis.text(index, value + 0.025, f"{value:.3f}", ha="center", color=RED)
+
+    axes[1, 1].axis("off")
+    axes[1, 1].set_title("這輪真正發現的問題", fontproperties=FONT, fontsize=14, color=NAVY)
+    findings = [
+        ("v1：27/28 格式成功", "R-CLR-02 缺少 strength 欄位；相同設定重跑 3 次仍失敗。"),
+        ("v2：格式修好但語意失敗", "三次都把待改善項目寫成優點，不能把 schema 成功當內容正確。"),
+        ("繁中一致性", "R-SV-02 出現簡體字『无』，需後處理或更嚴格驗證。"),
+        ("仍待人工盲評", "grounding、實用性、清楚度與幻覺需由人評分，再與 A 同表比較。"),
+    ]
+    for index, (title, body) in enumerate(findings):
+        y = 0.88 - index * 0.22
+        axes[1, 1].add_patch(FancyBboxPatch((0.03, y - 0.13), 0.94, 0.17, boxstyle="round,pad=0.02", fc=PALE, ec="#CBD5E1"))
+        axes[1, 1].text(0.07, y, title, fontproperties=FONT, fontsize=13, color=NAVY)
+        axes[1, 1].text(0.07, y - 0.07, body, fontproperties=FONT, fontsize=10.5, color="#52606D")
+
+    fig.text(0.5, 0.025, "模擬案例只測 LLM 邊界，不算真實受測者；人工語意評分尚未完成。", ha="center", fontproperties=FONT, fontsize=12, color=RED)
+    fig.tight_layout(rect=[0, 0.06, 1, 0.93])
+    fig.savefig(ASSETS / "b_28_case_evidence.png", dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
 def option_c() -> None:
     yolo = _json("yolov12_tiny_feasibility.json")
     sample_path = RESULTS / "yolo_workspace" / "dataset" / "images" / "val" / yolo["inference"]["sample"]
@@ -255,6 +344,7 @@ def main() -> None:
     ASSETS.mkdir(parents=True, exist_ok=True)
     option_a()
     option_b()
+    option_b_corpus()
     option_c()
     decision()
 

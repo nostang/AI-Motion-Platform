@@ -52,12 +52,13 @@ B 分成兩位工作者：
 
 ### 並行模式
 
-| 同時請求 | 平均每筆延遲 | 總吞吐 | 成功率 |
-|---:|---:|---:|---:|
-| 1 | 1.9347 秒 | 0.5168 requests/s | 100% |
-| 2 | 2.9006 秒 | 0.5154 requests/s | 100% |
+| 同時請求 | 平均每筆延遲 | p95 | 總吞吐 | 成功率 |
+|---:|---:|---:|---:|---:|
+| 1 | 2.0682 秒 | 2.0710 秒 | 0.4834 requests/s | 100% |
+| 2 | 3.0977 秒 | 4.1401 秒 | 0.4838 requests/s | 100% |
+| 4 | 5.1825 秒 | 8.3004 秒 | 0.4822 requests/s | 100% |
 
-兩筆同時來時，吞吐沒有增加，代表此環境實際上以排隊為主。第一筆約 1.92 秒完成，另一筆約 3.87–3.89 秒完成。若要多人服務，不能只看單筆 tokens/s。
+每級各五批，共 35 個請求。請求增加到四筆時，吞吐仍沒有增加，代表此環境實際上以排隊為主。若要多人服務，不能只看單筆 tokens/s。
 
 ## 設備建議
 
@@ -118,21 +119,30 @@ Google Cloud Taiwan `n2-standard-4` 為 4 vCPU / 16 GiB，公開隨用隨付價 
 
 ## B 能做到什麼程度
 
-- 已證明：三類結構化輸入可生成繁中 JSON，9/9 成功。
+- 已證明：19 個真實影片案例全部產生規則報告，再加 9 個明確標示的模擬壓力案例，共 28 份固定輸入。
+- 已證明：28/28 是有效 JSON；一次輸出 27/28 欄位完整，自動九項檢查 26/28 全部通過。
+- 已發現：沒有任何優點的 `R-CLR-02` 會穩定造成 v1 欄位錯誤；v2 雖修正 schema，卻把待改善項目誤寫成優點。
 - 已證明：CPU 能跑，Apple GPU 明顯縮短等待。
-- 已證明：單 runner 的兩請求吞吐沒有提升，會排隊。
-- 尚未證明：更廣泛的語意正確率、長期幻覺率、不同硬體、Windows/Linux、多人壓測與 24/7 穩定性。
+- 已證明：單 runner 從 1、2 到 4 個請求，總吞吐都約 0.48 requests/s；p95 從 2.07 增至 8.30 秒。
+- 尚未證明：人工語意品質、更長期幻覺率、不同硬體、Windows/Linux、大規模或長時間多人壓測與 24/7 穩定性。
 - 不應宣稱：Gemma 看過影片、辨識球拍或羽球、比規則引擎更會評分。
 
 ## 本段心得
 
 B 不是做不到，而是「把雲端成本換成每一台終端的硬體與維護成本」。對離線、隱私、教練工作站或固定場館設備，它很有價值；對一般使用者與多人服務，7 GB 模型、16 GB 最低記憶體和排隊行為會成為部署門檻。這也是最後偏向 A 的主要實驗依據之一。
 
+![B 的 28 案例擴充實驗](assets/b_28_case_evidence.png)
+
+28 案例的資料來源、限制與人工評分表見 [A vs B 共用測試集說明](AB_BENCHMARK_CORPUS.zh-TW.md)。
+
 ## 原始證據
 
 - [`results/gemma4_three_cases.json`](results/gemma4_three_cases.json)
 - [`results/gemma4_cpu_only.json`](results/gemma4_cpu_only.json)
 - [`results/gemma4_concurrency.json`](results/gemma4_concurrency.json)
+- [`results/gemma4_28_case_corpus.json`](results/gemma4_28_case_corpus.json)
+- [`results/gemma4_28_case_quality.json`](results/gemma4_28_case_quality.json)
+- [`results/gemma4_concurrency_1_2_4.json`](results/gemma4_concurrency_1_2_4.json)
 - [`benchmark_gemma4.py`](benchmark_gemma4.py)
 - [`benchmark_gemma_concurrency.py`](benchmark_gemma_concurrency.py)
 - [Google Cloud general-purpose VM pricing](https://cloud.google.com/products/compute/pricing/general-purpose)

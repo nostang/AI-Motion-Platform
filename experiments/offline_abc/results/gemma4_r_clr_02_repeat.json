@@ -1,0 +1,174 @@
+{
+  "benchmark": "local-gemma4-motion-explanation",
+  "model": "gemma4:e2b",
+  "runtime": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.14",
+    "transport": "Ollama localhost",
+    "num_gpu_override": null,
+    "corpus_manifest": null
+  },
+  "resource": {
+    "resident_size_bytes": 7004298935,
+    "resident_vram_bytes": 7004298935,
+    "quantization_level": "Q4_K_M"
+  },
+  "cases": [
+    {
+      "case_id": "R-CLR-02",
+      "evidence_kind": "unspecified_report",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-02/analysis_report.json",
+      "repeat": 1,
+      "client_wall_seconds": 2.6299,
+      "load_seconds": 0.0014,
+      "prompt_tokens": 440,
+      "output_tokens": 277,
+      "tokens_per_second": 108.601,
+      "input_overall_score": 58,
+      "checks": {
+        "json_valid": true,
+        "required_keys": false,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": false,
+      "response": {
+        "summary": "本次評估基於單鏡頭2D MediaPipe標記，主要針對身體動作的品質進行分析。整體評分顯示在側向準備、重量轉移、非球拍手臂平衡和揮拍順暢度方面存在需要改進的空間。",
+        "評估結果提供的是身體動作的品質指標，不代表實際的球飛軌或結果。所有分數和等級均為暫定，建議進行多視角和教練校準以獲得更準確的判斷。": "strength_summary_placeholder_for_future_input",
+        "priority": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "drill": [
+          "側向準備練習",
+          "重量轉移練習",
+          "非球拍手臂平衡練習",
+          "揮拍順暢度練習"
+        ],
+        "caution": [
+          "此版本僅基於單鏡頭2D MediaPipe標記進行評估。",
+          "結果評估的是身體動作品質，而非球的實際飛軌。",
+          "側向準備和重量轉移使用了暫定的2D代理測量。",
+          "未評估球拍、羽球、握拍、接觸點、軌跡、速度和落地位置。",
+          "閾值和等級分數是暫定的，需要多視角和教練校準。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-02",
+      "evidence_kind": "unspecified_report",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-02/analysis_report.json",
+      "repeat": 2,
+      "client_wall_seconds": 2.5818,
+      "load_seconds": 0.0006,
+      "prompt_tokens": 440,
+      "output_tokens": 277,
+      "tokens_per_second": 108.882,
+      "input_overall_score": 58,
+      "checks": {
+        "json_valid": true,
+        "required_keys": false,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": false,
+      "response": {
+        "summary": "本次評估基於單鏡頭2D MediaPipe標記，主要針對身體動作的品質進行分析。整體評分顯示在側向準備、重量轉移、非球拍手臂平衡和揮拍順暢度方面存在需要改進的空間。",
+        "評估結果提供的是身體動作的品質指標，不代表實際的球飛軌或結果。所有分數和等級均為暫定，建議進行多視角和教練校準以獲得更準確的判斷。": "strength_summary_placeholder_for_future_input",
+        "priority": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "drill": [
+          "側向準備練習",
+          "重量轉移練習",
+          "非球拍手臂平衡練習",
+          "揮拍順暢度練習"
+        ],
+        "caution": [
+          "此版本僅基於單鏡頭2D MediaPipe標記進行評估。",
+          "結果評估的是身體動作品質，而非球的實際飛軌。",
+          "側向準備和重量轉移使用了暫定的2D代理測量。",
+          "未評估球拍、羽球、握拍、接觸點、軌跡、速度和落地位置。",
+          "閾值和等級分數是暫定的，需要多視角和教練校準。"
+        ]
+      }
+    },
+    {
+      "case_id": "R-CLR-02",
+      "evidence_kind": "unspecified_report",
+      "motion": "clear",
+      "scenario": null,
+      "report_path": "experiments/offline_abc/corpus/real/R-CLR-02/analysis_report.json",
+      "repeat": 3,
+      "client_wall_seconds": 2.5504,
+      "load_seconds": 0.0007,
+      "prompt_tokens": 440,
+      "output_tokens": 277,
+      "tokens_per_second": 110.256,
+      "input_overall_score": 58,
+      "checks": {
+        "json_valid": true,
+        "required_keys": false,
+        "priority_grounded": true,
+        "caution_present": true
+      },
+      "success": false,
+      "response": {
+        "summary": "本次評估基於單鏡頭2D MediaPipe標記，主要針對身體動作的品質進行分析。整體評分顯示在側向準備、重量轉移、非球拍手臂平衡和揮拍順暢度方面存在需要改進的空間。",
+        "評估結果提供的是身體動作的品質指標，不代表實際的球飛軌或結果。所有分數和等級均為暫定，建議進行多視角和教練校準以獲得更準確的判斷。": "strength_summary_placeholder_for_future_input",
+        "priority": [
+          "sideways_preparation",
+          "weight_transfer",
+          "non_racket_arm_balance",
+          "swing_smoothness"
+        ],
+        "drill": [
+          "側向準備練習",
+          "重量轉移練習",
+          "非球拍手臂平衡練習",
+          "揮拍順暢度練習"
+        ],
+        "caution": [
+          "此版本僅基於單鏡頭2D MediaPipe標記進行評估。",
+          "結果評估的是身體動作品質，而非球的實際飛軌。",
+          "側向準備和重量轉移使用了暫定的2D代理測量。",
+          "未評估球拍、羽球、握拍、接觸點、軌跡、速度和落地位置。",
+          "閾值和等級分數是暫定的，需要多視角和教練校準。"
+        ]
+      }
+    }
+  ],
+  "aggregate": {
+    "case_count": 3,
+    "mean_wall_seconds": 2.5874,
+    "p50_wall_seconds": 2.5818,
+    "p95_wall_seconds": 2.6251,
+    "mean_tokens_per_second": 109.246,
+    "success_rate": 0.0,
+    "json_valid_rate": 1.0,
+    "required_keys_rate": 0.0,
+    "priority_grounded_rate": 1.0
+  },
+  "aggregate_by_evidence_kind": {
+    "unspecified_report": {
+      "case_count": 3,
+      "mean_wall_seconds": 2.5874,
+      "p50_wall_seconds": 2.5818,
+      "p95_wall_seconds": 2.6251,
+      "mean_tokens_per_second": 109.246,
+      "success_rate": 0.0,
+      "json_valid_rate": 1.0,
+      "required_keys_rate": 0.0,
+      "priority_grounded_rate": 1.0
+    }
+  }
+}

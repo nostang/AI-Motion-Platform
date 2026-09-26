@@ -14,6 +14,7 @@ from pathlib import Path
 
 
 REQUIRED_KEYS = {"summary", "strength", "priority", "drill", "caution"}
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _compact_report(report: dict) -> dict:
@@ -33,13 +34,23 @@ def _compact_report(report: dict) -> dict:
     }
 
 
-def _prompt(compact: dict) -> str:
-    return (
+def _prompt(compact: dict, version: str = "v1") -> str:
+    base = (
         "你是羽球動作分析報告的文字說明器。只能根據下列 MediaPipe 與規則引擎的結構化結果撰寫，"
         "不可修改分數、不可聲稱看見球拍或羽球、不可做醫療診斷。請用繁體中文回傳 JSON，且只含："
-        "summary（2句）、strength、priority、drill（可實行練習）、caution（單鏡頭2D限制）。\n"
-        + json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
+        "summary（2句）、strength、priority、drill（可實行練習）、caution（單鏡頭2D限制）。"
     )
+    if version == "v1":
+        instructions = ""
+    elif version == "v2":
+        instructions = (
+            "必須剛好使用這五個 key，不得新增、改名或省略。格式範例："
+            '{"summary":"","strength":"","priority":[],"drill":[],"caution":""}。'
+            "若輸入沒有優點，strength 填『無明確優點』；若沒有改善項目，priority 使用空陣列。"
+        )
+    else:
+        raise ValueError(f"Unsupported prompt version: {version}")
+    return base + instructions + "\n" + json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
 
 
 def _call_ollama(endpoint: str, model: str, prompt: str, num_gpu: int | None = None) -> dict:
@@ -114,11 +125,65 @@ def _parse_response(response_text: str) -> dict | None:
     return parsed if isinstance(parsed, dict) else None
 
 
+def _percentile(values: list[float], percentile: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    position = (len(ordered) - 1) * percentile
+    lower = int(position)
+    upper = min(lower + 1, len(ordered) - 1)
+    fraction = position - lower
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * fraction
+
+
+def _manifest_reports(manifest_path: Path) -> tuple[list[Path], dict[str, dict]]:
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    reports = []
+    metadata = {}
+    for case in [*(manifest.get("real_cases") or []), *(manifest.get("synthetic_cases") or [])]:
+        report_path_text = case.get("report_path")
+        if not report_path_text or case.get("status") not in {"completed", "generated"}:
+            continue
+        report_path = Path(report_path_text)
+        if not report_path.is_absolute():
+            report_path = PROJECT_ROOT / report_path
+        reports.append(report_path)
+        metadata[str(report_path.resolve())] = {
+            "case_id": case.get("case_id"),
+            "evidence_kind": case.get("evidence_kind"),
+            "motion": case.get("motion"),
+            "scenario": case.get("scenario"),
+        }
+    return reports, metadata
+
+
+def _aggregate_cases(cases: list[dict]) -> dict:
+    latencies = [case["client_wall_seconds"] for case in cases]
+    token_rates = [case["tokens_per_second"] for case in cases if case["tokens_per_second"]]
+    return {
+        "case_count": len(cases),
+        "mean_wall_seconds": round(statistics.fmean(latencies), 4),
+        "p50_wall_seconds": round(_percentile(latencies, 0.5) or 0.0, 4),
+        "p95_wall_seconds": round(_percentile(latencies, 0.95) or 0.0, 4),
+        "mean_tokens_per_second": round(statistics.fmean(token_rates), 3) if token_rates else None,
+        "success_rate": round(sum(case["success"] for case in cases) / len(cases), 3),
+        "json_valid_rate": round(sum(case["checks"]["json_valid"] for case in cases) / len(cases), 3),
+        "required_keys_rate": round(sum(case["checks"]["required_keys"] for case in cases) / len(cases), 3),
+        "priority_grounded_rate": round(
+            sum(case["checks"]["priority_grounded"] for case in cases) / len(cases), 3
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--report", type=Path, action="append", required=True)
+    parser.add_argument("--report", type=Path, action="append", default=[])
+    parser.add_argument("--manifest", type=Path, help="Use every completed/generated report in a corpus manifest")
     parser.add_argument("--model", default="gemma4:e2b")
     parser.add_argument("--endpoint", default="http://127.0.0.1:11434/api/generate")
+    parser.add_argument("--prompt-version", choices=("v1", "v2"), default="v1")
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument(
         "--num-gpu",
@@ -128,20 +193,38 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
+    report_paths = list(args.report)
+    corpus_metadata: dict[str, dict] = {}
+    if args.manifest:
+        manifest_reports, corpus_metadata = _manifest_reports(args.manifest)
+        report_paths.extend(manifest_reports)
+    report_paths = list(dict.fromkeys(path.resolve() for path in report_paths))
+    if not report_paths:
+        parser.error("provide at least one --report or --manifest")
+
     cases = []
-    for report_path in args.report:
+    for report_path in report_paths:
         report = json.loads(report_path.read_text())
         compact = _compact_report(report)
+        metadata = corpus_metadata.get(str(report_path.resolve()), {})
         for repeat in range(args.repeats):
-            raw = _call_ollama(args.endpoint, args.model, _prompt(compact), args.num_gpu)
+            raw = _call_ollama(
+                args.endpoint,
+                args.model,
+                _prompt(compact, args.prompt_version),
+                args.num_gpu,
+            )
             eval_duration = int(raw.get("eval_duration") or 0)
             eval_count = int(raw.get("eval_count") or 0)
             response_text = raw.get("response", "")
             checks = _validate(response_text, compact)
             cases.append(
                 {
-                    "case_id": _case_id(report_path, report),
-                    "report_path": str(report_path),
+                    "case_id": metadata.get("case_id") or _case_id(report_path, report),
+                    "evidence_kind": metadata.get("evidence_kind") or "unspecified_report",
+                    "motion": metadata.get("motion") or compact.get("assessment_type"),
+                    "scenario": metadata.get("scenario"),
+                    "report_path": str(report_path.relative_to(PROJECT_ROOT)) if report_path.is_relative_to(PROJECT_ROOT) else str(report_path),
                     "repeat": repeat + 1,
                     "client_wall_seconds": round(raw["client_wall_seconds"], 4),
                     "load_seconds": round(int(raw.get("load_duration") or 0) / 1e9, 4),
@@ -159,7 +242,10 @@ def main() -> None:
             )
 
     resource = _ollama_process(args.endpoint, args.model)
-    token_rates = [case["tokens_per_second"] for case in cases if case["tokens_per_second"]]
+    by_evidence_kind = {}
+    for evidence_kind in sorted({case["evidence_kind"] for case in cases}):
+        selected = [case for case in cases if case["evidence_kind"] == evidence_kind]
+        by_evidence_kind[evidence_kind] = _aggregate_cases(selected)
 
     payload = {
         "benchmark": "local-gemma4-motion-explanation",
@@ -169,18 +255,13 @@ def main() -> None:
             "python": platform.python_version(),
             "transport": "Ollama localhost",
             "num_gpu_override": args.num_gpu,
+            "corpus_manifest": str(args.manifest) if args.manifest else None,
+            "prompt_version": args.prompt_version,
         },
         "resource": resource,
         "cases": cases,
-        "aggregate": {
-            "case_count": len(cases),
-            "mean_wall_seconds": round(statistics.fmean(case["client_wall_seconds"] for case in cases), 4),
-            "mean_tokens_per_second": round(statistics.fmean(token_rates), 3) if token_rates else None,
-            "success_rate": round(sum(case["success"] for case in cases) / len(cases), 3),
-            "json_valid_rate": round(sum(case["checks"]["json_valid"] for case in cases) / len(cases), 3),
-            "required_keys_rate": round(sum(case["checks"]["required_keys"] for case in cases) / len(cases), 3),
-            "priority_grounded_rate": round(sum(case["checks"]["priority_grounded"] for case in cases) / len(cases), 3),
-        },
+        "aggregate": _aggregate_cases(cases),
+        "aggregate_by_evidence_kind": by_evidence_kind,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")

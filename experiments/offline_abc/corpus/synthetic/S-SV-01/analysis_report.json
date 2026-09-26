@@ -1,0 +1,30 @@
+{
+  "assessment_id": "S-SV-01",
+  "assessment_type": "serve",
+  "summary": {
+    "completed": true,
+    "evaluation_status": "EVALUATED",
+    "overall_score": 95,
+    "system_confidence": 0.99
+  },
+  "score_breakdown": {
+    "stability": 95,
+    "coordination": 88
+  },
+  "highlights": {
+    "strengths": [
+      "動作節奏穩定"
+    ],
+    "improvement_priorities": []
+  },
+  "limitations": [
+    "單鏡頭 2D 姿態資料，未直接偵測羽球或球拍",
+    "此案例是結構化壓力測試，不是影片分析結果"
+  ],
+  "benchmark_metadata": {
+    "evidence_kind": "synthetic_structured_stress_case",
+    "not_from_video": true,
+    "scenario": "high_score_no_priority",
+    "must_not_be_counted_as_real_subject": true
+  }
+}

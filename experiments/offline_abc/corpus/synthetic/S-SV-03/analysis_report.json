@@ -1,0 +1,32 @@
+{
+  "assessment_id": "S-SV-03",
+  "assessment_type": "serve",
+  "summary": {
+    "completed": true,
+    "evaluation_status": "EVALUATED",
+    "overall_score": 73,
+    "system_confidence": 0.63
+  },
+  "score_breakdown": {
+    "stability": 73,
+    "coordination": 66
+  },
+  "highlights": {
+    "strengths": [
+      "出手方向一致"
+    ],
+    "improvement_priorities": [
+      "手腕控制"
+    ]
+  },
+  "limitations": [
+    "單鏡頭 2D 姿態資料，未直接偵測羽球或球拍",
+    "此案例是結構化壓力測試，不是影片分析結果"
+  ],
+  "benchmark_metadata": {
+    "evidence_kind": "synthetic_structured_stress_case",
+    "not_from_video": true,
+    "scenario": "medium_confidence_forbidden_visual_claim_trap",
+    "must_not_be_counted_as_real_subject": true
+  }
+}

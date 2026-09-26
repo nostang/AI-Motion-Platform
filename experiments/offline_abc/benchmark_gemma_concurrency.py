@@ -10,7 +10,14 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from benchmark_gemma4 import _call_ollama, _compact_report, _ollama_process, _prompt, _validate
+from benchmark_gemma4 import (
+    _call_ollama,
+    _compact_report,
+    _ollama_process,
+    _percentile,
+    _prompt,
+    _validate,
+)
 
 
 def main() -> None:
@@ -75,6 +82,8 @@ def main() -> None:
                 "aggregate": {
                     "request_count": len(latencies),
                     "mean_request_wall_seconds": round(statistics.fmean(latencies), 4),
+                    "p50_request_wall_seconds": round(_percentile(latencies, 0.5) or 0.0, 4),
+                    "p95_request_wall_seconds": round(_percentile(latencies, 0.95) or 0.0, 4),
                     "mean_requests_per_second": round(statistics.fmean(throughputs), 4),
                     "success_rate": round(
                         sum(case["success"] for batch in batches for case in batch["cases"])

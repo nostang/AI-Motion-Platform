@@ -1,0 +1,332 @@
+{
+  "benchmark": "local-gemma4-concurrency",
+  "model": "gemma4:e2b",
+  "warmup_excluded": true,
+  "report": "experiments/offline_abc/corpus/real/R-CLR-01/analysis_report.json",
+  "resource": {
+    "resident_size_bytes": 7004298935,
+    "resident_vram_bytes": 7004298935,
+    "quantization_level": "Q4_K_M"
+  },
+  "levels": [
+    {
+      "concurrency": 1,
+      "batches": [
+        {
+          "batch": 1,
+          "batch_wall_seconds": 2.069,
+          "requests_per_second": 0.4833,
+          "cases": [
+            {
+              "wall_seconds": 2.0686,
+              "tokens_per_second": 117.363,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 2,
+          "batch_wall_seconds": 2.0654,
+          "requests_per_second": 0.4842,
+          "cases": [
+            {
+              "wall_seconds": 2.0651,
+              "tokens_per_second": 117.463,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 3,
+          "batch_wall_seconds": 2.0718,
+          "requests_per_second": 0.4827,
+          "cases": [
+            {
+              "wall_seconds": 2.0715,
+              "tokens_per_second": 117.069,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 4,
+          "batch_wall_seconds": 2.0668,
+          "requests_per_second": 0.4838,
+          "cases": [
+            {
+              "wall_seconds": 2.0665,
+              "tokens_per_second": 117.333,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 5,
+          "batch_wall_seconds": 2.0694,
+          "requests_per_second": 0.4832,
+          "cases": [
+            {
+              "wall_seconds": 2.0692,
+              "tokens_per_second": 117.184,
+              "success": true
+            }
+          ]
+        }
+      ],
+      "aggregate": {
+        "request_count": 5,
+        "mean_request_wall_seconds": 2.0682,
+        "p50_request_wall_seconds": 2.0686,
+        "p95_request_wall_seconds": 2.071,
+        "mean_requests_per_second": 0.4834,
+        "success_rate": 1.0
+      }
+    },
+    {
+      "concurrency": 2,
+      "batches": [
+        {
+          "batch": 1,
+          "batch_wall_seconds": 4.1359,
+          "requests_per_second": 0.4836,
+          "cases": [
+            {
+              "wall_seconds": 2.0656,
+              "tokens_per_second": 117.508,
+              "success": true
+            },
+            {
+              "wall_seconds": 4.1354,
+              "tokens_per_second": 116.967,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 2,
+          "batch_wall_seconds": 4.1306,
+          "requests_per_second": 0.4842,
+          "cases": [
+            {
+              "wall_seconds": 4.1303,
+              "tokens_per_second": 117.32,
+              "success": true
+            },
+            {
+              "wall_seconds": 2.0652,
+              "tokens_per_second": 117.404,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 3,
+          "batch_wall_seconds": 4.1211,
+          "requests_per_second": 0.4853,
+          "cases": [
+            {
+              "wall_seconds": 2.0497,
+              "tokens_per_second": 118.341,
+              "success": true
+            },
+            {
+              "wall_seconds": 4.1206,
+              "tokens_per_second": 116.899,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 4,
+          "batch_wall_seconds": 4.1422,
+          "requests_per_second": 0.4828,
+          "cases": [
+            {
+              "wall_seconds": 4.1419,
+              "tokens_per_second": 116.941,
+              "success": true
+            },
+            {
+              "wall_seconds": 2.0688,
+              "tokens_per_second": 117.176,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 5,
+          "batch_wall_seconds": 4.1386,
+          "requests_per_second": 0.4833,
+          "cases": [
+            {
+              "wall_seconds": 2.0613,
+              "tokens_per_second": 117.583,
+              "success": true
+            },
+            {
+              "wall_seconds": 4.138,
+              "tokens_per_second": 116.58,
+              "success": true
+            }
+          ]
+        }
+      ],
+      "aggregate": {
+        "request_count": 10,
+        "mean_request_wall_seconds": 3.0977,
+        "p50_request_wall_seconds": 3.0947,
+        "p95_request_wall_seconds": 4.1401,
+        "mean_requests_per_second": 0.4838,
+        "success_rate": 1.0
+      }
+    },
+    {
+      "concurrency": 4,
+      "batches": [
+        {
+          "batch": 1,
+          "batch_wall_seconds": 8.2992,
+          "requests_per_second": 0.482,
+          "cases": [
+            {
+              "wall_seconds": 6.216,
+              "tokens_per_second": 117.238,
+              "success": true
+            },
+            {
+              "wall_seconds": 4.1496,
+              "tokens_per_second": 116.476,
+              "success": true
+            },
+            {
+              "wall_seconds": 8.2982,
+              "tokens_per_second": 116.325,
+              "success": true
+            },
+            {
+              "wall_seconds": 2.0704,
+              "tokens_per_second": 117.132,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 2,
+          "batch_wall_seconds": 8.2974,
+          "requests_per_second": 0.4821,
+          "cases": [
+            {
+              "wall_seconds": 2.0702,
+              "tokens_per_second": 117.145,
+              "success": true
+            },
+            {
+              "wall_seconds": 4.1479,
+              "tokens_per_second": 116.537,
+              "success": true
+            },
+            {
+              "wall_seconds": 6.2142,
+              "tokens_per_second": 117.227,
+              "success": true
+            },
+            {
+              "wall_seconds": 8.2965,
+              "tokens_per_second": 116.27,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 3,
+          "batch_wall_seconds": 8.3012,
+          "requests_per_second": 0.4819,
+          "cases": [
+            {
+              "wall_seconds": 2.0741,
+              "tokens_per_second": 116.964,
+              "success": true
+            },
+            {
+              "wall_seconds": 4.1508,
+              "tokens_per_second": 116.606,
+              "success": true
+            },
+            {
+              "wall_seconds": 8.3002,
+              "tokens_per_second": 116.587,
+              "success": true
+            },
+            {
+              "wall_seconds": 6.2224,
+              "tokens_per_second": 116.925,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 4,
+          "batch_wall_seconds": 8.3048,
+          "requests_per_second": 0.4816,
+          "cases": [
+            {
+              "wall_seconds": 2.1016,
+              "tokens_per_second": 115.439,
+              "success": true
+            },
+            {
+              "wall_seconds": 6.2296,
+              "tokens_per_second": 117.356,
+              "success": true
+            },
+            {
+              "wall_seconds": 4.1659,
+              "tokens_per_second": 117.358,
+              "success": true
+            },
+            {
+              "wall_seconds": 8.3035,
+              "tokens_per_second": 116.878,
+              "success": true
+            }
+          ]
+        },
+        {
+          "batch": 5,
+          "batch_wall_seconds": 8.2709,
+          "requests_per_second": 0.4836,
+          "cases": [
+            {
+              "wall_seconds": 2.0716,
+              "tokens_per_second": 117.221,
+              "success": true
+            },
+            {
+              "wall_seconds": 8.2701,
+              "tokens_per_second": 115.864,
+              "success": true
+            },
+            {
+              "wall_seconds": 4.117,
+              "tokens_per_second": 118.375,
+              "success": true
+            },
+            {
+              "wall_seconds": 6.1796,
+              "tokens_per_second": 117.446,
+              "success": true
+            }
+          ]
+        }
+      ],
+      "aggregate": {
+        "request_count": 20,
+        "mean_request_wall_seconds": 5.1825,
+        "p50_request_wall_seconds": 5.1727,
+        "p95_request_wall_seconds": 8.3004,
+        "mean_requests_per_second": 0.4822,
+        "success_rate": 1.0
+      }
+    }
+  ]
+}

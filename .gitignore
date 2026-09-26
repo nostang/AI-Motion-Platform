@@ -68,6 +68,7 @@ docs/calibration/serve_window_review_v0_4/
 # checkpoints, plots, and other bulky artifacts stay local.
 experiments/offline_abc/results/*
 !experiments/offline_abc/results/*.json
+!experiments/offline_abc/results/*.csv
 experiments/offline_abc/results/*_initial.json
 experiments/offline_abc/results/yolo_workspace/
 experiments/offline_abc/.venv/

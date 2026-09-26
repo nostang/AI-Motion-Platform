@@ -1,0 +1,182 @@
+{
+  "report_version": "clear-report-v0.1",
+  "generated_at": "2026-09-26T15:13:31.001371+00:00",
+  "assessment_id": null,
+  "assessment_type": "clear",
+  "clear_type": "high_clear",
+  "video_id": "R-CLR-09",
+  "summary": {
+    "completed": true,
+    "evaluation_status": "EVALUATED",
+    "overall_score": 73,
+    "system_confidence": 0.9991,
+    "coach_status": "PASS"
+  },
+  "score_breakdown": {
+    "sideways_preparation": {
+      "score": 25,
+      "max_score": 25,
+      "level": "EXCELLENT",
+      "measurement_levels": {
+        "minimum_shoulder_hip_ratio": "EXCELLENT",
+        "shoulder_angle_range_degrees": "EXCELLENT"
+      }
+    },
+    "weight_transfer": {
+      "score": 14,
+      "max_score": 25,
+      "level": "FAIR",
+      "measurement_levels": {
+        "hip_center_shift": "FAIR"
+      }
+    },
+    "non_racket_arm_balance": {
+      "score": 14,
+      "max_score": 25,
+      "level": "FAIR",
+      "measurement_levels": {
+        "maximum_arm_elevation": "FAIR",
+        "elevated_sample_ratio": "FAIR"
+      }
+    },
+    "swing_smoothness": {
+      "score": 20,
+      "max_score": 25,
+      "level": "FAIR",
+      "measurement_levels": {
+        "wrist_path_length": "EXCELLENT",
+        "wrist_speed_variation": "FAIR"
+      }
+    }
+  },
+  "highlights": {
+    "strengths": [
+      "sideways_preparation",
+      "swing_smoothness"
+    ],
+    "improvement_priorities": [
+      "weight_transfer",
+      "non_racket_arm_balance"
+    ]
+  },
+  "coach": {
+    "overall_message": "整體高遠球教學動作良好，可維持目前節奏持續練習。",
+    "feedback": [
+      {
+        "metric": "sideways_preparation",
+        "level": "EXCELLENT",
+        "message": "側身準備表現良好，可維持目前動作節奏。"
+      },
+      {
+        "metric": "weight_transfer",
+        "level": "FAIR",
+        "message": "重心轉移尚可，建議放慢速度確認完整動作。"
+      },
+      {
+        "metric": "non_racket_arm_balance",
+        "level": "FAIR",
+        "message": "非持拍手平衡尚可，建議放慢速度確認完整動作。"
+      },
+      {
+        "metric": "swing_smoothness",
+        "level": "FAIR",
+        "message": "揮拍流暢度尚可，建議放慢速度確認完整動作。"
+      }
+    ]
+  },
+  "radar_chart": {
+    "labels": [
+      "Sideways Preparation",
+      "Weight Transfer",
+      "Non-racket Arm",
+      "Swing Smoothness"
+    ],
+    "scores": [
+      25,
+      14,
+      14,
+      20
+    ],
+    "max_score": 25
+  },
+  "features": {
+    "status": "EXTRACTED",
+    "feature_version": "clear-feature-v0.3",
+    "sample_count": 1141,
+    "racket_side_estimate": "right",
+    "non_racket_side_estimate": "left",
+    "racket_hand": {
+      "status": "ESTIMATED",
+      "feature_version": "racket-hand-v0.2",
+      "estimated": "right",
+      "confidence": 1.0,
+      "evidence": {
+        "peak_speed": "right",
+        "burst_speed": "right",
+        "preparation_position": "right"
+      },
+      "weighted_scores": {
+        "left": 0,
+        "right": 1.0
+      },
+      "measurements": {
+        "forward_hip_shift_x": -0.045194,
+        "left_peak_speed": 4.663131,
+        "right_peak_speed": 5.064337,
+        "left_p95_speed": 1.242622,
+        "right_p95_speed": 1.343045,
+        "left_preparation_wrist_x": 0.434023,
+        "right_preparation_wrist_x": 0.475251
+      },
+      "limitations": [
+        "Experimental high-clear racket-hand estimation.",
+        "Uses one-camera 2D MediaPipe landmarks and does not detect the racket.",
+        "Assumes the video contains a visible preparation and swing.",
+        "Mirrored video or incomplete movement may reduce reliability.",
+        "This result does not modify the L3 assessment racket-side configuration."
+      ]
+    },
+    "reference_body_scale": 0.122452,
+    "sideways_preparation": {
+      "minimum_shoulder_hip_ratio": 0.351658,
+      "mean_shoulder_hip_ratio": 1.665654,
+      "shoulder_angle_range_degrees": 88.9594
+    },
+    "weight_transfer": {
+      "hip_center_shift": 0.369076,
+      "hip_center_range": 5.148356
+    },
+    "non_racket_arm_balance": {
+      "maximum_arm_elevation": 0.578481,
+      "elevated_sample_ratio": 0.113059,
+      "arm_path_length": 137.470355
+    },
+    "swing_smoothness": {
+      "wrist_path_length": 142.3369,
+      "mean_wrist_speed": 3.731887,
+      "wrist_speed_variation": 1.158743,
+      "wrist_low_speed_ratio": 0.123684
+    },
+    "limitations": [
+      "Uses one-camera 2D MediaPipe landmarks.",
+      "Designed for a high-clear teaching swing, not shuttle outcome analysis.",
+      "L3 assessment still uses the configured racket side.",
+      "Experimental racket-hand estimation is output for validation only.",
+      "Shoulder projection ratio is only a proxy for sideways preparation.",
+      "Hip-center displacement is only a proxy for weight transfer.",
+      "Does not evaluate racket, shuttle, grip, contact point, trajectory, or landing position."
+    ]
+  },
+  "limitations": [
+    "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks.",
+    "The result evaluates body-motion quality, not shuttle outcome.",
+    "Sideways preparation and weight transfer use provisional 2D proxy measurements.",
+    "Racket, shuttle, grip, contact point, trajectory, speed, and landing position are not evaluated.",
+    "Thresholds and level scores are provisional and require multi-video and coach calibration."
+  ],
+  "meta": {
+    "engine_version": "high-clear-mvp-v0.3",
+    "config_version": "clear-calibration-v0.2",
+    "calibration_status": "PROVISIONAL"
+  }
+}

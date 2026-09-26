@@ -12,6 +12,7 @@
 
 - [完整實驗報告](EXPERIMENT_REPORT.zh-TW.md)
 - [B 的設備、並行與 VM 專章](B_EQUIPMENT_AND_VM.zh-TW.md)
+- [A vs B 共用 28 案例測試集](AB_BENCHMARK_CORPUS.zh-TW.md)
 - [C 的羽球訓練研究計畫](C_RESEARCH_PLAN.zh-TW.md)
 - [從零開始的口頭報告稿](PRESENTATION_SCRIPT.zh-TW.md)
 - [實驗日誌](EXPERIMENT_LOG.zh-TW.md)
@@ -61,7 +62,29 @@ Gemma 只負責文字解說，不替換或修改版本化評分。YOLOv12 是離
   --concurrency 1 --concurrency 2 --batches 2 \
   --output experiments/offline_abc/results/gemma4_concurrency.json
 
-# 5. C：官方 YOLOv12 的最小流程驗證（先依日誌建立隔離環境）
+# 5. 建立 A/B 共用測試集：19 份真實影片流程輸出 + 9 份模擬壓力 JSON
+MPLCONFIGDIR=/tmp/ai-motion-mpl .venv/bin/python \
+  experiments/offline_abc/build_ab_benchmark_corpus.py
+
+# 6. B：對共用 28 案例各跑一次
+.venv/bin/python experiments/offline_abc/benchmark_gemma4.py \
+  --manifest experiments/offline_abc/results/ab_corpus_manifest.json \
+  --repeats 1 \
+  --output experiments/offline_abc/results/gemma4_28_case_corpus.json
+
+# 7. 建立自動檢查與待人工填寫的評分表
+.venv/bin/python experiments/offline_abc/evaluate_llm_corpus.py \
+  --input experiments/offline_abc/results/gemma4_28_case_corpus.json \
+  --output experiments/offline_abc/results/gemma4_28_case_quality.json \
+  --review-csv experiments/offline_abc/results/gemma4_28_case_human_review.csv
+
+# 8. B：暖機後測 1、2、4 個同時請求，各五批
+.venv/bin/python experiments/offline_abc/benchmark_gemma_concurrency.py \
+  --report experiments/offline_abc/corpus/real/R-CLR-01/analysis_report.json \
+  --concurrency 1 --concurrency 2 --concurrency 4 --batches 5 \
+  --output experiments/offline_abc/results/gemma4_concurrency_1_2_4.json
+
+# 9. C：官方 YOLOv12 的最小流程驗證（先依日誌建立隔離環境）
 experiments/offline_abc/.venv-yolo/bin/python \
   experiments/offline_abc/benchmark_yolov12.py \
   --repo experiments/offline_abc/yolov12 \
@@ -69,14 +92,14 @@ experiments/offline_abc/.venv-yolo/bin/python \
   --epochs 1 --device mps --inference-repeats 5 \
   --output experiments/offline_abc/results/yolov12_tiny_feasibility.json
 
-# 6. A：只做成本情境估算，不呼叫雲端
+# 10. A：只做成本情境估算，不呼叫雲端
 .venv/bin/python experiments/offline_abc/estimate_option_a.py \
   --mediapipe experiments/offline_abc/results/mediapipe_serve_baseline.json \
   --gemma experiments/offline_abc/results/gemma4_three_cases.json \
   --monthly-analyses 10000 \
   --output experiments/offline_abc/results/option_a_cost_estimate.json
 
-# 7. 重新產生所有證據圖
+# 11. 重新產生所有證據圖
 MPLCONFIGDIR=/tmp/ai-motion-mpl .venv/bin/python \
   experiments/offline_abc/render_evidence.py
 ```
