@@ -105,6 +105,8 @@ R-SV-02 中，三個 YOLO 都有找到球拍，但球拍被配到 MediaPipe 的 
 4. **YOLO11n、YOLO12n 留作控制組**：YOLO12n 的候選框覆蓋高於 YOLO11n，但案例一致同為 3/6，而且 p50 最慢，沒有超越 YOLO26n。
 5. **先補資料再微調**：至少先收左手案例、鏡像資訊與人工球拍框；固定 test set 後再報 precision、recall、mAP 與左右手 confusion matrix。
 
+後續已把 YOLO26n、26s、26m 各跑三輪。較大的 s、m 雖看到更多候選，右手案例一致只有 4/6，低於 26n 的 5/6，而且延遲與權重更高；因此單人 MVP 仍選 26n。詳見 [YOLO26 n／s／m 地端實測報告](C_YOLO26_SCALE_COMPARISON.zh-TW.md)。
+
 這不改變 A/B 的解說層結論：A 仍是目前預設的雲端解說方案；MediaPipe＋YOLO26n 是可以在未來加到 A 或 B 前面的視覺增強，不是新的 LLM 方案。
 
 ## 原始證據

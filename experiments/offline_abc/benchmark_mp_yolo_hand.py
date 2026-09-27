@@ -97,6 +97,11 @@ def _sync(device: str) -> None:
         torch.mps.synchronize()
 
 
+def _peak_rss_mb() -> float:
+    max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return max_rss / (1024 * 1024) if platform.system() == "Darwin" else max_rss / 1024
+
+
 def _case_decision(frames: list[dict[str, Any]]) -> dict[str, Any]:
     votes = [frame["pairing"]["paired_side"] for frame in frames if frame.get("pairing")]
     counts = {side: votes.count(side) for side in ("left", "right")}
@@ -177,13 +182,17 @@ def _evaluate_model(
 ) -> dict[str, Any]:
     from ultralytics import YOLO
 
+    rss_before_model_mb = _peak_rss_mb()
+    load_started = time.perf_counter()
     model = YOLO(str(weights_path))
+    model_load_wall_seconds = time.perf_counter() - load_started
     first_frame = next(
         frame
         for case in cases
         for frame in case["frames"]
         if frame.get("frame_path") and frame.get("pose_detected")
     )
+    warmup_started = time.perf_counter()
     model.predict(
         str(PROJECT_ROOT / first_frame["frame_path"]),
         imgsz=image_size,
@@ -193,6 +202,7 @@ def _evaluate_model(
         verbose=False,
     )
     _sync(device)
+    warmup_wall_seconds = time.perf_counter() - warmup_started
 
     evaluated_cases = []
     inference_times = []
@@ -263,8 +273,10 @@ def _evaluate_model(
     determined = [case for case in evaluated_cases if case["decision"]["estimated"] != "unknown"]
     agreements = sum(case["agreement"] for case in evaluated_cases)
     determined_agreements = sum(case["agreement"] for case in determined)
-    max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    peak_rss_mb = max_rss / (1024 * 1024) if platform.system() == "Darwin" else max_rss / 1024
+    peak_rss_mb = _peak_rss_mb()
+    mean_seconds = statistics.fmean(inference_times)
+    p50_seconds = statistics.median(inference_times)
+    p95_seconds = sorted(inference_times)[round((len(inference_times) - 1) * 0.95)]
     return {
         "model": model_name,
         "weights_path": str(weights_path),
@@ -287,14 +299,20 @@ def _evaluate_model(
             determined_agreements / len(determined), 4
         ) if determined else None,
         "balanced_accuracy_not_available": True,
+        "model_load_wall_seconds": round(model_load_wall_seconds, 6),
+        "warmup_wall_seconds": round(warmup_wall_seconds, 6),
         "latency": {
-            "mean_wall_seconds_per_frame": round(statistics.fmean(inference_times), 6),
-            "p50_wall_seconds_per_frame": round(statistics.median(inference_times), 6),
-            "p95_wall_seconds_per_frame": round(
-                sorted(inference_times)[round((len(inference_times) - 1) * 0.95)], 6
-            ),
+            "mean_wall_seconds_per_frame": round(mean_seconds, 6),
+            "p50_wall_seconds_per_frame": round(p50_seconds, 6),
+            "p95_wall_seconds_per_frame": round(p95_seconds, 6),
+            "mean_frames_per_second": round(1 / mean_seconds, 3),
+            "total_measured_inference_seconds": round(sum(inference_times), 6),
+            "estimated_seconds_per_12_sampled_frames": round(mean_seconds * 12, 6),
+            "estimated_seconds_per_10000_videos_at_12_frames": round(mean_seconds * 120000, 3),
         },
+        "process_peak_rss_mb_before_model": round(rss_before_model_mb, 2),
         "process_peak_rss_mb_after_model": round(peak_rss_mb, 2),
+        "process_peak_rss_delta_mb": round(max(0.0, peak_rss_mb - rss_before_model_mb), 2),
         "cases": evaluated_cases,
     }
 

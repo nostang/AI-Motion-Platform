@@ -658,6 +658,103 @@ def option_c_mp_yolo_comparison() -> None:
     plt.close(fig)
 
 
+def option_c_yolo26_scale_comparison() -> None:
+    result = _json("yolo26_n_s_m_comparison.json")
+    models = {model["model"]: model for model in result["models"]}
+    ordered = [models[name] for name in ("YOLO26n", "YOLO26s", "YOLO26m")]
+    mp = result["mediapipe_only"]
+
+    fig, axes = plt.subplots(2, 2, figsize=(16, 10), facecolor="white")
+    fig.suptitle(
+        "YOLO26 n / s / m｜同機、同資料、單一 worker 三輪實測",
+        fontproperties=FONT,
+        fontsize=22,
+        color=NAVY,
+    )
+
+    names = ["MediaPipe", "MP＋26n", "MP＋26s", "MP＋26m"]
+    coverage = [mp["coverage_rate"]] + [model["quality"]["coverage_rate"] for model in ordered]
+    agreement = [mp["right_hand_case_agreement_rate_all_cases"]] + [
+        model["quality"]["right_hand_case_agreement_rate_all_cases"] for model in ordered
+    ]
+    x = list(range(4))
+    axes[0, 0].bar([i - 0.18 for i in x], [value * 100 for value in coverage], 0.36, color=BLUE, label="可判定率")
+    axes[0, 0].bar([i + 0.18 for i in x], [value * 100 for value in agreement], 0.36, color=TEAL, label="右手案例一致率")
+    axes[0, 0].set_xticks(x, names, fontproperties=FONT)
+    axes[0, 0].set_ylim(0, 112)
+    axes[0, 0].set_ylabel("案例比例（%）", fontproperties=FONT)
+    axes[0, 0].set_title("案例品質（6 段真實右手影片）", fontproperties=FONT, fontsize=14)
+    axes[0, 0].legend(prop=FONT, loc="upper left")
+    axes[0, 0].grid(axis="y", alpha=0.2)
+    for positions, values in (([i - 0.18 for i in x], coverage), ([i + 0.18 for i in x], agreement)):
+        for position, value in zip(positions, values):
+            axes[0, 0].text(position, value * 100 + 2, f"{value * 100:.0f}%", ha="center", fontsize=9)
+
+    model_names = ["26n", "26s", "26m"]
+    mx = list(range(3))
+    raw = [model["quality"]["raw_detection_frame_rate"] * 100 for model in ordered]
+    paired = [model["quality"]["paired_frame_rate"] * 100 for model in ordered]
+    axes[0, 1].bar([i - 0.18 for i in mx], raw, 0.36, color=ORANGE, label="有球拍候選框")
+    axes[0, 1].bar([i + 0.18 for i in mx], paired, 0.36, color=TEAL, label="可配對手腕")
+    axes[0, 1].set_xticks(mx, model_names, fontproperties=FONT)
+    axes[0, 1].set_ylim(0, max(raw + paired) * 1.28)
+    axes[0, 1].set_ylabel("72 個抽樣影格的比例（%）", fontproperties=FONT)
+    axes[0, 1].set_title("球拍 proxy 覆蓋", fontproperties=FONT, fontsize=14)
+    axes[0, 1].legend(prop=FONT, loc="upper left")
+    axes[0, 1].grid(axis="y", alpha=0.2)
+    for positions, values in (([i - 0.18 for i in mx], raw), ([i + 0.18 for i in mx], paired)):
+        for position, value in zip(positions, values):
+            axes[0, 1].text(position, value + 1.2, f"{value:.0f}%", ha="center", fontsize=9)
+
+    p50 = [model["latency_across_all_measured_frames"]["p50_wall_seconds_per_frame"] * 1000 for model in ordered]
+    p95 = [model["latency_across_all_measured_frames"]["p95_wall_seconds_per_frame"] * 1000 for model in ordered]
+    axes[1, 0].bar([i - 0.18 for i in mx], p50, 0.36, color=BLUE, label="p50")
+    axes[1, 0].bar([i + 0.18 for i in mx], p95, 0.36, color=ORANGE, label="p95")
+    axes[1, 0].set_xticks(mx, model_names, fontproperties=FONT)
+    axes[1, 0].set_ylim(0, max(p95) * 1.3)
+    axes[1, 0].set_ylabel("推論時間（ms / frame）", fontproperties=FONT)
+    axes[1, 0].set_title("三輪合併延遲（每模型 216 frame）", fontproperties=FONT, fontsize=14)
+    axes[1, 0].legend(prop=FONT, loc="upper left")
+    axes[1, 0].grid(axis="y", alpha=0.2)
+    for positions, values in (([i - 0.18 for i in mx], p50), ([i + 0.18 for i in mx], p95)):
+        for position, value in zip(positions, values):
+            axes[1, 0].text(position, value + max(p95) * 0.025, f"{value:.1f}", ha="center", fontsize=9)
+
+    weights_mb = [model["weights_size_bytes"] / 1_000_000 for model in ordered]
+    compute_minutes = [
+        model["local_single_worker_cost_proxy"]["estimated_compute_minutes_per_10000_videos"]
+        for model in ordered
+    ]
+    weight_bars = axes[1, 1].bar(model_names, weights_mb, color=BLUE, width=0.55, label="權重大小")
+    axes[1, 1].set_ylabel("模型權重（MB）", fontproperties=FONT, color=BLUE)
+    axes[1, 1].set_title("本機成本代理：空間與順序運算時間", fontproperties=FONT, fontsize=14)
+    axes[1, 1].grid(axis="y", alpha=0.2)
+    time_axis = axes[1, 1].twinx()
+    time_axis.plot(model_names, compute_minutes, color=RED, marker="o", linewidth=2.5, label="10,000 影片運算分鐘")
+    time_axis.set_ylabel("10,000 段 × 12 frame（分鐘）", fontproperties=FONT, color=RED)
+    time_axis.set_ylim(0, max(compute_minutes) * 1.35)
+    for bar, value in zip(weight_bars, weights_mb):
+        axes[1, 1].text(bar.get_x() + bar.get_width() / 2, value + max(weights_mb) * 0.025, f"{value:.1f}", ha="center", fontsize=9)
+    for index, value in enumerate(compute_minutes):
+        time_axis.text(index, value + max(compute_minutes) * 0.035, f"{value:.1f}", ha="center", color=RED, fontsize=9)
+    handles_left, labels_left = axes[1, 1].get_legend_handles_labels()
+    handles_right, labels_right = time_axis.get_legend_handles_labels()
+    axes[1, 1].legend(handles_left + handles_right, labels_left + labels_right, prop=FONT, loc="upper left")
+
+    fig.text(
+        0.5,
+        0.025,
+        "全程本機 M5 Pro／MPS、零付費 API/VM、單一 worker；6 段皆右手且沒有人工球拍框，因此不是平衡準確率或 mAP。",
+        ha="center",
+        fontproperties=FONT,
+        fontsize=11.5,
+        color=RED,
+    )
+    fig.tight_layout(rect=[0, 0.06, 1, 0.93])
+    fig.savefig(ASSETS / "yolo26_n_s_m_comparison.png", dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
 def decision() -> None:
     rows = ["沿用既有固定評分", "低規格終端可使用", "集中更新/回滾", "目前已有品質證據", "需要自行標註訓練"]
     cols = ["A 雲端 MP+LLM", "B 地端 MP+Gemma", "C：MP+YOLO 視覺增強"]
@@ -699,6 +796,7 @@ def main() -> None:
     option_b_corpus()
     option_c()
     option_c_mp_yolo_comparison()
+    option_c_yolo26_scale_comparison()
     decision()
 
 

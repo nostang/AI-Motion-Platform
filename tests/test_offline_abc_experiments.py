@@ -108,6 +108,71 @@ def test_mp_yolo_pairs_racket_to_nearest_visible_wrist():
     assert paired["right_distance_shoulder_widths"] == 0.0
 
 
+def test_yolo_scale_summary_is_dashboard_ready_and_prefers_quality(tmp_path):
+    summarizer = _load("summarize_yolo26_scale_runs")
+
+    def payload(model_name, agreement, coverage, latency):
+        return {
+            "runtime": {"device": "mps", "image_size": 1280, "confidence_threshold": 0.15},
+            "dataset": {"case_count": 1},
+            "mediapipe_only": {"case_count": 1},
+            "limitations": [],
+            "models": [
+                {
+                    "model": model_name,
+                    "weights_size_bytes": 10,
+                    "weights_sha256": model_name,
+                    "parameter_count": 10,
+                    "fine_tuned_on_project_data": False,
+                    "pose_valid_frame_count": 1,
+                    "raw_detection_frame_count": 1,
+                    "raw_detection_frame_rate": 1.0,
+                    "paired_frame_count": 1,
+                    "paired_frame_rate": 1.0,
+                    "determined_case_count": 1,
+                    "coverage_rate": coverage,
+                    "right_hand_case_agreement_rate_all_cases": agreement,
+                    "right_hand_case_agreement_rate_when_determined": agreement,
+                    "model_load_wall_seconds": 0.1,
+                    "warmup_wall_seconds": 0.2,
+                    "latency": {
+                        "mean_wall_seconds_per_frame": latency,
+                        "p50_wall_seconds_per_frame": latency,
+                        "p95_wall_seconds_per_frame": latency,
+                    },
+                    "process_peak_rss_mb_after_model": 100.0,
+                    "process_peak_rss_delta_mb": 10.0,
+                    "cases": [
+                        {
+                            "case_id": "CASE-1",
+                            "human_racket_side": "right",
+                            "decision": {"estimated": "right", "vote_counts": {"left": 0, "right": 1}},
+                            "agreement": True,
+                            "frames": [{"inference_wall_seconds": latency}],
+                        }
+                    ],
+                }
+            ],
+        }
+
+    paths = []
+    for name, agreement, coverage, latency in (
+        ("YOLO26n", 0.8, 1.0, 0.01),
+        ("YOLO26s", 1.0, 0.9, 0.02),
+    ):
+        path = tmp_path / f"{name}.json"
+        path.write_text(json.dumps(payload(name, agreement, coverage, latency)))
+        paths.append(path)
+
+    result = summarizer.summarize(paths)
+
+    assert result["schema_version"] == "ai-motion-dashboard-experiment-v1"
+    assert result["status"] == "completed"
+    assert result["queue_assumption"]["concurrency"] == 1
+    assert result["recommendation"]["model"] == "YOLO26s"
+    assert result["models"][0]["local_single_worker_cost_proxy"]["money_cost_usd"] is None
+
+
 def test_local_guardrails_normalize_types_and_use_safe_fallback(tmp_path):
     guardrails = _load("apply_local_llm_guardrails")
     normalized, changes = guardrails._normalize_response(

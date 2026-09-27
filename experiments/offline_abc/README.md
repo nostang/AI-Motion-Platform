@@ -18,6 +18,7 @@
 - [A vs B 共用 28 案例測試集](AB_BENCHMARK_CORPUS.zh-TW.md)
 - [C 的羽球訓練研究計畫](C_RESEARCH_PLAN.zh-TW.md)
 - [MediaPipe vs MediaPipe＋YOLO11n／YOLO12n／YOLO26n](C_MP_YOLO_COMPARISON.zh-TW.md)
+- [YOLO26 n／s／m 地端成本與效果比較](C_YOLO26_SCALE_COMPARISON.zh-TW.md)
 - [從零開始的口頭報告稿](PRESENTATION_SCRIPT.zh-TW.md)
 - [實驗日誌](EXPERIMENT_LOG.zh-TW.md)
 - [原始結果](results/)
@@ -116,6 +117,21 @@ PYTHONPATH=experiments/offline_abc/results/yolo_compare_runtime \
   --device mps --image-size 1280 --confidence 0.15 \
   --evidence-dir experiments/offline_abc/results/yolo_compare_workspace/evidence \
   --output experiments/offline_abc/results/mp_yolo11_yolo12_yolo26_hand_comparison.json
+
+# 11b. 第二組深入：YOLO26 n / s / m 各用獨立程序跑三輪
+# 九次 benchmark 的參數與 11 相同，每次只帶一個 --model；逐輪 JSON 留在
+# results/yolo_scale_workspace/runs/。最後彙整成可供儀表板讀取的固定格式：
+.venv/bin/python experiments/offline_abc/summarize_yolo26_scale_runs.py \
+  --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26n_run1.json \
+  --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26n_run2.json \
+  --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26n_run3.json \
+  --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26s_run1.json \
+  --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26s_run2.json \
+  --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26s_run3.json \
+  --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26m_run1.json \
+  --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26m_run2.json \
+  --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26m_run3.json \
+  --output experiments/offline_abc/results/yolo26_n_s_m_comparison.json
 
 # 12. A：只做成本情境估算，不呼叫雲端
 .venv/bin/python experiments/offline_abc/estimate_option_a.py \
