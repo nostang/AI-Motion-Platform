@@ -173,6 +173,50 @@ def test_yolo_scale_summary_is_dashboard_ready_and_prefers_quality(tmp_path):
     assert result["models"][0]["local_single_worker_cost_proxy"]["money_cost_usd"] is None
 
 
+def test_yolo_racket_pilot_consensus_and_ap():
+    builder = _load("build_yolo_racket_pilot_dataset")
+    trainer = _load("train_yolo26n_racket_pilot")
+
+    first = [{"confidence": 0.8, "xyxy": [0.0, 0.0, 10.0, 10.0]}]
+    second = [{"confidence": 0.6, "xyxy": [1.0, 1.0, 11.0, 11.0]}]
+    consensus = builder._best_consensus(
+        first,
+        second,
+        minimum_iou=0.5,
+        minimum_confidence=0.4,
+    )
+    assert consensus is not None
+    assert consensus["xyxy"] == [0.5, 0.5, 10.5, 10.5]
+    assert builder.box_iou(first[0]["xyxy"], second[0]["xyxy"]) > 0.68
+
+    ground_truth = {"image.jpg": [[0.0, 0.0, 10.0, 10.0]]}
+    perfect = [{"image": "image.jpg", "confidence": 0.9, "xyxy": [0.0, 0.0, 10.0, 10.0]}]
+    miss = [{"image": "image.jpg", "confidence": 0.9, "xyxy": [20.0, 20.0, 30.0, 30.0]}]
+    assert trainer._ap_at_iou(perfect, ground_truth, 0.5) == 1.0
+    assert trainer._ap_at_iou(miss, ground_truth, 0.5) == 0.0
+
+
+def test_yolo_racket_training_curve_summary(tmp_path):
+    trainer = _load("train_yolo26n_racket_pilot")
+    results = tmp_path / "results.csv"
+    results.write_text(
+        "epoch,train/box_loss,metrics/mAP50(B),metrics/mAP50-95(B),val/box_loss\n"
+        "1,2.0,0.2,0.1,2.2\n"
+        "2,1.5,0.4,0.3,1.8\n",
+        encoding="utf-8",
+    )
+
+    summary = trainer._training_curve_summary(results)
+
+    assert summary == {
+        "best_validation_epoch": 2,
+        "best_validation_ap50": 0.4,
+        "best_validation_ap50_95": 0.3,
+        "final_train_box_loss": 1.5,
+        "final_validation_box_loss": 1.8,
+    }
+
+
 def test_local_guardrails_normalize_types_and_use_safe_fallback(tmp_path):
     guardrails = _load("apply_local_llm_guardrails")
     normalized, changes = guardrails._normalize_response(

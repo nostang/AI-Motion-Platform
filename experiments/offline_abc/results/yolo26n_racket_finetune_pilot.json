@@ -1,0 +1,136 @@
+{
+  "schema_version": "ai-motion-dashboard-experiment-v1",
+  "experiment": "yolo26n-ai-assisted-racket-finetune-pilot",
+  "status": "completed",
+  "claim_scope": "pipeline_learning_and_provisional_teacher_consensus_metrics_not_production_accuracy",
+  "runtime": {
+    "platform": "macOS-26.5.2-arm64-arm-64bit",
+    "python": "3.11.16",
+    "torch": "2.14.0",
+    "ultralytics": "8.4.163",
+    "device": "mps",
+    "image_size": 640,
+    "batch": 8,
+    "seed": 26
+  },
+  "dataset": {
+    "source_frames": 72,
+    "included_consensus_frames": 34,
+    "rejected_frames": 38,
+    "split_frames": {
+      "train": 19,
+      "val": 6,
+      "test": 9
+    },
+    "strict_consensus_frames": 34,
+    "annotation_status": "provisional_ai_assisted_not_human_ground_truth",
+    "selection": {
+      "minimum_teacher_iou": 0.65,
+      "minimum_teacher_confidence": 0.4,
+      "one_consensus_box_maximum_per_frame": true
+    },
+    "split_source_cases": {
+      "train": [
+        "R-SV-01",
+        "R-SV-02",
+        "R-SV-03",
+        "R-SV-05"
+      ],
+      "val": [
+        "R-SV-04"
+      ],
+      "test": [
+        "R-SV-06"
+      ]
+    },
+    "source_case_leakage": false
+  },
+  "training": {
+    "method": "transfer_learning_from_official_pretrained_yolo26n",
+    "smoke_epochs": 5,
+    "smoke_wall_seconds": 16.889,
+    "smoke_run_directory": "experiments/offline_abc/results/yolo_racket_pilot_workspace/training_runs/smoke",
+    "epochs_requested": 40,
+    "epochs_completed": 40,
+    "wall_seconds": 97.535,
+    "best_validation_epoch": 39,
+    "best_validation_ap50": 0.50256,
+    "best_validation_ap50_95": 0.19427,
+    "final_train_box_loss": 1.07345,
+    "final_validation_box_loss": 1.36926,
+    "formal_run_directory": "experiments/offline_abc/results/yolo_racket_pilot_workspace/training_runs/formal",
+    "best_weights_path": "experiments/offline_abc/results/yolo_racket_pilot_workspace/training_runs/formal/weights/best.pt",
+    "best_weights_size_bytes": 5367685,
+    "best_weights_sha256": "3a78960187c015f3daec8552220267d9a293f844951533824be9ad822807c24b"
+  },
+  "evaluation": {
+    "protocol": "held-out_source_video_test; IoU>=0.50 for fixed-threshold P/R/F1; 101-point AP",
+    "baseline_pretrained_yolo26n": {
+      "weights_path": "experiments/offline_abc/results/yolo_compare_workspace/weights/yolo26n.pt",
+      "weights_size_bytes": 5544453,
+      "weights_sha256": "9b09cc8bf347f0fc8a5f7657480587f25db09b34bf33b0652110fb03a8ad4fef",
+      "test_frames": 9,
+      "test_ground_truth_boxes": 9,
+      "decision_confidence": 0.15,
+      "iou_for_precision_recall": 0.5,
+      "true_positives": 4,
+      "false_positives": 1,
+      "false_negatives": 5,
+      "precision": 0.8,
+      "recall": 0.444444,
+      "f1": 0.571429,
+      "ap50": 0.67459,
+      "ap50_95": 0.320633,
+      "frames_with_detection": 5,
+      "frame_detection_rate": 0.555556,
+      "latency_sample_count": 27,
+      "p50_wall_seconds_per_frame": 0.011528,
+      "p95_wall_seconds_per_frame": 0.012873,
+      "mean_wall_seconds_per_frame": 0.011501
+    },
+    "finetuned_yolo26n": {
+      "weights_path": "experiments/offline_abc/results/yolo_racket_pilot_workspace/training_runs/formal/weights/best.pt",
+      "weights_size_bytes": 5367685,
+      "weights_sha256": "3a78960187c015f3daec8552220267d9a293f844951533824be9ad822807c24b",
+      "test_frames": 9,
+      "test_ground_truth_boxes": 9,
+      "decision_confidence": 0.15,
+      "iou_for_precision_recall": 0.5,
+      "true_positives": 2,
+      "false_positives": 1,
+      "false_negatives": 7,
+      "precision": 0.666667,
+      "recall": 0.222222,
+      "f1": 0.333333,
+      "ap50": 0.307626,
+      "ap50_95": 0.088199,
+      "frames_with_detection": 3,
+      "frame_detection_rate": 0.333333,
+      "latency_sample_count": 27,
+      "p50_wall_seconds_per_frame": 0.010563,
+      "p95_wall_seconds_per_frame": 0.011883,
+      "mean_wall_seconds_per_frame": 0.011143
+    }
+  },
+  "evidence": {
+    "annotation_audit_directory": "experiments/offline_abc/results/yolo_racket_pilot_workspace/audit",
+    "training_curve": "experiments/offline_abc/results/yolo_racket_pilot_workspace/training_runs/formal/results.png",
+    "test_pretrained_vs_finetuned": "experiments/offline_abc/results/yolo_racket_pilot_workspace/test_pretrained_vs_finetuned.jpg"
+  },
+  "decision": {
+    "training_experience_completed": true,
+    "changes_mvp_architecture": false,
+    "mvp_recommendation": "MediaPipe remains sufficient when the user confirms racket hand.",
+    "future_option": "YOLO26n may be retrained after human boxes, left-hand videos, negatives, and mirror metadata are added."
+  },
+  "limitations": [
+    "Labels are model-consensus prelabels, not independent human ground truth.",
+    "All source cases are right-handed and contain only six source videos.",
+    "Only consensus-positive frames are included, so negative-image false-positive behavior is not measured.",
+    "Metrics from this dataset demonstrate training workflow behavior, not production accuracy.",
+    "The same model family helped create the labels, so teacher-student agreement can inflate apparent gains.",
+    "The held-out test contains one source video and only positive frames.",
+    "Visual audit found several coarse boxes; the strict consensus filter reduces but does not remove label noise.",
+    "No result here changes the A-over-B LLM deployment decision or proves real-world racket accuracy."
+  ]
+}

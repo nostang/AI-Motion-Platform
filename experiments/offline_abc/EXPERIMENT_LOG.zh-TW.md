@@ -1030,3 +1030,59 @@ YOLO26n 在第一輪看起來很好，是否真的能用在單人 MVP；改用�
 - [`results/yolo26_n_s_m_comparison.json`](results/yolo26_n_s_m_comparison.json)
 - [YOLO26 n／s／m 完整報告](C_YOLO26_SCALE_COMPARISON.zh-TW.md)
 - [`summarize_yolo26_scale_runs.py`](summarize_yolo26_scale_runs.py)
+
+## 39. YOLO26n 小型羽球拍微調
+
+### 想回答的問題
+
+在不要求使用者先介入人工標註的前提下，現有素材能否讓我完成一次真正的 YOLO 微調經驗；訓練後是否能勝過官方預訓練 YOLO26n。
+
+### 實際步驟
+
+- 使用既有 6 段右手發球影片、72 張抽樣影格，不接觸「羽球＋1」。
+- 用 YOLO26s 與 YOLO26m 當 teacher，僅接受兩者框 IoU ≥ 0.65 且兩者 confidence ≥ 0.40 的共識框。
+- 逐段產生本機標註稽核圖並目視檢查；仍將資料標記為 provisional AI-assisted，不冒充人工 ground truth。
+- 共留下 34 張，依完整影片切成 train/val/test = 19/6/9，來源案例沒有跨 split。
+- 先用 5 epochs smoke test 驗證流程，再從同一官方 YOLO26n 重新執行 40 epochs 正式 transfer learning。
+- 保存 best checkpoint、訓練曲線、測試前後畫面、權重大小與 SHA-256。
+- 在固定 test 影片用 confidence 0.15、IoU 0.50 比較官方預訓練與 fine-tuned model，另算 AP50 與 AP50-95。
+
+### 遇到的問題
+
+- 第一次 smoke test 在第 1 epoch 儲存 checkpoint 時缺少 `polars`；只在 `.venv-yolo` 隔離環境補上套件，清除該次 run 後重新開始。
+- Apple MPS 對部分 deterministic operation 只有 warning，訓練仍正常完成；結果記錄 seed=26，但不宣稱跨硬體 bit-for-bit 相同。
+- 嚴格共識仍可看到部分粗框，說明「兩個模型同意」不等於人工真相。
+
+### 結果
+
+| 指標 | 官方預訓練 | 40 epochs 微調 |
+|---|---:|---:|
+| Precision | **80.00%** | 66.67% |
+| Recall | **44.44%** | 22.22% |
+| F1 | **57.14%** | 33.33% |
+| AP50 | **67.46%** | 30.76% |
+| AP50-95 | **32.06%** | 8.82% |
+| test 有偵測影格 | **5/9** | 3/9 |
+| p50 / p95 | 11.53 / 12.87 ms | 10.56 / 11.88 ms |
+
+- smoke test：5 epochs，16.889 秒。
+- 正式訓練：40 epochs，97.535 秒。
+- validation 第 39–40 epoch：AP50 50.256%、AP50-95 19.427%；最早最佳 epoch 為 39。
+- 最佳權重 5,367,685 bytes；SHA-256 `3a78960187c015f3daec8552220267d9a293f844951533824be9ad822807c24b`。
+- 獨立 test 低於 baseline，因此不採用這個權重。
+
+### 心得
+
+這次最大的收穫是看到「loss 下降」與「真正測試變好」是兩回事。模型確實越來越配合少量 train/val 影片，但換到另一段 test 影片反而漏掉更多球拍。34 張 AI 預標註足以學完整訓練流程，不足以建立可靠羽球拍模型；下一步若真的要精進 C，預算應先放在人工框、左手、負樣本與按球員切分，而不是增加 epochs、換更大模型或租 VM。
+
+這個負結果反而讓 C 可以更完整地結案：目前 MVP 用 MediaPipe＋使用者確認已足夠；YOLO 保留為 AI Motion 未來資料成熟後的增強研究，不放入「羽球＋1」，也不影響 A vs B 最終選 A。
+
+### 畫面與證據
+
+![YOLO26n 小型微調結果](assets/yolo26n_racket_finetune_pilot.png)
+
+- [完整訓練報告](C_YOLO26N_FINETUNE_PILOT.zh-TW.md)
+- [`results/yolo26n_racket_finetune_pilot.json`](results/yolo26n_racket_finetune_pilot.json)
+- [`build_yolo_racket_pilot_dataset.py`](build_yolo_racket_pilot_dataset.py)
+- [`train_yolo26n_racket_pilot.py`](train_yolo26n_racket_pilot.py)
+- [`render_yolo_racket_pilot_evidence.py`](render_yolo_racket_pilot_evidence.py)

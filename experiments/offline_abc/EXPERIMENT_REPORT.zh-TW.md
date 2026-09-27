@@ -248,6 +248,24 @@ R-SV-02 中，YOLO11n、YOLO12n 與 YOLO26n 都找到球拍，卻都配到 Media
 
 ![YOLO26 n／s／m 比較](assets/yolo26_n_s_m_comparison.png)
 
+### YOLO26n 小型微調：流程成功，模型退步
+
+為了不只停在預訓練比較，本輪再用現有 72 張影格完成一次真正的 transfer learning。YOLO26s 與 26m 必須同時達到 IoU ≥ 0.65、confidence ≥ 0.40 才產生 provisional racket box，共留下 34 張；再按完整來源影片切成 train/val/test = 19/6/9，沒有來源影片跨 split。
+
+先跑 5 epochs smoke test，再從官方 YOLO26n 重新跑 40 epochs 正式微調。M5 Pro MPS 的 smoke／正式訓練分別為 16.889／97.535 秒。結果不是改善：
+
+| 保留影片指標 | 官方預訓練 | 小型微調 |
+|---|---:|---:|
+| Precision | **80.00%** | 66.67% |
+| Recall | **44.44%** | 22.22% |
+| F1 | **57.14%** | 33.33% |
+| AP50 | **67.46%** | 30.76% |
+| AP50-95 | **32.06%** | 8.82% |
+
+![YOLO26n 小型微調前後比較](assets/yolo26n_racket_finetune_pilot.png)
+
+訓練曲線顯示模型逐漸配合 train/validation，但獨立 test 反而漏掉更多球拍。原因包括 train 僅 19 張、標籤不是人工 ground truth、沒有 negative frames、全部是右手、teacher/student 又屬同一模型家族。因此此輪證明的是「本機微調與測試流程可完成」以及「目前資料不足」，不採用 fine-tuned checkpoint。完整步驟、模型雜湊與學習說明見 [YOLO26n 小型羽球拍微調報告](C_YOLO26N_FINETUNE_PILOT.zh-TW.md)。
+
 ### 歷史 YOLOv12 流程驗證（不能當模型選型結果）
 
 ![C 的流程證據與研究方向](assets/c_feasibility_research.png)
@@ -295,12 +313,12 @@ C 解決的是「看見球拍/羽球/落點」，A/B 解決的是「在哪裡用
 3. 同條件 28 例中，B1 p50/p95 甚至略低；選 A 不是因為速度，也不是因為 Gemma 不能輸出格式，而是 A 原始輸出十項全過 28/28，B1 為 13/28，B2 需要 15/28 fallback。
 4. B 已證明能做，但每台機器需要約 7 GB 常駐模型與至少 16 GB RAM；這不適合一般終端部署。
 5. B 若租 24/7 VM，CPU 參考情境約 US$141.79/月，L4 參考情境約 US$515.99/月，且還要自己維運模型。
-6. 第二組實驗顯示，MediaPipe＋YOLO26n 在 6 個右手案例達到 5/6 一致、6/6 可判定，優於 MediaPipe 單獨、YOLO11n 與 YOLO12n；深入比較 26n／s／m 後，s、m 都只有 4/6 且更慢、更大，因此單人 MVP 仍選 26n，但仍缺左手案例與人工球拍框。
+6. 第二組實驗顯示，MediaPipe＋官方預訓練 YOLO26n 在 6 個右手案例達到 5/6 一致、6/6 可判定；但 34 張 AI 預標註微調後 test AP50 由 67.46% 降為 30.76%，所以目前資料不足，不採用自訓權重，MVP 仍以 MediaPipe＋使用者確認為主。
 7. A 把重運算、版本、提示詞與回滾集中在服務端，一般終端只需上傳和看報告；依目前產品條件最合理。
 
 所以正式說法應是：
 
-> 本輪選擇 A 作為 LLM 解說層預設，因為它能沿用已驗證的 MediaPipe 固定評分，原始輸出 grounding 較穩定，又不把 7 GB 模型、至少 16 GB RAM 與 guardrail 維護轉嫁給使用者。Gemma 4 加 Schema 與 fallback 已證明可用，保留作離線方案；視覺層則保留 MediaPipe，並以 YOLO26n 作為下一輪球拍標註與微調候選。
+> 本輪選擇 A 作為 LLM 解說層預設，因為它能沿用已驗證的 MediaPipe 固定評分，原始輸出 grounding 較穩定，又不把 7 GB 模型、至少 16 GB RAM 與 guardrail 維護轉嫁給使用者。Gemma 4 加 Schema 與 fallback 已證明可用，保留作離線方案；視覺層 MVP 保留 MediaPipe，官方預訓練 YOLO26n 只作未來資料成熟後的增強 baseline，本次小型微調權重不採用。
 
 ## 8. 證據可信度與限制
 
@@ -308,7 +326,7 @@ C 解決的是「看見球拍/羽球/落點」，A/B 解決的是「在哪裡用
 - B 的 GPU 與 CPU 輸出 token 數不同，因此延遲與 tokens/s應一起看。
 - A/B 的 28 案例已完成同條件自動 contract/grounding 檢查；56 份人工教練品質盲評仍待填寫。
 - A 的 LLM API 已在隔離 Free tier 專案實測；完整雲端 MediaPipe、儲存與服務帳單尚未實測。US$0.0121284 是 paid-tier 單價等值，不是帳單。
-- 舊 YOLOv12 實驗只有 16 張合成圖片與 1 epoch，只驗流程；新比較有 6 段真實右手影片，但左手與人工球拍框仍為 0，因此不可宣稱平衡準確率或 mAP。
+- 舊 YOLOv12 實驗只有 16 張合成圖片與 1 epoch，只驗流程；後續 YOLO26n 微調雖真的完成 40 epochs，但只有 34 張 AI 預標註、沒有左手與人工球拍框，表中的 provisional AP 只能用來比較這個固定小資料集，不能宣稱正式羽球拍準確率。
 - 沒有建立雲端 VM、Cloud Run、Cloud SQL、bucket、queue、secret 或自訂 IAM，也沒有接觸羽球＋1正式資源；只有隔離專案的 Gemini API 呼叫。AI Studio 自動綁定同名服務帳戶；API key 已於收尾刪除，服務帳戶留待另行確認是否移除。
 
 ## 9. 公開來源

@@ -21,6 +21,12 @@ Ultralytics 對穩定工作負載建議 YOLO11 或 YOLO26；為了同時回答 Y
 
 這輪決定單人 MVP 繼續使用 YOLO26n。s、m 雖有較多球拍／手腕證據，R-SV-01 卻增加錯側票，因此不能用「模型比較大」代替任務實測。完整成本、逐案例與儀表板欄位見 [YOLO26 n／s／m 地端實測報告](C_YOLO26_SCALE_COMPARISON.zh-TW.md)。
 
+## 已完成的第三輪：YOLO26n 小型微調經驗
+
+為了真正走過一次訓練流程，本輪用 YOLO26s＋26m 的嚴格共識建立 34 張 provisional racket labels，依完整來源影片切成 train/val/test = 19/6/9；先跑 5 epochs 短測，再從官方 YOLO26n 重新跑 40 epochs 正式微調。
+
+保留影片測試顯示微調沒有改善：AP50 從 67.46% 降到 30.76%，recall 從 44.44% 降到 22.22%。因此本輪只完成「訓練經驗與管線驗證」，不採用微調權重，也不改變 MediaPipe 優先的 MVP 決定。詳細資料、圖表與原因見 [YOLO26n 小型羽球拍微調報告](C_YOLO26N_FINETUNE_PILOT.zh-TW.md)。
+
 ## 先理解：YOLO 是找東西，不是自動懂羽球
 
 YOLO 的基本工作像是在每張照片上畫框並說「這裡有球拍」「這裡有羽球」。它不知道人體動作好不好，也不知道畫面中的點對應球場哪一個公分位置。持拍手、球路與落點都必須在 YOLO 之外加入 MediaPipe、時間追蹤或球場座標轉換。

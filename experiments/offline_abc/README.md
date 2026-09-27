@@ -19,6 +19,7 @@
 - [C 的羽球訓練研究計畫](C_RESEARCH_PLAN.zh-TW.md)
 - [MediaPipe vs MediaPipe＋YOLO11n／YOLO12n／YOLO26n](C_MP_YOLO_COMPARISON.zh-TW.md)
 - [YOLO26 n／s／m 地端成本與效果比較](C_YOLO26_SCALE_COMPARISON.zh-TW.md)
+- [YOLO26n 小型羽球拍微調實驗](C_YOLO26N_FINETUNE_PILOT.zh-TW.md)
 - [從零開始的口頭報告稿](PRESENTATION_SCRIPT.zh-TW.md)
 - [實驗日誌](EXPERIMENT_LOG.zh-TW.md)
 - [原始結果](results/)
@@ -133,6 +134,26 @@ PYTHONPATH=experiments/offline_abc/results/yolo_compare_runtime \
   --run experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26m_run3.json \
   --output experiments/offline_abc/results/yolo26_n_s_m_comparison.json
 
+# 11c. 建立嚴格的 AI 輔助球拍預標註資料（不是人工 ground truth）
+experiments/offline_abc/.venv-yolo/bin/python \
+  experiments/offline_abc/build_yolo_racket_pilot_dataset.py \
+  --corpus experiments/offline_abc/results/mp_yolo_hand_corpus.json \
+  --teacher-s experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26s_run1.json \
+  --teacher-m experiments/offline_abc/results/yolo_scale_workspace/runs/YOLO26m_run1.json \
+  --workspace experiments/offline_abc/results/yolo_racket_pilot_workspace \
+  --minimum-iou 0.65 --minimum-confidence 0.4
+
+# 11d. YOLO26n：5 epochs 短測＋40 epochs 正式微調＋保留影片測試
+PYTHONPATH=experiments/offline_abc/results/yolo_compare_runtime \
+  experiments/offline_abc/.venv-yolo/bin/python \
+  experiments/offline_abc/train_yolo26n_racket_pilot.py \
+  --dataset-yaml experiments/offline_abc/results/yolo_racket_pilot_workspace/dataset.yaml \
+  --manifest experiments/offline_abc/results/yolo_racket_pilot_workspace/manifest.json \
+  --base-weights experiments/offline_abc/results/yolo_compare_workspace/weights/yolo26n.pt \
+  --workspace experiments/offline_abc/results/yolo_racket_pilot_workspace \
+  --output experiments/offline_abc/results/yolo26n_racket_finetune_pilot.json \
+  --device mps --image-size 640 --batch 8 --smoke-epochs 5 --epochs 40
+
 # 12. A：只做成本情境估算，不呼叫雲端
 .venv/bin/python experiments/offline_abc/estimate_option_a.py \
   --mediapipe experiments/offline_abc/results/mediapipe_serve_baseline.json \
@@ -180,6 +201,12 @@ PYTHONPATH=experiments/offline_abc/results/yolo_compare_runtime \
 # 19. 重新產生所有證據圖
 MPLCONFIGDIR=/tmp/ai-motion-mpl .venv/bin/python \
   experiments/offline_abc/render_evidence.py
+
+# 20. 產生小型微調公開統計圖（不含原始人物畫面）
+MPLCONFIGDIR=/tmp/ai-motion-mpl experiments/offline_abc/.venv-yolo/bin/python \
+  experiments/offline_abc/render_yolo_racket_pilot_evidence.py \
+  --summary experiments/offline_abc/results/yolo26n_racket_finetune_pilot.json \
+  --summary-output experiments/offline_abc/assets/yolo26n_racket_finetune_pilot.png
 ```
 
 ## 安全邊界
