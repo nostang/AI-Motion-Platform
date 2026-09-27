@@ -4,12 +4,13 @@
 
 ## 已完成的第一輪：持拍手預訓練基準
 
-Ultralytics 對穩定工作負載建議 YOLO11 或 YOLO26，因此先以同為 nano 等級的 YOLO11n 與 YOLO26n，搭配現有 MediaPipe 做公平比較；未使用專案資料微調。
+Ultralytics 對穩定工作負載建議 YOLO11 或 YOLO26；為了同時回答 YOLO12 的差異，本輪以同為 nano 等級的 YOLO11n、YOLO12n、YOLO26n，搭配現有 MediaPipe 做公平比較；未使用專案資料微調。
 
 - 資料：6 段真實發球影片，每段 12 張，共 72 張；人工答案全為右手。
 - YOLO11n：4/6 可判定、3/6 與右手答案一致，p95 19.6 ms/frame。
-- YOLO26n：6/6 可判定、5/6 與右手答案一致，p95 15.6 ms/frame。
-- 結論：YOLO26n 作為下一輪主要微調候選，YOLO11n 留作控制組。
+- YOLO12n：5/6 可判定、3/6 與右手答案一致，p95 18.9 ms/frame。
+- YOLO26n：6/6 可判定、5/6 與右手答案一致，p95 14.4 ms/frame。
+- 結論：YOLO26n 作為下一輪主要微調候選，YOLO11n、YOLO12n 留作控制組。
 - 限制：左手影片 0 段、人工球拍框 0 張，因此不是平衡準確率，也不能報 precision、recall 或 mAP。
 
 完整方法、逐案結果與失敗分析見 [MediaPipe vs MediaPipe＋YOLO 比較報告](C_MP_YOLO_COMPARISON.zh-TW.md)。

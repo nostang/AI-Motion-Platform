@@ -14,9 +14,10 @@
 - [A 的雲端 LLM 隔離實驗](A_CLOUD_LLM_BENCHMARK.zh-TW.md)
 - [A vs B 同條件 28 案例結論](AB_CLOUD_LOCAL_COMPARISON.zh-TW.md)
 - [B 的設備、並行與 VM 專章](B_EQUIPMENT_AND_VM.zh-TW.md)
+- [B 的非中國地端模型候選](B_LOCAL_MODEL_CANDIDATES.zh-TW.md)
 - [A vs B 共用 28 案例測試集](AB_BENCHMARK_CORPUS.zh-TW.md)
 - [C 的羽球訓練研究計畫](C_RESEARCH_PLAN.zh-TW.md)
-- [MediaPipe vs MediaPipe＋YOLO11n／YOLO26n](C_MP_YOLO_COMPARISON.zh-TW.md)
+- [MediaPipe vs MediaPipe＋YOLO11n／YOLO12n／YOLO26n](C_MP_YOLO_COMPARISON.zh-TW.md)
 - [從零開始的口頭報告稿](PRESENTATION_SCRIPT.zh-TW.md)
 - [實驗日誌](EXPERIMENT_LOG.zh-TW.md)
 - [原始結果](results/)
@@ -103,17 +104,18 @@ MPLCONFIGDIR=/tmp/ai-motion-mp-yolo-mpl .venv/bin/python \
   --frame-root experiments/offline_abc/results/yolo_compare_workspace/frames \
   --output experiments/offline_abc/results/mp_yolo_hand_corpus.json
 
-# 11. 第二組：同條件比較 YOLO11n 與 YOLO26n
+# 11. 第二組：同條件比較 YOLO11n、YOLO12n 與 YOLO26n
 # 需先在隔離環境安裝 Ultralytics 8.4.163，並放入官方 yolo11n.pt / yolo26n.pt。
 PYTHONPATH=experiments/offline_abc/results/yolo_compare_runtime \
   experiments/offline_abc/.venv-yolo/bin/python \
   experiments/offline_abc/benchmark_mp_yolo_hand.py \
   --corpus experiments/offline_abc/results/mp_yolo_hand_corpus.json \
   --model YOLO11n experiments/offline_abc/results/yolo_compare_workspace/weights/yolo11n.pt \
+  --model YOLO12n experiments/offline_abc/results/yolo_compare_workspace/weights/yolo12n.pt \
   --model YOLO26n experiments/offline_abc/results/yolo_compare_workspace/weights/yolo26n.pt \
   --device mps --image-size 1280 --confidence 0.15 \
   --evidence-dir experiments/offline_abc/results/yolo_compare_workspace/evidence \
-  --output experiments/offline_abc/results/mp_yolo11_yolo26_hand_comparison.json
+  --output experiments/offline_abc/results/mp_yolo11_yolo12_yolo26_hand_comparison.json
 
 # 12. A：只做成本情境估算，不呼叫雲端
 .venv/bin/python experiments/offline_abc/estimate_option_a.py \

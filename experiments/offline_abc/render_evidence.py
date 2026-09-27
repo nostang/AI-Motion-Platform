@@ -578,26 +578,27 @@ result: pipeline completed; model accuracy NOT established"""
 
 
 def option_c_mp_yolo_comparison() -> None:
-    result = _json("mp_yolo11_yolo26_hand_comparison.json")
+    result = _json("mp_yolo11_yolo12_yolo26_hand_comparison.json")
     mp = result["mediapipe_only"]
-    y11, y26 = result["models"]
+    y11, y12, y26 = result["models"]
 
     fig, axes = plt.subplots(1, 3, figsize=(17, 6.8), facecolor="white")
     fig.suptitle(
-        "第二組實驗｜MediaPipe vs MediaPipe + YOLO11n / YOLO26n",
+        "第二組實驗｜MediaPipe vs MediaPipe + YOLO11n / YOLO12n / YOLO26n",
         fontproperties=FONT,
         fontsize=22,
         color=NAVY,
     )
 
-    names = ["MediaPipe", "MP +\nYOLO11n", "MP +\nYOLO26n"]
-    coverage = [mp["coverage_rate"], y11["coverage_rate"], y26["coverage_rate"]]
+    names = ["MediaPipe", "MP +\nYOLO11n", "MP +\nYOLO12n", "MP +\nYOLO26n"]
+    coverage = [mp["coverage_rate"], y11["coverage_rate"], y12["coverage_rate"], y26["coverage_rate"]]
     agreement = [
         mp["right_hand_case_agreement_rate_all_cases"],
         y11["right_hand_case_agreement_rate_all_cases"],
+        y12["right_hand_case_agreement_rate_all_cases"],
         y26["right_hand_case_agreement_rate_all_cases"],
     ]
-    x = list(range(3))
+    x = list(range(4))
     axes[0].bar([i - 0.18 for i in x], [v * 100 for v in coverage], 0.36, color=BLUE, label="可判定率")
     axes[0].bar([i + 0.18 for i in x], [v * 100 for v in agreement], 0.36, color=TEAL, label="右手案例一致率")
     axes[0].set_xticks(x, names, fontproperties=FONT)
@@ -611,10 +612,10 @@ def option_c_mp_yolo_comparison() -> None:
     for pos, value in zip([i + 0.18 for i in x], agreement):
         axes[0].text(pos, value * 100 + 2, f"{value * 100:.0f}%", ha="center", fontsize=10)
 
-    model_names = ["YOLO11n", "YOLO26n"]
-    raw_rates = [y11["raw_detection_frame_rate"], y26["raw_detection_frame_rate"]]
-    paired_rates = [y11["paired_frame_rate"], y26["paired_frame_rate"]]
-    mx = list(range(2))
+    model_names = ["YOLO11n", "YOLO12n", "YOLO26n"]
+    raw_rates = [y11["raw_detection_frame_rate"], y12["raw_detection_frame_rate"], y26["raw_detection_frame_rate"]]
+    paired_rates = [y11["paired_frame_rate"], y12["paired_frame_rate"], y26["paired_frame_rate"]]
+    mx = list(range(3))
     axes[1].bar([i - 0.18 for i in mx], [v * 100 for v in raw_rates], 0.36, color=ORANGE, label="有球拍候選框")
     axes[1].bar([i + 0.18 for i in mx], [v * 100 for v in paired_rates], 0.36, color=TEAL, label="可配對手腕")
     axes[1].set_xticks(mx, model_names, fontproperties=FONT)
@@ -628,8 +629,8 @@ def option_c_mp_yolo_comparison() -> None:
     for pos, value in zip([i + 0.18 for i in mx], paired_rates):
         axes[1].text(pos, value * 100 + 1.5, f"{value * 100:.0f}%", ha="center", fontsize=10)
 
-    p50 = [y11["latency"]["p50_wall_seconds_per_frame"] * 1000, y26["latency"]["p50_wall_seconds_per_frame"] * 1000]
-    p95 = [y11["latency"]["p95_wall_seconds_per_frame"] * 1000, y26["latency"]["p95_wall_seconds_per_frame"] * 1000]
+    p50 = [model["latency"]["p50_wall_seconds_per_frame"] * 1000 for model in (y11, y12, y26)]
+    p95 = [model["latency"]["p95_wall_seconds_per_frame"] * 1000 for model in (y11, y12, y26)]
     axes[2].bar([i - 0.18 for i in mx], p50, 0.36, color=BLUE, label="p50")
     axes[2].bar([i + 0.18 for i in mx], p95, 0.36, color=ORANGE, label="p95")
     axes[2].set_xticks(mx, model_names, fontproperties=FONT)
@@ -653,7 +654,7 @@ def option_c_mp_yolo_comparison() -> None:
         color=RED,
     )
     fig.tight_layout(rect=[0, 0.07, 1, 0.91])
-    fig.savefig(ASSETS / "mp_yolo11_yolo26_hand_comparison.png", dpi=170, bbox_inches="tight")
+    fig.savefig(ASSETS / "mp_yolo11_yolo12_yolo26_hand_comparison.png", dpi=170, bbox_inches="tight")
     plt.close(fig)
 
 

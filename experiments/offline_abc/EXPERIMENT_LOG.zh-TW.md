@@ -916,3 +916,65 @@ R-SV-02 不是單純「YOLO 沒看到球拍」，而是球拍位置和 MediaPipe
 ### 心得
 
 這輪真正得到的不是「YOLO26n 已經完成」，而是「值得把標註預算放在哪裡」。先用預訓練模型做低成本 baseline，再決定資料怎麼補，比直接宣稱自訓或把 pseudo label 當真實答案更有說服力。
+
+## 36. 補測 YOLO12n：四方案同表
+
+### 想證明什麼
+
+依使用者要求，把 MediaPipe 單獨、MediaPipe＋YOLO11n、＋YOLO12n、＋YOLO26n 放在完全相同條件下比較，避免只因官方建議而跳過 YOLO12。
+
+### 實際步驟
+
+- 從 Ultralytics assets v8.4.0 下載 `yolo12n.pt`。
+- 記錄權重大小 5,595,063 bytes 與 SHA-256 `419ff3dca37d69bacc93a50fa0c186a1c6f9fe62fae0f108b0872829689e9ca6`。
+- 沿用相同 6 段影片、72 張影格、1280 px、confidence 0.15、MPS、手腕 visibility、距離與案例投票規則。
+- 在同一次 benchmark 中依序執行 YOLO11n、YOLO12n、YOLO26n，輸出逐幀候選框、配對、票數與延遲。
+
+### 結果
+
+| 指標 | MediaPipe | MP＋YOLO11n | MP＋YOLO12n | MP＋YOLO26n |
+|---|---:|---:|---:|---:|
+| 可判定案例 | 5/6 | 4/6 | 5/6 | 6/6 |
+| 全部右手案例一致 | 2/6 | 3/6 | 3/6 | 5/6 |
+| 球拍候選影格 | 不適用 | 40/72 | 45/72 | 49/72 |
+| 手腕配對影格 | 不適用 | 35/72 | 37/72 | 38/72 |
+| p50 / p95 | 不適用 | 11.6 / 18.8 ms | 15.9 / 18.9 ms | 11.2 / 14.4 ms |
+
+### 心得
+
+YOLO12n 確實比 YOLO11n 多產生球拍候選與手腕配對，但最後仍只有 3/6 符合右手答案，而且 p50 最慢。這證明「多偵測到一些框」不必然等於任務答案更正確。YOLO26n 在這批資料的案例覆蓋、一致結果與延遲都最好，因此選它是實測結果，不只是照官方推薦。
+
+### 畫面
+
+![四方案比較](assets/mp_yolo11_yolo12_yolo26_hand_comparison.png)
+
+### 證據
+
+[`results/mp_yolo11_yolo12_yolo26_hand_comparison.json`](results/mp_yolo11_yolo12_yolo26_hand_comparison.json)
+
+## 37. Gemma 4 定案範圍與非中國候選
+
+### 想回答的問題
+
+Gemma 4 是否已經是 B 的最終模型，以及還有哪些不屬於中國公司的地端模型值得同條件實驗。
+
+### 實際步驟
+
+- 檢查本機 Ollama 0.32.15：目前只有 `gemma4:e2b`、`gemma3:4b`、`llama3.2:1b`、`gemma3:270m`。
+- 查核 Mistral、IBM、Microsoft、Meta 與 Ollama 模型頁的來源、量化大小、多語與 JSON 能力。
+- 排除 Qwen、DeepSeek、Kimi、GLM 等中國公司模型。
+
+### 結果
+
+- Gemma 4 已完成 28 案例、Schema、guardrail、CPU/GPU、並行與設備實驗，可以定案為 B 的 baseline。
+- 它尚未和同級非中國模型跑同一份考卷，因此不能定案為「最佳地端模型」。
+- 下一輪主候選：Ministral 3 8B（法國，約 6.0 GB）、Granite 4.1 8B（美國，約 5.3 GB）。
+- 低規格控制組：Phi-4-mini 3.8B（美國，約 2.5 GB）。
+
+### 心得
+
+「B 可不可行」已經定案；「B 用哪個模型最好」是另一個尚未完成的實驗問題。三個候選必須沿用同一 28 案例與十項檢查，不能拿供應商 benchmark 或模型大小直接替代本專案結果。
+
+### 證據
+
+[B 的非中國地端模型候選](B_LOCAL_MODEL_CANDIDATES.zh-TW.md)

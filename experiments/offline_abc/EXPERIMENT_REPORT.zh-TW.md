@@ -187,41 +187,45 @@ GPU 不是「能不能跑」的必要條件：CPU-only 也有 100% JSON 成功�
 
 B 的功能已被證明可行，而且完整 Schema 已解決欄位型別問題。本輪甚至不需要 LangChain，直接 Ollama Schema + Python 驗證即可。但原始輸出只有 13/28 十項全過，15/28 要用固定模板接手；每個執行端仍要下載 7.2 GB、保留至少約 7 GB 模型常駐空間、管理 Ollama/模型版本、guardrail 與硬體差異。若改租 VM，成本與維運又回到雲端。
 
+### Gemma 4 是否已定案
+
+Gemma 4 已定案為 **B 方案的已驗證 baseline**，不是「所有地端模型中的最終冠軍」。要對地端模型本身做選型，下一輪應以完全相同的 28 案例、Schema、grounding、fallback 與並行設定，再測非中國來源的 Ministral 3 8B（Mistral AI／法國）、Granite 4.1 8B（IBM／美國）與 Phi-4-mini（Microsoft／美國）。完整候選理由與公平實驗表見 [B 的非中國地端模型候選](B_LOCAL_MODEL_CANDIDATES.zh-TW.md)。
+
 ## 6. 第二組：MediaPipe vs MediaPipe＋YOLO
 
-![MediaPipe 與兩個官方建議 YOLO 模型比較](assets/mp_yolo11_yolo26_hand_comparison.png)
+![MediaPipe 與 YOLO11n、YOLO12n、YOLO26n 比較](assets/mp_yolo11_yolo12_yolo26_hand_comparison.png)
 
-### 為什麼改測 YOLO11n 與 YOLO26n
+### 為什麼測 YOLO11n、YOLO12n 與 YOLO26n
 
-先前 YOLOv12 的 16 張合成圖、1 epoch 實驗只證明訓練管線可執行。Ultralytics 的 YOLO12 文件將它列為社群模型，並建議穩定工作負載使用 YOLO11 或 YOLO26；所以這一輪改用兩個官方建議的 nano 模型，測真正相關的「球拍＋手腕」流程。
+先前 YOLOv12 的 16 張合成圖、1 epoch 實驗只證明訓練管線可執行。Ultralytics 的 YOLO12 文件將它列為社群模型，並建議穩定工作負載使用 YOLO11 或 YOLO26；但為了完整回答世代差異，這一輪仍把三個 nano 模型都放進真正相關的「球拍＋手腕」流程。
 
 ### 方法
 
 - 6 段去重後的真實發球影片，全部有人工右手持拍答案。
 - 每段在人工作用時間窗內均勻取 12 張，共 72 張。
 - MediaPipe 提供肩膀與左右手腕；YOLO 使用 COCO 預訓練 `tennis racket` 當羽球拍 proxy。
-- 兩個模型都用 1280 px、confidence 0.15、相同手腕 visibility 與距離規則。
+- 三個模型都用 1280 px、confidence 0.15、相同手腕 visibility 與距離規則。
 - 至少 2 張成功配對且同側票數達 60% 才判定，否則回傳 `unknown`。
 
-| 指標 | MediaPipe | MP＋YOLO11n | MP＋YOLO26n |
-|---|---:|---:|---:|
-| 可判定案例 | 5/6（83.3%） | 4/6（66.7%） | 6/6（100%） |
-| 全部案例的右手一致 | 2/6（33.3%） | 3/6（50.0%） | 5/6（83.3%） |
-| 球拍候選影格 | 不適用 | 40/72（55.6%） | 49/72（68.1%） |
-| 可配對手腕影格 | 不適用 | 35/72（48.6%） | 38/72（52.8%） |
-| YOLO p50 / p95 | 不適用 | 11.4 / 19.6 ms | 11.2 / 15.6 ms |
+| 指標 | MediaPipe | MP＋YOLO11n | MP＋YOLO12n | MP＋YOLO26n |
+|---|---:|---:|---:|---:|
+| 可判定案例 | 5/6（83.3%） | 4/6（66.7%） | 5/6（83.3%） | 6/6（100%） |
+| 全部案例的右手一致 | 2/6（33.3%） | 3/6（50.0%） | 3/6（50.0%） | 5/6（83.3%） |
+| 球拍候選影格 | 不適用 | 40/72（55.6%） | 45/72（62.5%） | 49/72（68.1%） |
+| 可配對手腕影格 | 不適用 | 35/72（48.6%） | 37/72（51.4%） | 38/72（52.8%） |
+| YOLO p50 / p95 | 不適用 | 11.6 / 18.8 ms | 15.9 / 18.9 ms | 11.2 / 14.4 ms |
 
 這批資料全部是右手，所以「一致率」不是左右手平衡準確率。又因為沒有人工球拍框，候選影格率也不是 precision、recall 或 mAP。
 
 ### 失敗案例與真正瓶頸
 
-R-SV-02 中，YOLO11n 與 YOLO26n 都找到球拍，卻都配到 MediaPipe 的左手腕，而人工答案是右手。這顯示問題可能是影片鏡像或左右語意沒有正規化；只微調 YOLO 不一定能修好，還要記錄前/後鏡頭與鏡像狀態。
+R-SV-02 中，YOLO11n、YOLO12n 與 YOLO26n 都找到球拍，卻都配到 MediaPipe 的左手腕，而人工答案是右手。這顯示問題可能是影片鏡像或左右語意沒有正規化；只微調 YOLO 不一定能修好，還要記錄前/後鏡頭與鏡像狀態。
 
 ### 決策
 
 - MediaPipe 保留，繼續負責人體骨架、規則與固定分數。
 - YOLO26n 在這個小型基準的覆蓋、一致率與 p95 延遲都較好，作為下一輪人工標註與微調主模型。
-- YOLO11n 留作控制組，避免只看單一模型。
+- YOLO11n 與 YOLO12n 留作控制組；YOLO12n 的候選框覆蓋較高，但案例一致率沒有超過 YOLO11n。
 - 微調前先補左手影片、鏡像 metadata 與人工球拍框；否則不能誠實報完整準確率。
 
 完整逐案結果與模型雜湊見 [MediaPipe vs MediaPipe＋YOLO 比較報告](C_MP_YOLO_COMPARISON.zh-TW.md)。
@@ -248,7 +252,7 @@ R-SV-02 中，YOLO11n 與 YOLO26n 都找到球拍，卻都配到 MediaPipe 的�
 | precision / recall | 0 / 0 |
 | 五次預測數量 | 0 / 0 / 0 / 0 / 0 |
 
-原始證據在 [`results/yolov12_tiny_feasibility.json`](results/yolov12_tiny_feasibility.json)。這只能證明 YOLOv12 作者程式在此 Mac 可完成「資料 → 訓練 → 驗證 → 推論」；零指標來自刻意極小的合成資料與 1 epoch，不能用來說 YOLO 不適合，也不能拿來否定 YOLO11/26。
+原始證據在 [`results/yolov12_tiny_feasibility.json`](results/yolov12_tiny_feasibility.json)。這只能證明 YOLOv12 作者程式在此 Mac 可完成「資料 → 訓練 → 驗證 → 推論」；零指標來自刻意極小的合成資料與 1 epoch，不能用來說 YOLO 不適合，也不能拿來否定後續 YOLO11/12/26 的預訓練實測。
 
 ![YOLOv12 訓練結果畫面](assets/c_training_result_screen.png)
 
@@ -273,7 +277,7 @@ C 解決的是「看見球拍/羽球/落點」，A/B 解決的是「在哪裡用
 3. 同條件 28 例中，B1 p50/p95 甚至略低；選 A 不是因為速度，也不是因為 Gemma 不能輸出格式，而是 A 原始輸出十項全過 28/28，B1 為 13/28，B2 需要 15/28 fallback。
 4. B 已證明能做，但每台機器需要約 7 GB 常駐模型與至少 16 GB RAM；這不適合一般終端部署。
 5. B 若租 24/7 VM，CPU 參考情境約 US$141.79/月，L4 參考情境約 US$515.99/月，且還要自己維運模型。
-6. 第二組實驗顯示，MediaPipe＋YOLO26n 在 6 個右手案例達到 5/6 一致、6/6 可判定，優於 MediaPipe 單獨與 YOLO11n；但仍缺左手案例與人工球拍框。
+6. 第二組實驗顯示，MediaPipe＋YOLO26n 在 6 個右手案例達到 5/6 一致、6/6 可判定，優於 MediaPipe 單獨、YOLO11n 與 YOLO12n；但仍缺左手案例與人工球拍框。
 7. A 把重運算、版本、提示詞與回滾集中在服務端，一般終端只需上傳和看報告；依目前產品條件最合理。
 
 所以正式說法應是：
@@ -296,6 +300,10 @@ C 解決的是「看見球拍/羽球/落點」，A/B 解決的是「在哪裡用
 - [Ultralytics YOLO12 文件：社群模型與穩定工作負載建議](https://docs.ultralytics.com/models/yolo12/)
 - [Ultralytics 模型總覽：YOLO11 與 YOLO26](https://docs.ultralytics.com/models/)
 - [MediaPipe Pose Landmarker 官方文件](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker)
+- [Mistral 官方模型總覽](https://docs.mistral.ai/models/)
+- [Ollama Ministral 3](https://ollama.com/library/ministral-3)
+- [Ollama IBM Granite 4.1](https://ollama.com/library/granite4.1)
+- [Ollama Microsoft Phi-4-mini](https://ollama.com/library/phi4-mini)
 - [Gemini Developer API pricing](https://ai.google.dev/gemini-api/docs/pricing)
 - [Google Cloud Run pricing](https://cloud.google.com/run/pricing)
 - [Google Cloud general-purpose VM pricing](https://cloud.google.com/products/compute/pricing/general-purpose)
