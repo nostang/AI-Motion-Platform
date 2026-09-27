@@ -23,6 +23,7 @@ DIRECT_VISUAL_CLAIMS = ("我看到", "影片中可以看到", "畫面顯示", "�
 LIMITATION_TERMS = ("單鏡頭", "單攝影機", "單相機", "2D", "二維")
 UNCERTAINTY_TERMS = ("不足", "無法", "尚未", "未評估", "僅能", "缺乏")
 POSITIVE_LEVELS = {"GOOD", "EXCELLENT", "PASS"}
+EXPLICIT_NONE_TERMS = ("無", "无", "none", "未提供", "沒有")
 
 
 def _text(value: Any) -> str:
@@ -57,6 +58,30 @@ def _positive_metric_tokens(score_breakdown: Any) -> set[str]:
     return tokens
 
 
+def _items(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def _grounded_and_complete(value: Any, allowed: list[str]) -> bool:
+    """Require every claim to cite input evidence and every allowed ID to be represented."""
+
+    items = _items(value)
+    if not allowed:
+        return not items or all(
+            any(term in item.lower() for term in EXPLICIT_NONE_TERMS) for item in items
+        )
+    if not items:
+        return False
+    return (
+        all(any(token in item for token in allowed) for item in items)
+        and all(any(token in item for item in items) for token in allowed)
+    )
+
+
 def _evaluate_case(case: dict, compact_profile: str = "full") -> dict:
     report_path = Path(case["report_path"])
     if not report_path.is_absolute():
@@ -66,8 +91,6 @@ def _evaluate_case(case: dict, compact_profile: str = "full") -> dict:
     )
     response = case.get("response") if isinstance(case.get("response"), dict) else {}
     response_text = _text(response)
-    response_priority = _text(response.get("priority", ""))
-    response_strength = _text(response.get("strength", ""))
     source_priorities = [str(value) for value in source.get("improvement_priorities") or []]
     source_strengths = [str(value) for value in source.get("strengths") or []]
     positive_metrics = _positive_metric_tokens(source.get("score_breakdown"))
@@ -76,12 +99,16 @@ def _evaluate_case(case: dict, compact_profile: str = "full") -> dict:
         or case.get("input_overall_score") is None
     )
     if source_strengths:
-        strength_grounded = any(value in response_strength for value in source_strengths)
+        strength_grounded = _grounded_and_complete(response.get("strength"), source_strengths)
     else:
+        response_strength = _text(response.get("strength", ""))
         strength_grounded = (
             (insufficient and response.get("strength") in ([], "", None))
             or (not positive_metrics and response.get("strength") in ([], "", None))
-            or any(term in response_strength.lower() for term in ("無", "无", "none"))
+            or all(
+                any(term in item.lower() for term in EXPLICIT_NONE_TERMS)
+                for item in _items(response.get("strength"))
+            )
             or any(metric in response_strength for metric in positive_metrics)
         )
     score_ok, score_mentions = _score_integrity(response_text, case.get("input_overall_score"))
@@ -98,7 +125,9 @@ def _evaluate_case(case: dict, compact_profile: str = "full") -> dict:
             and isinstance(response.get("caution"), str)
         ),
         "non_empty_required_values": all(bool(_text(response.get(key, "")).strip()) for key in REQUIRED_KEYS),
-        "all_priorities_grounded": all(value in response_priority for value in source_priorities),
+        "all_priorities_grounded": _grounded_and_complete(
+            response.get("priority"), source_priorities
+        ),
         "strength_grounded_or_explicitly_none": strength_grounded,
         "score_claim_integrity": score_ok,
         "limitation_acknowledged": any(term in _text(response.get("caution", "")) for term in LIMITATION_TERMS),

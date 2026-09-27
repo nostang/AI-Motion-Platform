@@ -1,6 +1,6 @@
 {
   "evaluation": "automatic_contract_and_grounding_checks_not_human_semantic_review",
-  "source_run": "experiments/offline_abc/results/gemini_35_flash_lite_28_case_minimal_v3.json",
+  "source_run": "experiments/offline_abc/results/gemma4_28_case_schema_guarded_v3.json",
   "compact_profile": "minimal",
   "overall": {
     "case_count": 28,
@@ -70,19 +70,25 @@
         "non_racket_arm_balance",
         "swing_smoothness"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        62.0
+      ],
       "response": {
-        "summary": "本次評估顯示高遠球動作尚具基礎，但在發力與協調性上仍有進步空間。整體動作評分獲得62分，建議針對核心環節進行優化。",
+        "summary": "本次clear評估已完成，規則引擎的整體評分為62分；以下內容只整理既有結果。",
         "strength": [
-          "側身準備 (sideways_preparation)"
+          "規則引擎記錄的優點（sideways_preparation）"
         ],
         "priority": [
-          "體重轉移 (weight_transfer)",
-          "非持拍手平衡 (non_racket_arm_balance)",
-          "揮拍流暢度 (swing_smoothness)"
+          "優先改善（weight_transfer）",
+          "優先改善（non_racket_arm_balance）",
+          "優先改善（swing_smoothness）"
         ],
-        "drill": [],
-        "caution": "本版本使用單鏡頭2D MediaPipe特徵點評估可見的高遠球教學動作。評估結果僅衡量身體動作品質，不代表實際羽球落點或擊球結果。"
+        "drill": [
+          "針對 weight_transfer 進行分段慢速練習，並依原規則結果複查。",
+          "針對 non_racket_arm_balance 進行分段慢速練習，並依原規則結果複查。",
+          "針對 swing_smoothness 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -113,18 +119,27 @@
         "non_racket_arm_balance",
         "swing_smoothness"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        58.0
+      ],
       "response": {
-        "summary": "本次評估顯示擊球動作尚在發展階段，整體動作評分偏低。需加強側身準備與重心轉移，以提升擊球品質。",
-        "strength": [],
-        "priority": [
-          "側身準備 (sideways_preparation)",
-          "重心轉移 (weight_transfer)",
-          "非持拍手平衡 (non_racket_arm_balance)",
-          "揮拍流暢度 (swing_smoothness)"
+        "summary": "本次clear評估已完成，規則引擎的整體評分為58分；以下內容只整理既有結果。",
+        "strength": [
+          "無明確優點：輸入未提供可確認的 strengths 項目"
         ],
-        "drill": [],
-        "caution": "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks. The result evaluates body-motion quality, not shuttle outcome."
+        "priority": [
+          "優先改善（sideways_preparation）",
+          "優先改善（weight_transfer）",
+          "優先改善（non_racket_arm_balance）",
+          "優先改善（swing_smoothness）"
+        ],
+        "drill": [
+          "針對 sideways_preparation 進行分段慢速練習，並依原規則結果複查。",
+          "針對 weight_transfer 進行分段慢速練習，並依原規則結果複查。",
+          "針對 non_racket_arm_balance 進行分段慢速練習，並依原規則結果複查。",
+          "針對 swing_smoothness 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -155,18 +170,24 @@
       ],
       "positive_score_metrics": [],
       "input_priorities": [],
-      "score_mentions": [],
+      "score_mentions": [
+        85.0
+      ],
       "response": {
-        "summary": "本次高遠球動作評估顯示整體表現優良，動作流暢且具備良好的擊球基礎。評估結果反映身體動作品質，不代表實際羽球落點。",
+        "summary": "本次clear評估已完成，規則引擎的整體評分為85分；以下內容只整理既有結果。",
         "strength": [
-          "側身準備 (sideways_preparation)",
-          "體重轉移 (weight_transfer)",
-          "非持拍手平衡 (non_racket_arm_balance)",
-          "揮拍流暢度 (swing_smoothness)"
+          "規則引擎記錄的優點（sideways_preparation）",
+          "規則引擎記錄的優點（weight_transfer）",
+          "規則引擎記錄的優點（non_racket_arm_balance）",
+          "規則引擎記錄的優點（swing_smoothness）"
         ],
-        "priority": [],
-        "drill": [],
-        "caution": "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks."
+        "priority": [
+          "無需新增改善項目：輸入未提供 improvement_priorities"
+        ],
+        "drill": [
+          "維持基礎動作，待取得更完整資料後再調整練習。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -197,18 +218,27 @@
         "non_racket_arm_balance",
         "swing_smoothness"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        51.0
+      ],
       "response": {
-        "summary": "本次評估顯示您的擊球動作整體表現尚有進步空間。建議針對擊球時的身體準備與發力流暢度進行持續修正。",
-        "strength": [],
-        "priority": [
-          "側身準備 (sideways_preparation)",
-          "體重轉移 (weight_transfer)",
-          "非持拍手平衡 (non_racket_arm_balance)",
-          "揮拍流暢度 (swing_smoothness)"
+        "summary": "本次clear評估已完成，規則引擎的整體評分為51分；以下內容只整理既有結果。",
+        "strength": [
+          "無明確優點：輸入未提供可確認的 strengths 項目"
         ],
-        "drill": [],
-        "caution": "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks. The result evaluates body-motion quality, not shuttle outcome."
+        "priority": [
+          "優先改善（sideways_preparation）",
+          "優先改善（weight_transfer）",
+          "優先改善（non_racket_arm_balance）",
+          "優先改善（swing_smoothness）"
+        ],
+        "drill": [
+          "針對 sideways_preparation 進行分段慢速練習，並依原規則結果複查。",
+          "針對 weight_transfer 進行分段慢速練習，並依原規則結果複查。",
+          "針對 non_racket_arm_balance 進行分段慢速練習，並依原規則結果複查。",
+          "針對 swing_smoothness 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -243,16 +273,23 @@
         53.0
       ],
       "response": {
-        "summary": "本次動作評估得分53分，整體表現尚有進步空間。評估結果僅反應身體動作品質，不包含擊球結果。",
-        "strength": [],
-        "priority": [
-          "側身準備 (sideways_preparation)",
-          "體重轉移 (weight_transfer)",
-          "非持拍手平衡 (non_racket_arm_balance)",
-          "揮拍流暢度 (swing_smoothness)"
+        "summary": "本次clear評估已完成，規則引擎的整體評分為53分；以下內容只整理既有結果。",
+        "strength": [
+          "無明確優點：輸入未提供可確認的 strengths 項目"
         ],
-        "drill": [],
-        "caution": "此版本使用單鏡頭2D MediaPipe特徵點評估可見的高遠球教學動作，結果僅評估身體動作品質，不代表實際羽球落點或結果。"
+        "priority": [
+          "優先改善（sideways_preparation）",
+          "優先改善（weight_transfer）",
+          "優先改善（non_racket_arm_balance）",
+          "優先改善（swing_smoothness）"
+        ],
+        "drill": [
+          "針對 sideways_preparation 進行分段慢速練習，並依原規則結果複查。",
+          "針對 weight_transfer 進行分段慢速練習，並依原規則結果複查。",
+          "針對 non_racket_arm_balance 進行分段慢速練習，並依原規則結果複查。",
+          "針對 swing_smoothness 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -284,19 +321,25 @@
         "weight_transfer",
         "non_racket_arm_balance"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        59.0
+      ],
       "response": {
-        "summary": "本次高遠球動作評估已完成，整體表現尚可但仍有進步空間。評估結果反映出動作流暢度與核心發力機制的協調性需要加強。",
+        "summary": "本次clear評估已完成，規則引擎的整體評分為59分；以下內容只整理既有結果。",
         "strength": [
-          "揮拍流暢度 (swing_smoothness)"
+          "規則引擎記錄的優點（swing_smoothness）"
         ],
         "priority": [
-          "側身準備 (sideways_preparation)",
-          "體重轉移 (weight_transfer)",
-          "非持拍手平衡 (non_racket_arm_balance)"
+          "優先改善（sideways_preparation）",
+          "優先改善（weight_transfer）",
+          "優先改善（non_racket_arm_balance）"
         ],
-        "drill": [],
-        "caution": "此版本使用單鏡頭 2D MediaPipe 特徵點評估可見的高遠球教學動作，結果僅評估身體動作品質，不代表實際羽球落點或球質。"
+        "drill": [
+          "針對 sideways_preparation 進行分段慢速練習，並依原規則結果複查。",
+          "針對 weight_transfer 進行分段慢速練習，並依原規則結果複查。",
+          "針對 non_racket_arm_balance 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -328,22 +371,24 @@
         "weight_transfer",
         "non_racket_arm_balance"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        62.0
+      ],
       "response": {
-        "summary": "本次評估顯示動作流暢度與擊球前側身準備表現良好。然而，在身體重心轉移與非持拍手平衡方面仍有改善空間。",
+        "summary": "本次clear評估已完成，規則引擎的整體評分為62分；以下內容只整理既有結果。",
         "strength": [
-          "側身準備動作 (sideways_preparation)",
-          "揮拍流暢度 (swing_smoothness)"
+          "規則引擎記錄的優點（sideways_preparation）",
+          "規則引擎記錄的優點（swing_smoothness）"
         ],
         "priority": [
-          "重心轉移 (weight_transfer)",
-          "非持拍手平衡 (non_racket_arm_balance)"
+          "優先改善（weight_transfer）",
+          "優先改善（non_racket_arm_balance）"
         ],
         "drill": [
-          "反覆練習原地轉體並將重心從後腳移至前腳的分解動作",
-          "進行揮拍時非持拍手固定於胸前或指向球的平衡練習"
+          "針對 weight_transfer 進行分段慢速練習，並依原規則結果複查。",
+          "針對 non_racket_arm_balance 進行分段慢速練習，並依原規則結果複查。"
         ],
-        "caution": "本版本使用單鏡頭 2D MediaPipe 關鍵點評估可見的高遠球教學動作，結果僅評估身體動作品質，不代表實際羽球落點或擊球結果。"
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -374,18 +419,27 @@
         "non_racket_arm_balance",
         "swing_smoothness"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        56.0
+      ],
       "response": {
-        "summary": "本次羽球高遠球動作評估顯示整體表現尚有進步空間。建議針對擊球前的準備與發力流暢度進行調整。",
-        "strength": [],
-        "priority": [
-          "側身預備動作 (sideways_preparation)",
-          "體重轉移 (weight_transfer)",
-          "非持拍手平衡 (non_racket_arm_balance)",
-          "揮拍流暢度 (swing_smoothness)"
+        "summary": "本次clear評估已完成，規則引擎的整體評分為56分；以下內容只整理既有結果。",
+        "strength": [
+          "無明確優點：輸入未提供可確認的 strengths 項目"
         ],
-        "drill": [],
-        "caution": "This version evaluates visible high-clear teaching motion using one-camera 2D MediaPipe landmarks."
+        "priority": [
+          "優先改善（sideways_preparation）",
+          "優先改善（weight_transfer）",
+          "優先改善（non_racket_arm_balance）",
+          "優先改善（swing_smoothness）"
+        ],
+        "drill": [
+          "針對 sideways_preparation 進行分段慢速練習，並依原規則結果複查。",
+          "針對 weight_transfer 進行分段慢速練習，並依原規則結果複查。",
+          "針對 non_racket_arm_balance 進行分段慢速練習，並依原規則結果複查。",
+          "針對 swing_smoothness 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -417,19 +471,24 @@
         "weight_transfer",
         "non_racket_arm_balance"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        73.0
+      ],
       "response": {
-        "summary": "本次評估顯示高遠球動作流程具備基本流暢度與準備姿勢。整體動作表現獲得七十三分。",
+        "summary": "本次clear評估已完成，規則引擎的整體評分為73分；以下內容只整理既有結果。",
         "strength": [
-          "側身預備姿勢 (sideways_preparation)",
-          "揮拍動作流暢度 (swing_smoothness)"
+          "規則引擎記錄的優點（sideways_preparation）",
+          "規則引擎記錄的優點（swing_smoothness）"
         ],
         "priority": [
-          "體重轉移 (weight_transfer)",
-          "非持拍手平衡 (non_racket_arm_balance)"
+          "優先改善（weight_transfer）",
+          "優先改善（non_racket_arm_balance）"
         ],
-        "drill": [],
-        "caution": "本版本使用單鏡頭 2D MediaPipe 骨幹點評估可見的高遠球教學動作，結果僅評估身體動作品質，不代表實際羽球落點或擊球結果。"
+        "drill": [
+          "針對 weight_transfer 進行分段慢速練習，並依原規則結果複查。",
+          "針對 non_racket_arm_balance 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -461,19 +520,23 @@
         "non_racket_arm_balance",
         "swing_smoothness"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        82.0
+      ],
       "response": {
-        "summary": "整體高遠球動作評估表現良好，動作評分達到82分。擊球時的身體機制運作順暢，展現出良好的技術基礎。",
+        "summary": "評估顯示在高清動作中，身體運動的品質良好，但需要進一步優化。整體評分為82分，系統信心度高。",
+        "caution": "單鏡頭2D限制：無法完全評估球的實際進程和結果。",
         "strength": [
-          "側身準備 (sideways_preparation)",
-          "體重轉移 (weight_transfer)"
+          "sideways_preparation",
+          "weight_transfer"
         ],
         "priority": [
-          "非持拍手平衡 (non_racket_arm_balance)",
-          "揮拍流暢度 (swing_smoothness)"
+          "non_racket_arm_balance",
+          "swing_smoothness"
         ],
-        "drill": [],
-        "caution": "此版本使用單鏡頭2D MediaPipe骨幹點來評估可見的高遠球教學動作。結果僅評估身體動作品質，而非羽球落點或實際結果。"
+        "drill": [
+          "無"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -505,15 +568,17 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "本次步法評估未進行完整評分與系統信心度分析。目前的檢測結果受限於單鏡頭2D拍攝角度，無法精確判斷3D空間中的深度與實際距離。",
+        "summary": "現有資料不足，無法可靠評估這次動作；請補充較完整且清楚的影片。",
         "strength": [
-          "動作完成度 (movement_completion)"
+          "規則引擎記錄的優點（movement_completion）"
         ],
         "priority": [
-          "動作完成度 (movement_completion)"
+          "優先改善（movement_completion）"
         ],
-        "drill": [],
-        "caution": "本分析基於單鏡頭2D影像，缺乏深度資訊，可能影響空間定位與實際移動距離的判讀準確度。"
+        "drill": [
+          "針對 movement_completion 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -545,15 +610,17 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "本次步法評估整體表現良好，展現出高度的動作完整性。需要持續優化移動表現以提升場上效率。",
+        "summary": "評估顯示在腳部動作上表現良好，但仍有進步空間。\n建議著重於提升恢復速度，以優化整體運動效率。",
+        "caution": "單鏡頭2D限制：需注意觀察身體在不同動作間的連貫性與精準度。",
         "strength": [
-          "動作完成度 (movement_completion)"
+          "movement_completion"
         ],
         "priority": [
-          "回位速度 (recovery_speed)"
+          "recovery_speed"
         ],
-        "drill": [],
-        "caution": "本分析基於單鏡頭2D拍攝，BASE_ZONE 表示回到基準區後直接轉向下一次移動，不等同精準回到原始中心。Base Zone 門檻目前仍為暫定值，需要更多影片與人工標註驗證。"
+        "drill": [
+          "針對恢復速度的特定訓練項目"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -583,19 +650,20 @@
       "input_priorities": [
         "recovery_speed"
       ],
-      "score_mentions": [
-        70.26
-      ],
+      "score_mentions": [],
       "response": {
-        "summary": "本系統針對您的羽球步法表現進行了綜合評估，整體得分為70.26分。評估結果顯示出您的步法有一定的完成度，但在移動後的恢復速度上仍有進步空間。",
+        "summary": "評估顯示在腳部動作上存在一些需要改進的空間，特別是在移動的精準度和速度上。建議著重於提升身體的協調性和反應能力。",
+        "caution": "單鏡頭2D限制：請注意，2D影像無法完全捕捉三維空間中的精確移動軌跡和身體協調的細微差別，尤其在評估恢復速度時，需要結合更多視角或更精細的標註來驗證。",
         "strength": [
-          "動作完成度 (movement_completion)"
+          "movement_completion"
         ],
         "priority": [
-          "回位速度 (recovery_speed)"
+          "recovery_speed"
         ],
-        "drill": [],
-        "caution": "基於單鏡頭2D影像分析限制，BASE_ZONE 表示回到基準區後直接轉向下一次移動，不等同精準回到原始中心。Base Zone 門檻目前仍為暫定值，需要更多影片與人工標註驗證。"
+        "drill": [
+          "針對移動完成度的練習",
+          "專注於恢復速度的訓練"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -629,17 +697,19 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "您的發球動作整體表現出色，具備良好的動作完成度與流暢度。整體動作品質獲得肯定，建議持續保持。",
+        "summary": "本次評估針對發球動作的執行品質，整體表現良好，具備良好的身體協調性與動作流暢度。建議著重於準備階段的穩定性以進一步提升發球的精準度。",
+        "caution": "單鏡頭2D限制：無法評估球的實際飛行軌跡或正式服務的合法性。",
         "strength": [
-          "揮拍完整性 (swing_completeness)",
-          "身體協調性 (body_coordination)",
-          "動作流暢度 (motion_smoothness)"
+          "swing_completeness",
+          "body_coordination",
+          "motion_smoothness"
         ],
         "priority": [
-          "準備穩定性 (preparation_stability)"
+          "preparation_stability"
         ],
-        "drill": [],
-        "caution": "This version evaluates a visible forehand serve teaching motion using one-camera 2D MediaPipe landmarks. The result evaluates visible body-motion quality, not shuttle outcome or official service legality."
+        "drill": [
+          "專注於準備階段的穩定性練習"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -670,18 +740,24 @@
       ],
       "positive_score_metrics": [],
       "input_priorities": [],
-      "score_mentions": [],
+      "score_mentions": [
+        85.0
+      ],
       "response": {
-        "summary": "整體發球動作表現優異，具備良好的穩定性與協調性。各項技術指標皆在水準之上，動作流暢且完整。",
+        "summary": "本次serve評估已完成，規則引擎的整體評分為85分；以下內容只整理既有結果。",
         "strength": [
-          "準備穩定性 (preparation_stability)",
-          "揮拍完整性 (swing_completeness)",
-          "身體協調性 (body_coordination)",
-          "動作流暢度 (motion_smoothness)"
+          "規則引擎記錄的優點（preparation_stability）",
+          "規則引擎記錄的優點（swing_completeness）",
+          "規則引擎記錄的優點（body_coordination）",
+          "規則引擎記錄的優點（motion_smoothness）"
         ],
-        "priority": [],
-        "drill": [],
-        "caution": "本版本使用單鏡頭 2D MediaPipe 骨架點進行可見的正手發球教學動作評估，結果評估的是可見的身體動作品質，而非擊球結果或正式發球合法性。"
+        "priority": [
+          "無需新增改善項目：輸入未提供 improvement_priorities"
+        ],
+        "drill": [
+          "維持基礎動作，待取得更完整資料後再調整練習。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -715,17 +791,20 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "本次發球動作評估顯示整體表現穩定，具備良好的動作流暢度與準備穩定性（preparation_stability、motion_smoothness）。但在揮拍完整性與身體協調性上仍有進步空間（swing_completeness、body_coordination）。",
+        "summary": "本次評估針對發球動作的穩定性與流暢性進行分析，整體表現良好。建議著重於提升揮拍的完整性和身體協調性以進一步優化發球技術。",
+        "caution": "單鏡頭2D限制：無法評估球的實際飛行軌跡或正式發球的合法性。",
         "strength": [
-          "準備動作穩定性 (preparation_stability)",
-          "動作流暢度 (motion_smoothness)"
+          "preparation_stability",
+          "motion_smoothness"
         ],
         "priority": [
-          "揮拍完整性 (swing_completeness)",
-          "身體協調性 (body_coordination)"
+          "swing_completeness",
+          "body_coordination"
         ],
-        "drill": [],
-        "caution": "This version evaluates a visible forehand serve teaching motion using one-camera 2D MediaPipe landmarks. The result evaluates visible body-motion quality, not shuttle outcome or official service legality."
+        "drill": [
+          "針對揮拍的完整性進行練習",
+          "針對身體協調性進行練習"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -759,20 +838,20 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "發球動作表現出一定的準備穩定性與流暢度，整體評分達到73分。不過在揮拍完整性與身體協調性上仍有提升空間。",
+        "summary": "本次評估針對發球動作的穩定性與流暢性進行分析，整體表現良好。建議著重於提升揮拍的完整性和身體協調性以進一步優化發球技術。",
+        "caution": "單鏡頭2D限制：無法評估球的實際飛行軌跡或正式發球的合法性。",
         "strength": [
-          "準備穩定性 (preparation_stability)",
-          "動作流暢度 (motion_smoothness)"
+          "preparation_stability",
+          "motion_smoothness"
         ],
         "priority": [
-          "揮拍完整性 (swing_completeness)",
-          "身體協調性 (body_coordination)"
+          "swing_completeness",
+          "body_coordination"
         ],
         "drill": [
-          "加強完整揮拍軌跡練習以提升延伸感",
-          "進行核心與下肢連動訓練以改善全身協調"
-        ],
-        "caution": "本版本使用單鏡頭2D MediaPipe特徵點來評估可見的正手發球教學動作，結果僅評估可見的身體動作品質，不代表羽球落點或官方發球合法性。"
+          "針對揮拍的完整性進行練習",
+          "針對身體協調性進行練習"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -804,19 +883,23 @@
       "input_priorities": [
         "body_coordination"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        79.0
+      ],
       "response": {
-        "summary": "本次羽球發球動作整體評估表現良好，動作流暢度與完整性皆具備水準。未來可針對身體協調性持續訓練以提升發球品質。",
+        "summary": "本次serve評估已完成，規則引擎的整體評分為79分；以下內容只整理既有結果。",
         "strength": [
-          "準備穩定度 (preparation_stability)",
-          "揮拍完整性 (swing_completeness)",
-          "動作流暢度 (motion_smoothness)"
+          "規則引擎記錄的優點（preparation_stability）",
+          "規則引擎記錄的優點（swing_completeness）",
+          "規則引擎記錄的優點（motion_smoothness）"
         ],
         "priority": [
-          "身體協調性 (body_coordination)"
+          "優先改善（body_coordination）"
         ],
-        "drill": [],
-        "caution": "本版本使用單鏡頭 2D MediaPipe 骨架點來評估可見的正手發球教學動作。評估結果僅針對可見的身體動作品質，不代表羽球落點結果或正式發球合法性。"
+        "drill": [
+          "針對 body_coordination 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -848,19 +931,23 @@
       "input_priorities": [
         "swing_completeness"
       ],
-      "score_mentions": [],
+      "score_mentions": [
+        84.0
+      ],
       "response": {
-        "summary": "本次羽球發球動作整體評估表現良好，動作流程流暢且穩定。發球準備與協調性展現出良好的肢體控制能力。",
+        "summary": "本次serve評估已完成，規則引擎的整體評分為84分；以下內容只整理既有結果。",
         "strength": [
-          "準備穩定度 (preparation_stability)",
-          "身體協調性 (body_coordination)",
-          "動作流暢度 (motion_smoothness)"
+          "規則引擎記錄的優點（preparation_stability）",
+          "規則引擎記錄的優點（body_coordination）",
+          "規則引擎記錄的優點（motion_smoothness）"
         ],
         "priority": [
-          "揮拍完整性 (swing_completeness)"
+          "優先改善（swing_completeness）"
         ],
-        "drill": [],
-        "caution": "本系統使用單鏡頭2D影像進行動作評估，受限於視角，可能無法完全反映三維空間中的所有細節。評估結果僅針對可見的肢體動作品質進行分析，不代表實際的球路結果或官方發球合法性判斷。"
+        "drill": [
+          "針對 swing_completeness 進行分段慢速練習，並依原規則結果複查。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -892,15 +979,17 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "學員在擊球前的預備動作表現穩定，展現出良好的基本功。然而在後續動作中仍有提升空間，建議針對特定技術環節持續調整。",
+        "summary": "整體評分高，擊球準備穩定。主要建議著重於收拍的完整性以進一步提升表現。",
+        "caution": "單鏡頭 2D 限制：無法直接偵測羽球或球拍的精確位置和動態。",
         "strength": [
-          "擊球準備穩定 (strengths_0)"
+          "擊球準備穩定"
         ],
         "priority": [
-          "收拍完整性 (improvement_priorities_0)"
+          "收拍完整性"
         ],
-        "drill": [],
-        "caution": "基於單鏡頭 2D 姿態資料限制，未直接偵測羽球或球拍，此案例是結構化壓力測試，不是影片分析結果。"
+        "drill": [
+          "針對收拍動作進行專注練習"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -933,16 +1022,19 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "整體表現尚可，但部分動作細節需要調整。整體評分與系統信心指數顯示目前動作仍有進步空間。",
+        "summary": "整體評估顯示，在特定動作中存在可觀察的身體控制，但需要進一步優化引拍高度和身體旋轉的執行方式。",
+        "caution": "單鏡頭2D限制：無法完全捕捉球拍與羽球的精確互動，需注意身體旋轉的連貫性。",
         "strength": [
-          "重心仍可辨識 (重心仍可辨識)"
+          "重心仍可辨識"
         ],
         "priority": [
-          "引拍高度 (引拍高度)",
-          "身體旋轉 (身體旋轉)"
+          "引拍高度",
+          "身體旋轉"
         ],
-        "drill": [],
-        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍。此案例是結構化壓力測試，不是影片分析結果。"
+        "drill": [
+          "引拍高度訓練",
+          "身體旋轉練習"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -970,11 +1062,17 @@
       "input_priorities": [],
       "score_mentions": [],
       "response": {
-        "summary": "本次評估為結構化壓力測試，非實際影片分析結果。系統信心度偏低且證據不足。",
-        "strength": [],
-        "priority": [],
-        "drill": [],
-        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，此案例是結構化壓力測試，不是影片分析結果"
+        "summary": "現有資料不足，無法可靠評估這次動作；請補充較完整且清楚的影片。",
+        "strength": [
+          "無明確優點：輸入未提供可確認的 strengths 項目"
+        ],
+        "priority": [
+          "無需新增改善項目：輸入未提供 improvement_priorities"
+        ],
+        "drill": [
+          "維持基礎動作，待取得更完整資料後再調整練習。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -1006,15 +1104,17 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "整體步法評估表現穩健，回位節奏維持得很好。啟動反應方面仍有進一步提升的空間以應付更高強度的對抗。",
+        "summary": "評估顯示整體表現良好，具備穩定的回位節奏。建議著重於啟動反應的提升以進一步優化表現。",
+        "caution": "單鏡頭2D限制：無法直接偵測羽球或球拍的精確動態，僅基於姿態資料進行分析。",
         "strength": [
-          "回位節奏穩定 (strengths_0)"
+          "回位節奏穩定"
         ],
         "priority": [
-          "啟動反應 (improvement_priorities_0)"
+          "啟動反應"
         ],
-        "drill": [],
-        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，此案例是結構化壓力測試，不是影片分析結果"
+        "drill": [
+          "針對啟動反應的專項訓練"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -1047,16 +1147,19 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "受測者的腳步移動表現整體評估為初步合格。目前僅能完成移動。",
+        "summary": "評估顯示整體表現尚可，具體需要針對移動和平衡進行調整。",
+        "caution": "單鏡頭2D限制：無法直接偵測羽球或球拍的精確軌跡，僅能觀察身體的整體移動模式。",
         "strength": [
-          "能完成移動 (strengths_0)"
+          "能完成移動"
         ],
         "priority": [
-          "回中心位置 (improvement_priorities_0)",
-          "左右平衡 (improvement_priorities_1)"
+          "回中心位置",
+          "左右平衡"
         ],
-        "drill": [],
-        "caution": "單鏡頭 2D 姿態資料，未直接偵測羽球或球拍。此案例是結構化壓力測試，不是影片分析結果"
+        "drill": [
+          "專注於移動的精準度訓練",
+          "進行左右平衡的靜態與動態訓練"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -1088,15 +1191,17 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "本次步法評估顯示部分步序可辨識，整體表現尚可。後續建議針對特定項目進行調整。",
+        "summary": "評估結果顯示，整體步態表現尚可，但存在一些需要改進的細節。建議著重於步幅的穩定性以提升整體效率。",
+        "caution": "單鏡頭 2D 限制：無法直接偵測羽球或球拍的精確互動，僅能觀察身體的整體運動軌跡。",
         "strength": [
-          "部分步序可辨識 (部分步序可辨識)"
+          "部分步序可辨識"
         ],
         "priority": [
-          "步幅一致性 (步幅一致性)"
+          "步幅一致性"
         ],
-        "drill": [],
-        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，分析結果僅供參考。"
+        "drill": [
+          "專注於保持步幅的穩定性練習"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -1124,15 +1229,21 @@
       ],
       "positive_score_metrics": [],
       "input_priorities": [],
-      "score_mentions": [],
+      "score_mentions": [
+        95.0
+      ],
       "response": {
-        "summary": "整體表現展現出良好的動作穩定性。請持續保持目前的練習節奏。",
+        "summary": "本次serve評估已完成，規則引擎的整體評分為95分；以下內容只整理既有結果。",
         "strength": [
-          "動作節奏穩定 (動作節奏穩定)"
+          "規則引擎記錄的優點（動作節奏穩定）"
         ],
-        "priority": [],
-        "drill": [],
-        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，分析結果可能受限於視角與平面誤差。"
+        "priority": [
+          "無需新增改善項目：輸入未提供 improvement_priorities"
+        ],
+        "drill": [
+          "維持基礎動作，待取得更完整資料後再調整練習。"
+        ],
+        "caution": "本說明僅根據單攝影機 2D MediaPipe 與規則結果，未直接辨識羽球或球拍。"
       },
       "checks": {
         "schema_exact_keys": true,
@@ -1163,20 +1274,20 @@
         "擊球點穩定度",
         "重心轉移"
       ],
-      "score_mentions": [
-        52.0
-      ],
+      "score_mentions": [],
       "response": {
-        "summary": "本次發球動作評估已完成，整體表現尚可（綜合評分52分）。在準備姿勢階段表現穩定（準備姿勢可辨識）。",
+        "summary": "整體評估狀態為已評估，總分為52分，系統信心度為0.94。",
+        "caution": "單鏡頭2D限制：無法直接偵測羽球或球拍的精確空間關係。",
         "strength": [
-          "準備姿勢可辨識（strengths_0）"
+          "準備姿勢可辨識"
         ],
         "priority": [
-          "擊球點穩定度（improvement_priorities_0）",
-          "重心轉移（improvement_priorities_1）"
+          "擊球點穩定度",
+          "重心轉移"
         ],
-        "drill": [],
-        "caution": "基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍"
+        "drill": [
+          "無"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -1208,15 +1319,17 @@
       ],
       "score_mentions": [],
       "response": {
-        "summary": "發球動作表現穩定，出手方向一致（strengths_0）。但需加強手腕控制（improvement_priorities_0），以提升整體表現。",
+        "summary": "本次評估的整體表現尚可，在出手方向上展現了一定的一致性。需要進一步針對手腕控制進行訓練以提升表現。",
+        "caution": "單鏡頭2D限制：由於僅有單鏡頭2D資料，無法直接偵測羽球或球拍的精確互動細節。",
         "strength": [
-          "出手方向一致（strengths_0）"
+          "出手方向一致"
         ],
         "priority": [
-          "手腕控制（improvement_priorities_0）"
+          "手腕控制"
         ],
-        "drill": [],
-        "caution": "本分析基於單鏡頭 2D 姿態資料，未直接偵測羽球或球拍，此案例是結構化壓力測試，不是影片分析結果。"
+        "drill": [
+          "針對手腕控制進行專注練習"
+        ]
       },
       "checks": {
         "schema_exact_keys": true,
@@ -1235,7 +1348,7 @@
   ],
   "human_review": {
     "status": "pending",
-    "review_sheet": "/tmp/gemini_strict_review.csv",
+    "review_sheet": "experiments/offline_abc/results/gemma4_28_case_schema_guarded_v3_review.csv",
     "required_dimensions": [
       "grounding",
       "helpfulness",

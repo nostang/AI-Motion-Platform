@@ -44,11 +44,11 @@
 
 自動九項檢查有 26/28 全部通過。九項包含：固定 schema、必要值非空、改善項目有根據、優點有正向證據、分數引用未被修改、說明 2D 限制、沒有聲稱直接看見畫面、證據不足時有保留、基本繁中一致性。
 
-這仍然不是教練人工品質評分。後續同條件 A/B 比較已完成，56 份輸出集中在 `ab_28_case_blind_human_review.csv` 等待人工盲評。
+這仍然不是教練人工品質評分。後續公平的 A/B1 Schema 比較已完成，56 份輸出集中在 [`results/ab_schema_28_case_blind_human_review.csv`](results/ab_schema_28_case_blind_human_review.csv) 等待人工盲評。
 
 ## A/B 同條件正式結果
 
-使用相同 `minimal` 輸入、v3 提示詞與新增欄位型別後的十項檢查：A 的 p50/p95 為 1.6191/2.4000 秒，B 為 1.8344/2.4474 秒；A 的欄位型別、priority grounding、strength grounding 與十項全過皆 100%，B 分別為 0%、64.3%、42.9%、0%。完整解讀見 [`AB_CLOUD_LOCAL_COMPARISON.zh-TW.md`](AB_CLOUD_LOCAL_COMPARISON.zh-TW.md)。
+使用相同 `minimal` 輸入、v3 提示詞與完整五欄 Schema：A 的 p50/p95 為 1.6191/2.4000 秒，B1 為 1.4489/2.1314 秒；兩者欄位型別皆 100%。A 的 priority grounding、strength grounding 與十項全過皆 100%，B1 分別為 67.9%、53.6%、46.4%。B2 加入固定模板 fallback 後最終 28/28，但 15/28 並非原始模型輸出。完整解讀見 [`AB_CLOUD_LOCAL_COMPARISON.zh-TW.md`](AB_CLOUD_LOCAL_COMPARISON.zh-TW.md)。
 
 ## 發現的兩個問題
 
@@ -78,7 +78,9 @@
 - [`results/gemma4_28_case_human_review.csv`](results/gemma4_28_case_human_review.csv)：待人工填寫的評分表。
 - [`results/gemma4_concurrency_1_2_4.json`](results/gemma4_concurrency_1_2_4.json)：並行原始結果。
 - [`results/gemini_35_flash_lite_28_case_minimal_v3.json`](results/gemini_35_flash_lite_28_case_minimal_v3.json)：A 同條件正式輸出。
-- [`results/gemma4_28_case_minimal_v3.json`](results/gemma4_28_case_minimal_v3.json)：B 同條件正式輸出。
-- [`results/ab_28_case_blind_human_review.csv`](results/ab_28_case_blind_human_review.csv)：56 列待人工評分盲評表。
+- [`results/gemma4_28_case_minimal_v3.json`](results/gemma4_28_case_minimal_v3.json)：B0 Prompt-only 輸出。
+- [`results/gemma4_28_case_schema_v3.json`](results/gemma4_28_case_schema_v3.json)：B1 完整 Schema 輸出。
+- [`results/gemma4_28_case_schema_guarded_v3.json`](results/gemma4_28_case_schema_guarded_v3.json)：B2 guardrail 最終輸出。
+- [`results/ab_schema_28_case_blind_human_review.csv`](results/ab_schema_28_case_blind_human_review.csv)：A 與 B1 共 56 列待人工評分盲評表。
 
 ![28 案例 B 實驗證據](assets/b_28_case_evidence.png)

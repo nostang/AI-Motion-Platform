@@ -121,7 +121,9 @@ Google Cloud Taiwan `n2-standard-4` 為 4 vCPU / 16 GiB，公開隨用隨付價 
 
 - 已證明：19 個真實影片案例全部產生規則報告，再加 9 個明確標示的模擬壓力案例，共 28 份固定輸入。
 - 早期 v1：28/28 是有效 JSON；一次輸出 27/28 欄位完整，當時九項檢查 26/28 全部通過。
-- 正式同條件 v3：28/28 有 JSON，p50 1.8344 秒、p95 2.4474 秒；但字串/陣列型別正確率 0%、priority grounding 64.3%、strength grounding 42.9%，十項全部通過率 0%。這是合約檢查，不是人工內容 0 分。
+- B0 Prompt-only：28/28 有 JSON，p50 1.8344 秒、p95 2.4474 秒；欄位型別 0%。這是整合基準，不是 Gemma 最終能力。
+- B1 完整 Schema：欄位型別升至 100%，p50 1.4489 秒、p95 2.1314 秒；priority grounding 67.9%、strength grounding 53.6%，十項全過 13/28。
+- B2 Schema + Python guardrail：15/28 使用固定模板 fallback 後，最終輸出 28/28 通過。這代表產品可安全降級，不代表原始模型品質 100%。
 - 已發現：沒有任何優點的 `R-CLR-02` 會穩定造成 v1 欄位錯誤；v2 雖修正 schema，卻把待改善項目誤寫成優點。
 - 已證明：CPU 能跑，Apple GPU 明顯縮短等待。
 - 已證明：單 runner 從 1、2 到 4 個請求，總吞吐都約 0.48 requests/s；p95 從 2.07 增至 8.30 秒。
@@ -130,9 +132,11 @@ Google Cloud Taiwan `n2-standard-4` 為 4 vCPU / 16 GiB，公開隨用隨付價 
 
 ## 本段心得
 
-B 不是做不到，而是「把雲端成本換成每一台終端的硬體與維護成本」。對離線、隱私、教練工作站或固定場館設備，它很有價值；對一般使用者與多人服務，7 GB 模型、16 GB 最低記憶體和排隊行為會成為部署門檻。這也是最後偏向 A 的主要實驗依據之一。
+B 不是做不到。完整 Schema 已解決格式問題，且不需要 LangChain；直接 Ollama + Python 驗證即可實作。它的代價是把雲端成本換成每台終端的硬體、模型、驗證與 fallback 維護。對離線、隱私、教練工作站或固定場館設備很有價值；對一般使用者與多人服務，7 GB 模型、16 GB 最低記憶體、53.6% fallback 與排隊行為仍是部署門檻。
 
 ![B 的 28 案例擴充實驗](assets/b_28_case_evidence.png)
+
+![B 的 Schema 與 Guardrail 實驗](assets/b_schema_guardrail_comparison.png)
 
 28 案例的資料來源、限制與人工評分表見 [A vs B 共用測試集說明](AB_BENCHMARK_CORPUS.zh-TW.md)。
 
@@ -145,6 +149,9 @@ B 不是做不到，而是「把雲端成本換成每一台終端的硬體與維
 - [`results/gemma4_28_case_quality.json`](results/gemma4_28_case_quality.json)
 - [`results/gemma4_28_case_minimal_v3.json`](results/gemma4_28_case_minimal_v3.json)
 - [`results/gemma4_28_case_minimal_v3_quality.json`](results/gemma4_28_case_minimal_v3_quality.json)
+- [`results/gemma4_28_case_schema_v3.json`](results/gemma4_28_case_schema_v3.json)
+- [`results/gemma4_28_case_schema_v3_quality.json`](results/gemma4_28_case_schema_v3_quality.json)
+- [`results/gemma4_28_case_schema_guarded_v3.json`](results/gemma4_28_case_schema_guarded_v3.json)
 - [`results/gemma4_concurrency_1_2_4.json`](results/gemma4_concurrency_1_2_4.json)
 - [`benchmark_gemma4.py`](benchmark_gemma4.py)
 - [`benchmark_gemma_concurrency.py`](benchmark_gemma_concurrency.py)

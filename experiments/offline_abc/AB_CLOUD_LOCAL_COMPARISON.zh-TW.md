@@ -4,55 +4,70 @@
 
 ## 先講結論
 
-這輪資料支持選 A，但理由不是「雲端快很多」。A、B 的單筆回應速度接近；A 的差異在於它較穩定遵守產品要求的欄位型別，且輸出的改善與優點較能對回輸入證據。B 還多了 7.2 GB 模型、至少 16 GB RAM、Ollama 與版本維護負擔。
+Gemma 4 不是不能用。補上 Ollama 完整 JSON Schema 後，欄位型別由 0% 升到 100%，證明原先格式問題主要是整合方式，不是模型完全無能力。
 
-![A 與 B 的同條件 28 案例比較](assets/ab_cloud_local_28_case_comparison.png)
+但 Schema 只修格式，不會自動修內容。Gemma 原始輸出的改善依據為 67.9%、優點依據為 53.6%，十項全部通過 46.4%（13/28）。加入程式驗證與固定模板 fallback 後，產品最終輸出可達 28/28，但有 15/28 使用 fallback；這個 100% 是系統可靠性，不是 Gemma 原始品質。
 
-## 怎麼做到公平
+![A 與 B 的 Schema 公平比較](assets/ab_cloud_local_28_case_comparison.png)
 
-A 與 B 都使用：
+![Gemma Prompt、Schema 與 Guardrail 比較](assets/b_schema_guardrail_comparison.png)
 
-- 相同 28 案例：19 個真實影片流程輸出、9 個明確標示的模擬壓力案例。
-- 相同 `minimal` 輸入：動作類型、狀態、總分、信心、優點、改善項目與前兩項限制。
-- 相同 v3 提示規則與五欄 JSON 合約。
-- 相同十項自動 contract/grounding 檢查。
+## 三個 B 階段
 
-A 透過隔離 Free tier 測試專案呼叫 Gemini 3.5 Flash-Lite；B 在本機 Apple M5 Pro / 24 GB 上呼叫 Ollama Gemma 4 e2b。A 的刻意 4.5 秒 rate-limit 等待不算在單筆 API 回應時間；因此表格比較的是請求送出到回應完成的時間，不是整批牆鐘時間。
+| 階段 | 做法 | 型別正確 | 十項全過 | 意義 |
+|---|---|---:|---:|---|
+| B0 | Prompt + `format: json` | 0% | 0% | JSON 合法，但欄位型別未被強制 |
+| B1 | Prompt + 完整 JSON Schema | 100% | 46.4%（13/28） | 格式已解決，剩下內容依據問題 |
+| B2 | Schema + 驗證 + 固定模板 fallback | 100% | 100%（28/28） | 15/28 使用 fallback，不等於模型 100% |
 
-## 數字
+本輪沒有使用 LangChain。直接使用 Ollama Schema、Python 驗證與 deterministic fallback 就能完成，因此 LangChain 是日後多模型/多步驟編排選項，不是解決此問題的必要條件。
 
-| 指標 | A：雲端 Gemini | B：地端 Gemma 4 | 解讀 |
+## A 與 B1 的公平比較
+
+A、B 都使用相同 28 案例、`minimal` 輸入、v3 提示詞與五欄 Schema。A 的 Schema 由 Gemini API 提供，B 的 Schema 直接傳給本機 Ollama。
+
+| 指標 | A：雲端 Gemini | B1：地端 Gemma + Schema | 解讀 |
 |---|---:|---:|---|
 | 完成 | 28/28 | 28/28 | 兩者都能產生輸出 |
-| p50 | 1.6191 秒 | 1.8344 秒 | A 稍低，但不是數量級差距 |
-| p95 | 2.4000 秒 | 2.4474 秒 | 尾端延遲非常接近 |
-| 精確五個 key | 100% | 100% | 兩者都能列出 key |
-| 欄位型別正確 | 100% | 0% | B 常把字串回成陣列 |
-| priority 有輸入依據 | 100% | 64.3% | A 較穩定引用原始改善 ID |
-| strength 有依據或明確無資料 | 100% | 42.9% | B 較常產生未對應的優點 |
-| 十項全部通過 | 100% | 0% | B 每案至少有一項合約失敗 |
-| 本輪成本口徑 | US$0.0121284 paid-tier 單價等值 | 使用既有本機設備 | A 專案為 Free tier；兩者都不是完整 TCO |
+| p50 | 1.6191 秒 | 1.4489 秒 | B 本機稍低 |
+| p95 | 2.4000 秒 | 2.1314 秒 | 兩者接近 |
+| 精確五個 key | 100% | 100% | 格式都固定 |
+| 欄位型別正確 | 100% | 100% | Schema 解決 B0 的型別問題 |
+| priority 有輸入依據且無新增 | 100% | 67.9% | B 仍可能翻譯掉 ID 或自行新增 |
+| strength 有依據或明確無資料 | 100% | 53.6% | B 內容 grounding 仍不穩 |
+| 十項全部通過 | 100% | 46.4% | B 原始輸出 13/28 全過 |
 
-## 為什麼 B 的 0% 不能說成「B 完全沒用」
+A 的 100% 只代表固定 corpus 通過自動 contract/grounding 規則，不代表所有羽球教練內容永遠正確；人工盲評仍待完成。
 
-B 仍有 28/28 可解析 JSON，而且內容可以閱讀。0% 指的是：在這個嚴格的五欄合約下，每一案至少有一個欄位型別不符合，最常見是 `summary` 或 `caution` 應是單一字串卻回成陣列。這會增加後端驗證、修正與 fallback 成本，但不等同於人類認為每篇內容都是 0 分。
+## B2 是怎麼做到 100%
 
-同樣地，A 的 100% 只代表這 28 例通過預先定義的自動規則，不代表所有影片、所有語意或教練品質永遠正確。
+1. 先用 Schema 固定五欄型別。
+2. 程式驗證 key、型別、分數、限制、繁中及 strength/priority 是否引用輸入 ID。
+3. 確定性的字串/陣列錯誤才做正規化，不讓另一個 LLM「修」答案。
+4. 內容仍不合格時，不重試猜答案，直接用原始 MediaPipe/規則結果建立固定模板。
 
-## 還差哪一塊證據
+本輪 13/28 原始 Gemma 輸出直接通過，15/28 進入固定模板。這能保護產品，但 fallback 比例 53.6% 仍偏高，代表若要把 B 當主要方案，還需要改善 prompt、模型或資料表示。
 
-已建立 56 列的 [`results/ab_28_case_blind_human_review.csv`](results/ab_28_case_blind_human_review.csv)。評分者看不到 A/B 提供者，需對 grounding、helpfulness、clarity、hallucination 評分。這一輪先留下可直接填寫的表，不模擬人類分數，也不把自動檢查冒充人工判斷。
+## 為什麼目前仍選 A
 
-另外尚未測完整影片上傳、Cloud Run 冷啟動、雲端 MediaPipe 硬體差異、正式帳單與多人壓測。這些是「正式部署」的補驗，不會抹掉本輪解說層與設備門檻的比較結果。
+- A 原始輸出 28/28 通過，不需要 53.6% fallback。
+- B 可透過工程補強達到安全輸出，適合離線、固定場館或特殊隱私需求。
+- B 每個執行端仍要有約 7.2 GB 模型、至少 16 GB RAM、Ollama、版本管理與 guardrail。
+- A 可集中更新模型、Schema、提示詞、驗證器與 fallback，不把硬體及維護負擔交給一般使用者。
 
-## 我可以怎麼說
+因此正確結論不是「Gemma 很爛」，而是：
 
-> 我沒有只拿 A 的理論優點去比 B，而是讓兩個模型讀同一組 28 份最小化報告。兩邊速度接近，但 A 在欄位型別、改善依據與優點依據都達到 100%；B 分別是 0%、64.3%、42.9%。再加上 B 每個執行端需要約 7.2 GB 模型與至少 16 GB RAM，因此本輪選 A 作預設方案，B 保留給離線或特殊隱私需求。
+> Gemma 4 可以做成可用的 B 方案；Schema 已解決格式問題，程式 guardrail 也能保證安全輸出。但目前超過一半案例仍需固定模板接手，且地端硬體與維護成本仍存在，所以 A 適合作為預設方案，B 適合作為可控的離線備案。
+
+## 尚未完成的人工證據
+
+已建立新的 [`results/ab_schema_28_case_blind_human_review.csv`](results/ab_schema_28_case_blind_human_review.csv)，用 A 與 B1 Schema 原始輸出共 56 列進行匿名評分。評分者需填 grounding、helpfulness、clarity、hallucination；不能用 B2 固定模板結果冒充模型品質。
 
 ## 原始證據
 
-- A 執行：[`results/gemini_35_flash_lite_28_case_minimal_v3.json`](results/gemini_35_flash_lite_28_case_minimal_v3.json)
-- A 品質：[`results/gemini_35_flash_lite_28_case_minimal_v3_quality.json`](results/gemini_35_flash_lite_28_case_minimal_v3_quality.json)
-- B 執行：[`results/gemma4_28_case_minimal_v3.json`](results/gemma4_28_case_minimal_v3.json)
-- B 品質：[`results/gemma4_28_case_minimal_v3_quality.json`](results/gemma4_28_case_minimal_v3_quality.json)
-- 人工盲評表：[`results/ab_28_case_blind_human_review.csv`](results/ab_28_case_blind_human_review.csv)
+- A：[`results/gemini_35_flash_lite_28_case_minimal_v3.json`](results/gemini_35_flash_lite_28_case_minimal_v3.json)
+- B0 Prompt-only：[`results/gemma4_28_case_minimal_v3.json`](results/gemma4_28_case_minimal_v3.json)
+- B1 Schema：[`results/gemma4_28_case_schema_v3.json`](results/gemma4_28_case_schema_v3.json)
+- B1 品質：[`results/gemma4_28_case_schema_v3_quality.json`](results/gemma4_28_case_schema_v3_quality.json)
+- B2 Guardrail：[`results/gemma4_28_case_schema_guarded_v3.json`](results/gemma4_28_case_schema_guarded_v3.json)
+- B2 品質：[`results/gemma4_28_case_schema_guarded_v3_quality.json`](results/gemma4_28_case_schema_guarded_v3_quality.json)

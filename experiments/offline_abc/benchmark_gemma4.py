@@ -15,6 +15,18 @@ from pathlib import Path
 
 REQUIRED_KEYS = {"summary", "strength", "priority", "drill", "caution"}
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "strength": {"type": "array", "items": {"type": "string"}},
+        "priority": {"type": "array", "items": {"type": "string"}},
+        "drill": {"type": "array", "items": {"type": "string"}},
+        "caution": {"type": "string"},
+    },
+    "required": sorted(REQUIRED_KEYS),
+    "additionalProperties": False,
+}
 
 
 def _compact_report(report: dict) -> dict:
@@ -100,7 +112,13 @@ def _prompt(compact: dict, version: str = "v1") -> str:
     return base + instructions + "\n" + json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
 
 
-def _call_ollama(endpoint: str, model: str, prompt: str, num_gpu: int | None = None) -> dict:
+def _call_ollama(
+    endpoint: str,
+    model: str,
+    prompt: str,
+    num_gpu: int | None = None,
+    structured_output: str = "json",
+) -> dict:
     options = {"temperature": 0, "seed": 7, "num_predict": 320}
     if num_gpu is not None:
         options["num_gpu"] = num_gpu
@@ -109,7 +127,7 @@ def _call_ollama(endpoint: str, model: str, prompt: str, num_gpu: int | None = N
             "model": model,
             "prompt": prompt,
             "stream": False,
-            "format": "json",
+            "format": OUTPUT_SCHEMA if structured_output == "schema" else "json",
             "think": False,
             "options": options,
             "keep_alive": "10m",
@@ -232,6 +250,12 @@ def main() -> None:
     parser.add_argument("--endpoint", default="http://127.0.0.1:11434/api/generate")
     parser.add_argument("--prompt-version", choices=("v1", "v2", "v3"), default="v1")
     parser.add_argument("--compact-profile", choices=("full", "lean", "minimal"), default="full")
+    parser.add_argument(
+        "--structured-output",
+        choices=("json", "schema"),
+        default="json",
+        help="json only guarantees valid JSON; schema also constrains keys and value types",
+    )
     parser.add_argument("--repeats", type=int, default=1)
     parser.add_argument(
         "--num-gpu",
@@ -261,6 +285,7 @@ def main() -> None:
                 args.model,
                 _prompt(compact, args.prompt_version),
                 args.num_gpu,
+                args.structured_output,
             )
             eval_duration = int(raw.get("eval_duration") or 0)
             eval_count = int(raw.get("eval_count") or 0)
@@ -306,6 +331,7 @@ def main() -> None:
             "corpus_manifest": str(args.manifest) if args.manifest else None,
             "prompt_version": args.prompt_version,
             "compact_profile": args.compact_profile,
+            "structured_output": args.structured_output,
         },
         "resource": resource,
         "cases": cases,

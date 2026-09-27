@@ -116,8 +116,9 @@ experiments/offline_abc/.venv-yolo/bin/python \
 # 13. B：用與 A 完全相同的最小輸入與 v3 提示詞
 .venv/bin/python experiments/offline_abc/benchmark_gemma4.py \
   --manifest experiments/offline_abc/results/ab_corpus_manifest.json \
-  --compact-profile minimal --prompt-version v3 --repeats 1 \
-  --output experiments/offline_abc/results/gemma4_28_case_minimal_v3.json
+  --compact-profile minimal --prompt-version v3 \
+  --structured-output schema --repeats 1 \
+  --output experiments/offline_abc/results/gemma4_28_case_schema_v3.json
 
 # 14. 分別跑十項自動檢查（A、B 各跑一次）
 .venv/bin/python experiments/offline_abc/evaluate_llm_corpus.py \
@@ -125,14 +126,19 @@ experiments/offline_abc/.venv-yolo/bin/python \
   --output experiments/offline_abc/results/gemini_35_flash_lite_28_case_minimal_v3_quality.json \
   --review-csv experiments/offline_abc/results/gemini_35_flash_lite_28_case_minimal_v3_review.csv
 
-# 15. 建立隱藏提供者的 56 列人工盲評表
+# 15. B：套用確定性正規化、同一套十項檢查與固定模板 fallback
+.venv/bin/python experiments/offline_abc/apply_local_llm_guardrails.py \
+  --input experiments/offline_abc/results/gemma4_28_case_schema_v3.json \
+  --output experiments/offline_abc/results/gemma4_28_case_schema_guarded_v3.json
+
+# 16. 建立隱藏提供者的 56 列人工盲評表（A vs B1 原始模型輸出）
 .venv/bin/python experiments/offline_abc/build_blind_ab_review.py \
   --a-run experiments/offline_abc/results/gemini_35_flash_lite_28_case_minimal_v3.json \
-  --b-run experiments/offline_abc/results/gemma4_28_case_minimal_v3.json \
-  --review-csv experiments/offline_abc/results/ab_28_case_blind_human_review.csv \
-  --mapping-json experiments/offline_abc/results/ab_28_case_blind_mapping.json
+  --b-run experiments/offline_abc/results/gemma4_28_case_schema_v3.json \
+  --review-csv experiments/offline_abc/results/ab_schema_28_case_blind_human_review.csv \
+  --mapping-json experiments/offline_abc/results/ab_schema_28_case_blind_mapping.json
 
-# 16. 重新產生所有證據圖
+# 17. 重新產生所有證據圖
 MPLCONFIGDIR=/tmp/ai-motion-mpl .venv/bin/python \
   experiments/offline_abc/render_evidence.py
 ```

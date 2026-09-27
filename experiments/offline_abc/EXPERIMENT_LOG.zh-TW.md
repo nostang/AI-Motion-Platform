@@ -584,6 +584,8 @@ GPU 不是可行性的必要條件，但對互動等待很有價值。由於兩�
 
 ## 22. A vs B：相同 28 案例正式比較
 
+> 歷史記錄：本節是 B0 Prompt-only 階段的當時結果。後續發現 A 用完整 Schema、B0 卻只用 JSON mode，因此不應用本節的型別 0% 直接判定 Gemma 能力。修正後的 B1/B2 公平實驗與最終結論見第 26–29 節。
+
 ### 實際步驟
 
 - A、B 都讀相同 28 案例、`minimal` profile 與 v3 提示詞。
@@ -597,7 +599,7 @@ GPU 不是可行性的必要條件，但對互動等待很有價值。由於兩�
 - A：欄位型別 100%、priority grounding 100%、strength grounding/合理留空 100%、十項全過 100%。
 - A：28 筆 paid-tier 單價等值 US$0.0121284；Free tier，非實際帳單。
 - B：28/28 有 JSON；平均 1.9120 秒、p50 1.8344 秒、p95 2.4474 秒。
-- B：欄位型別 0%、priority grounding 64.3%、strength grounding/合理留空 42.9%、十項全過 0%。
+- B0：欄位型別 0%、當時舊版 evaluator 計算的 priority grounding 64.3%、strength grounding/合理留空 42.9%、十項全過 0%。後續收緊「不得自行新增」規則後，B0 priority grounding 重算為 57.1%。
 
 ### 心得
 
@@ -624,7 +626,8 @@ A、B 的速度接近，因此不能把「比較快」當成主結論。真正�
 
 ### 結果
 
-- [`results/ab_28_case_blind_human_review.csv`](results/ab_28_case_blind_human_review.csv) 可直接交給評分者。
+- 本節當時產生的 B0 盲評表已由後續更公平的 A vs B1 Schema 版取代。
+- [`results/ab_schema_28_case_blind_human_review.csv`](results/ab_schema_28_case_blind_human_review.csv) 可直接交給評分者。
 - 人工分數保持空白，沒有用模型或模擬數字冒充人類判斷。
 
 ### 心得
@@ -681,11 +684,112 @@ A、B 的速度接近，因此不能把「比較快」當成主結論。真正�
 
 ### 結果
 
-- 主 PoC Python：246 passed、2 skipped。
-- 新增 A/B 實驗測試：12/12 通過（已包含在上述 246 個 passed）。
+- 主 PoC Python：249 passed、2 skipped。
+- 新增 A/B 實驗測試：15/15 通過（已包含在上述 249 個 passed）。
 - Python 語法、JSON、CSV 筆數、金鑰掃描與 diff whitespace 檢查通過。
 - 沒有改動羽球＋1專案，也沒有部署或變更任何正式資源。
 
 ### 心得
 
 本輪已從「A 架構上比較合理」進展到「A 的解說層有同條件實測依據」。最後仍保留兩個誠實邊界：自動檢查不是人類教練認可；LLM API 成功也不是完整雲端影片流程已上線。
+
+## 26. 重新檢查「Gemma 真的那麼差嗎」
+
+### 實際步驟
+
+- 逐案統計 B0 `minimal`/v3 的五個欄位實際型別。
+- 檢查 Ollama request，確認當時只有 `format: "json"`，沒有將完整五欄 JSON Schema 傳給執行層。
+- 核對模型與本機環境：Ollama 0.32.15、`gemma4:e2b`、5.1B、Q4_K_M、模型檔約 7.2 GB。
+
+### 結果
+
+- 28/28 都有五個 key，且都是合法 JSON。
+- `strength`、`priority`、`drill` 28/28 都是正確陣列。
+- `summary` 28/28 被回成陣列；`caution` 只有 5/28 是字串。
+- 因此原先「欄位型別 0%」是每案至少有一個型別錯誤，不是五欄都失敗。
+
+### 心得
+
+把 Prompt-only 的 0% 直接說成 Gemma 差是不公平的。Prompt 是文字要求，`format: json` 只保證 JSON 合法；A 使用完整 provider schema，B 卻沒有，測到的是「模型 + 執行層 + 整合方式」，不是純模型智力。
+
+## 27. B1：Ollama 完整 JSON Schema
+
+### 實際步驟
+
+- 在 `benchmark_gemma4.py` 新增與 A 相同的五欄 Schema，禁止額外 key，明定字串/字串陣列型別。
+- 先用純模擬 `S-SV-01` smoke test，再跑固定 28 案例。
+- smoke test 發現：型別全部正確，但輸入沒有改善項目時，Gemma 仍自行新增 priority。
+- 因此加嚴 evaluator：輸出的每個 strength/priority 都必須引用允許 ID，且不能在空輸入時自行新增；再用同一規則重算 A、B0、B1。
+
+### 結果
+
+- B1 Schema：28/28 JSON、五 key、欄位型別全部 100%。
+- p50 1.4489 秒、p95 2.1314 秒、平均 1.5399 秒。
+- priority grounding 67.9%、strength grounding 53.6%。
+- 十項全部通過 46.4%，即 13/28；15/28 至少有一項內容規則失敗。
+- 加嚴後 A 仍維持 28/28 全過；B0 priority grounding 由舊檢查的 64.3% 修正為 57.1%。
+
+### 心得
+
+Schema 確實把 0% 型別率修到 100%，所以 Gemma 能用，也不需要為了這件事導入 LangChain。但 Schema 只能控制外殼，不能阻止模型翻譯掉 snake_case ID、把優點與缺點混用，或在沒有改善項目時自行增加建議。
+
+## 28. B2：確定性 Guardrail 與安全 Fallback
+
+### 實際步驟
+
+- 新增 `apply_local_llm_guardrails.py`。
+- 只對明確的字串/陣列差異做 deterministic normalization，不讓另一個 LLM 修文。
+- 使用同一套十項 contract/grounding 檢查；不合格時直接從原始 MediaPipe/規則 JSON 建立固定模板。
+- 固定模板保留原始分數與 evidence ID，並明確標示單攝影機 2D、未直接辨識球拍或羽球。
+
+### 結果
+
+- B1 原始全過：13/28（46.4%）。
+- 正規化後仍為 13/28，證明剩餘問題不是簡單型別轉換。
+- 15/28 使用固定模板 fallback，fallback rate 53.6%。
+- B2 最終產品輸出 28/28 通過十項檢查。
+
+### 心得
+
+最終 100% 必須誠實拆開：13 筆是 Gemma 原始輸出，15 筆是規則模板接手。這證明 B 可以被工程化成安全方案，但不能把 fallback 成功率算成模型準確率。對離線場館或教練工作站，這條路可行；對大眾終端，仍要承擔模型、硬體、驗證器與 fallback 維護。
+
+### 畫面
+
+![Gemma Prompt、Schema 與 Guardrail 比較](assets/b_schema_guardrail_comparison.png)
+
+## 29. 修正後的 A/B 結論
+
+### 結果
+
+- A：p50/p95 1.6191/2.4000 秒；原始十項全過 28/28。
+- B1：p50/p95 1.4489/2.1314 秒；欄位型別 100%，原始十項全過 13/28。
+- B2：15/28 fallback 後最終 28/28。
+- 新增 A vs B1 Schema 的 56 列匿名人工盲評表；B2 fallback 不拿來冒充模型盲評。
+
+### 心得
+
+不能再用「B 型別 0%」當成選 A 的主理由。修正後選 A 的理由是：A 在這批資料的原始 grounding 較穩、服務端可集中更新，且不用把 7.2 GB 模型、至少 16 GB RAM 與 53.6% fallback 維護交給使用者。B 已從「可能可行」提升為「有清楚 guardrail 的離線備案」。
+
+### 畫面
+
+![A 與 B 的 Schema 公平比較](assets/ab_cloud_local_28_case_comparison.png)
+
+## 30. B 實驗最終驗證
+
+### 實際步驟
+
+- 使用專案 `.venv` 重跑全部測試。第一次若用系統 Python，會因沒有專案依賴而在收集測試時失敗；這是環境差異，不是程式測試失敗。
+- 以同一專案環境重產 A/B、B0/B1/B2 與 A/B/C 決策圖。
+- 人工目視檢查圖表標題、圖例、數字與註解，確認沒有文字裁切或把 fallback 寫成模型準確率。
+- 重新檢查 JSON、CSV、Python 語法、金鑰樣式與 Git whitespace。
+
+### 結果
+
+- 全部測試：249 passed、2 skipped。
+- B 專用實驗測試：15/15 通過。
+- 圖表重產與 Python 語法檢查通過。
+- 公平盲評表為 A vs B1 Schema，共 56 筆待評輸出；B2 fallback 沒有混入模型盲評。
+
+### 心得
+
+這輪最重要的修正是把「模型能力」與「產品防護後的可靠度」分開。Gemma 4 不是不能用：Schema 已解決格式，guardrail 也能讓產品安全降級。但 A 在相同輸入與相同 Schema 下，原始輸出的 grounding 仍明顯較穩，這才是現階段選 A 當預設方案的實驗依據。

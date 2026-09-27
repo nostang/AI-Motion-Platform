@@ -75,6 +75,66 @@ def test_gemma_validation_and_case_id(tmp_path):
     assert aggregate["success_rate"] == 0.5
 
 
+def test_gemma_schema_matches_five_field_contract():
+    gemma = _load("benchmark_gemma4")
+
+    assert set(gemma.OUTPUT_SCHEMA["required"]) == gemma.REQUIRED_KEYS
+    assert gemma.OUTPUT_SCHEMA["additionalProperties"] is False
+    assert gemma.OUTPUT_SCHEMA["properties"]["summary"]["type"] == "string"
+    assert gemma.OUTPUT_SCHEMA["properties"]["strength"]["type"] == "array"
+    assert gemma.OUTPUT_SCHEMA["properties"]["caution"]["type"] == "string"
+
+
+def test_local_guardrails_normalize_types_and_use_safe_fallback(tmp_path):
+    guardrails = _load("apply_local_llm_guardrails")
+    normalized, changes = guardrails._normalize_response(
+        {
+            "summary": ["第一句", "第二句"],
+            "strength": "優點",
+            "priority": ["weight_transfer"],
+            "drill": ["練習"],
+            "caution": ["單鏡頭 2D 限制"],
+            "extra": "remove me",
+        }
+    )
+    assert normalized == {
+        "summary": "第一句 第二句",
+        "strength": ["優點"],
+        "priority": ["weight_transfer"],
+        "drill": ["練習"],
+        "caution": "單鏡頭 2D 限制",
+    }
+    assert "summary:string_list_to_string" in changes
+    assert "strength:string_to_string_list" in changes
+    assert "removed_extra_keys:extra" in changes
+
+    report = {
+        "assessment_id": "CASE-GUARDRAIL",
+        "assessment_type": "serve",
+        "summary": {"evaluation_status": "EVALUATED", "overall_score": 70},
+        "highlights": {
+            "strengths": ["ready_position"],
+            "improvement_priorities": ["weight_transfer"],
+        },
+        "limitations": ["single camera 2D"],
+    }
+    report_path = tmp_path / "analysis_report.json"
+    report_path.write_text(json.dumps(report))
+    fallback = guardrails._safe_fallback(
+        {
+            "case_id": "CASE-GUARDRAIL",
+            "motion": "serve",
+            "report_path": str(report_path),
+            "input_overall_score": 70,
+        },
+        "minimal",
+    )
+    assert isinstance(fallback["summary"], str)
+    assert "ready_position" in fallback["strength"][0]
+    assert "weight_transfer" in fallback["priority"][0]
+    assert "單攝影機 2D" in fallback["caution"]
+
+
 def test_yolov12_tiny_dataset_is_single_class(tmp_path):
     yolo = _load("benchmark_yolov12")
     yaml_path = yolo._make_dataset(tmp_path, train_count=3, val_count=2, image_size=96)
@@ -239,6 +299,14 @@ def test_llm_corpus_score_integrity():
     assert evaluator._score_integrity("整體評分為90分", 85) == (False, [90.0])
     assert evaluator._score_integrity("沒有引用分數", 85) == (True, [])
     assert evaluator._score_integrity("缺乏足夠證據", None) == (True, [])
+    assert evaluator._grounded_and_complete(
+        ["改善重心轉移（weight_transfer）"], ["weight_transfer"]
+    )
+    assert not evaluator._grounded_and_complete(["憑空新增改善"], [])
+    assert evaluator._grounded_and_complete(["無改善項目"], [])
+    assert not evaluator._grounded_and_complete(
+        ["改善重心轉移（weight_transfer）", "憑空新增項目"], ["weight_transfer"]
+    )
 
 
 def test_llm_corpus_rejects_invented_strength_when_input_has_none(tmp_path):
@@ -267,10 +335,39 @@ def test_llm_corpus_rejects_invented_strength_when_input_has_none(tmp_path):
 
     evaluated = evaluator._evaluate_case(case)
     assert evaluated["checks"]["strength_grounded_or_explicitly_none"] is False
+    assert evaluated["checks"]["all_priorities_grounded"] is True
 
     assert evaluator._positive_metric_tokens(
         {"swing": {"level": "FAIR", "measurement_levels": {"path": "EXCELLENT"}}}
     ) == {"path"}
+
+
+def test_llm_corpus_rejects_invented_priority_when_input_has_none(tmp_path):
+    evaluator = _load("evaluate_llm_corpus")
+    report = {
+        "assessment_id": "CASE-NO-PRIORITY",
+        "assessment_type": "serve",
+        "summary": {"evaluation_status": "EVALUATED", "overall_score": 95},
+        "highlights": {"strengths": ["tempo_stability"], "improvement_priorities": []},
+        "limitations": ["single camera 2D"],
+    }
+    report_path = tmp_path / "analysis_report.json"
+    report_path.write_text(json.dumps(report))
+    case = {
+        "case_id": "CASE-NO-PRIORITY",
+        "report_path": str(report_path),
+        "input_overall_score": 95,
+        "response": {
+            "summary": "摘要",
+            "strength": ["節奏穩定（tempo_stability）"],
+            "priority": ["憑空新增改善"],
+            "drill": ["練習"],
+            "caution": "單鏡頭2D限制",
+        },
+    }
+
+    evaluated = evaluator._evaluate_case(case)
+    assert evaluated["checks"]["all_priorities_grounded"] is False
 
 
 def test_llm_corpus_accepts_empty_strength_when_evidence_is_insufficient(tmp_path):

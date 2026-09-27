@@ -117,13 +117,14 @@ next: isolated GEMINI_API_KEY -> one synthetic smoke test -> 28-case run"""
 
 def option_ab_final_comparison() -> None:
     cloud = _json("gemini_35_flash_lite_28_case_minimal_v3.json")
-    local = _json("gemma4_28_case_minimal_v3.json")
+    local = _json("gemma4_28_case_schema_v3.json")
     cloud_quality = _json("gemini_35_flash_lite_28_case_minimal_v3_quality.json")
-    local_quality = _json("gemma4_28_case_minimal_v3_quality.json")
+    local_quality = _json("gemma4_28_case_schema_v3_quality.json")
+    guarded = _json("gemma4_28_case_schema_guarded_v3.json")
 
     fig, axes = plt.subplots(1, 3, figsize=(17, 7.5), facecolor="white")
     fig.suptitle(
-        "A vs B｜同一組 28 案例、相同最小輸入與 v3 提示詞",
+        "A vs B｜同一組 28 案例、相同最小輸入、v3 提示詞與 Schema",
         fontproperties=FONT,
         fontsize=22,
         color=NAVY,
@@ -180,8 +181,8 @@ def option_ab_final_comparison() -> None:
         ("A：28/28 完成", "0 errors；schema 與十項自動檢查皆 100%。"),
         ("A：費用口徑", f"28 筆付費單價等值 US${cloud['aggregate']['total_estimated_paid_tier_cost_usd']:.6f}；專案為 Free tier，非實際帳單。"),
         ("A：免費層限制", "AI Studio 顯示 15 RPM；本輪每筆至少間隔 4.5 秒。"),
-        ("B：仍能產生文字", "28/28 有 JSON，但型別 0%、改善 ID 64.3%、優點依據 42.9%。"),
-        ("共同限制", "56 份 A/B 輸出仍需人工盲評；自動檢查不等於教練認可。"),
+        ("B：Schema 有效", "欄位型別 100%；改善依據 67.9%、優點依據 53.6%。"),
+        ("B：產品 guardrail", f"原始 13/28 全過；{guarded['guardrail_aggregate']['fallback_count']}/28 使用固定模板後最終 28/28。"),
     ]
     for index, (title, body) in enumerate(findings):
         y = 0.91 - index * 0.18
@@ -201,7 +202,7 @@ def option_ab_final_comparison() -> None:
     fig.text(
         0.5,
         0.025,
-        "A 的請求時間不含為遵守 15 RPM 而加入的等待；人工 grounding、實用性、清楚度與幻覺盲評尚未填寫。",
+        "A 的請求時間不含 4.5 秒 pacing；B 的 100% 最終可靠率包含固定模板 fallback，不是原始模型品質。",
         ha="center",
         fontproperties=FONT,
         fontsize=11.5,
@@ -209,6 +210,98 @@ def option_ab_final_comparison() -> None:
     )
     fig.tight_layout(rect=[0, 0.07, 1, 0.92])
     fig.savefig(ASSETS / "ab_cloud_local_28_case_comparison.png", dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
+def option_b_schema_guardrails() -> None:
+    prompt_quality = _json("gemma4_28_case_minimal_v3_quality.json")
+    schema_run = _json("gemma4_28_case_schema_v3.json")
+    schema_quality = _json("gemma4_28_case_schema_v3_quality.json")
+    guarded = _json("gemma4_28_case_schema_guarded_v3.json")
+
+    fig, axes = plt.subplots(1, 3, figsize=(17, 7.5), facecolor="white")
+    fig.suptitle(
+        "Gemma 4｜從 Prompt-only 到 Schema 與產品 guardrail",
+        fontproperties=FONT,
+        fontsize=22,
+        color=NAVY,
+    )
+
+    stages = ["B0\nPrompt-only", "B1\n完整 Schema", "B2\nSchema+Guardrail"]
+    type_rates = [
+        prompt_quality["overall"]["check_pass_rates"]["schema_value_types"] * 100,
+        schema_quality["overall"]["check_pass_rates"]["schema_value_types"] * 100,
+        100,
+    ]
+    stage_x = list(range(3))
+    bars = axes[0].bar(stage_x, type_rates, color=[ORANGE, BLUE, TEAL])
+    axes[0].set_xticks(stage_x, stages, fontproperties=FONT)
+    axes[0].set_ylim(0, 112)
+    axes[0].set_ylabel("欄位型別正確率（%）", fontproperties=FONT)
+    axes[0].set_title("Schema 修正格式問題", fontproperties=FONT, fontsize=15)
+    axes[0].grid(axis="y", alpha=0.2)
+    for bar, value in zip(bars, type_rates):
+        axes[0].text(bar.get_x() + bar.get_width() / 2, value + 2, f"{value:.0f}%", ha="center")
+
+    labels = ["改善有依據", "優點有依據", "十項全通過"]
+    b0 = [
+        prompt_quality["overall"]["check_pass_rates"]["all_priorities_grounded"] * 100,
+        prompt_quality["overall"]["check_pass_rates"]["strength_grounded_or_explicitly_none"] * 100,
+        prompt_quality["overall"]["automatic_all_checks_pass_rate"] * 100,
+    ]
+    b1 = [
+        schema_quality["overall"]["check_pass_rates"]["all_priorities_grounded"] * 100,
+        schema_quality["overall"]["check_pass_rates"]["strength_grounded_or_explicitly_none"] * 100,
+        schema_quality["overall"]["automatic_all_checks_pass_rate"] * 100,
+    ]
+    x = list(range(3))
+    axes[1].bar([value - 0.18 for value in x], b0, width=0.36, color=ORANGE, label="B0 Prompt-only")
+    axes[1].bar([value + 0.18 for value in x], b1, width=0.36, color=BLUE, label="B1 Schema")
+    axes[1].set_xticks(x, labels, fontproperties=FONT, rotation=12)
+    axes[1].set_ylim(0, 112)
+    axes[1].set_ylabel("原始模型輸出通過率（%）", fontproperties=FONT)
+    axes[1].set_title("Schema 不會自動修內容", fontproperties=FONT, fontsize=15)
+    axes[1].legend(prop=FONT)
+    axes[1].grid(axis="y", alpha=0.2)
+    for pos, value in zip([value - 0.18 for value in x], b0):
+        axes[1].text(pos, value + 2, f"{value:.0f}%", ha="center", fontsize=9)
+    for pos, value in zip([value + 0.18 for value in x], b1):
+        axes[1].text(pos, value + 2, f"{value:.0f}%", ha="center", fontsize=9)
+
+    raw_pass = round(schema_quality["overall"]["automatic_all_checks_pass_rate"] * 28)
+    fallback = guarded["guardrail_aggregate"]["fallback_count"]
+    axes[2].bar([0, 1], [raw_pass, 28], color=[BLUE, TEAL])
+    axes[2].set_xticks(
+        [0, 1], ["B1 原始\nGemma", "B2 最終\n產品輸出"], fontproperties=FONT
+    )
+    axes[2].set_ylim(0, 31)
+    axes[2].set_ylabel("十項全過案例數（共 28）", fontproperties=FONT)
+    axes[2].set_title("Fallback 換來產品可靠性", fontproperties=FONT, fontsize=15)
+    axes[2].grid(axis="y", alpha=0.2)
+    axes[2].text(0, raw_pass + 0.6, f"{raw_pass}/28", ha="center", fontsize=12)
+    axes[2].text(1, 28.6, "28/28", ha="center", fontsize=12)
+    axes[2].text(
+        0.5,
+        0.1,
+        f"{fallback}/28 使用固定規則模板\n不是模型自己修好",
+        transform=axes[2].transAxes,
+        ha="center",
+        fontproperties=FONT,
+        fontsize=11,
+        color=RED,
+    )
+
+    fig.text(
+        0.5,
+        0.025,
+        f"B1 p50/p95：{schema_run['aggregate']['p50_wall_seconds']:.2f}/{schema_run['aggregate']['p95_wall_seconds']:.2f} 秒；不需要 LangChain，直接 Ollama Schema + Python 驗證即可完成本輪。",
+        ha="center",
+        fontproperties=FONT,
+        fontsize=11.5,
+        color=NAVY,
+    )
+    fig.tight_layout(rect=[0, 0.07, 1, 0.92])
+    fig.savefig(ASSETS / "b_schema_guardrail_comparison.png", dpi=170, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -491,10 +584,10 @@ def decision() -> None:
         ["通過", "通過", "未通過"],
         ["通過", "未通過", "尚未證明"],
         ["通過", "較困難", "可行但未建立"],
-        ["28例自動檢查通過", "可輸出；合約不穩", "僅流程；mAP=0"],
+        ["28例原始輸出通過", "Schema可用；需fallback", "僅流程；mAP=0"],
         ["不需要", "不需要", "需要"],
     ]
-    colors = {"通過": "#D1FAE5", "不需要": "#D1FAE5", "未通過": "#FEE2E2", "較困難": "#FEF3C7", "尚未證明": "#FEF3C7", "28例自動檢查通過": "#D1FAE5", "可輸出；合約不穩": "#FEF3C7", "僅流程；mAP=0": "#FEE2E2", "可行但未建立": "#FEF3C7", "需要": "#FEE2E2"}
+    colors = {"通過": "#D1FAE5", "不需要": "#D1FAE5", "未通過": "#FEE2E2", "較困難": "#FEF3C7", "尚未證明": "#FEF3C7", "28例原始輸出通過": "#D1FAE5", "Schema可用；需fallback": "#FEF3C7", "僅流程；mAP=0": "#FEE2E2", "可行但未建立": "#FEF3C7", "需要": "#FEE2E2"}
     fig, ax = plt.subplots(figsize=(15, 7), facecolor="white")
     ax.axis("off")
     table = ax.table(cellText=matrix, rowLabels=rows, colLabels=cols, cellLoc="center", loc="center", colWidths=[0.24, 0.24, 0.24])
@@ -520,6 +613,7 @@ def main() -> None:
     option_a_preflight()
     option_ab_final_comparison()
     option_a_final_screen()
+    option_b_schema_guardrails()
     option_b()
     option_b_corpus()
     option_c()
