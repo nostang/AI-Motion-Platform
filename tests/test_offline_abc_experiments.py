@@ -85,6 +85,29 @@ def test_gemma_schema_matches_five_field_contract():
     assert gemma.OUTPUT_SCHEMA["properties"]["caution"]["type"] == "string"
 
 
+def test_mp_yolo_sampling_uses_interior_timestamps():
+    builder = _load("build_mp_yolo_hand_corpus")
+
+    assert builder._interior_timestamps(1000, 2000, 4) == [1125, 1375, 1625, 1875]
+
+
+def test_mp_yolo_pairs_racket_to_nearest_visible_wrist():
+    benchmark = _load("benchmark_mp_yolo_hand")
+    landmarks = {
+        "left_shoulder": {"x": 40.0, "y": 50.0, "visibility": 1.0},
+        "right_shoulder": {"x": 60.0, "y": 50.0, "visibility": 1.0},
+        "left_wrist": {"x": 30.0, "y": 80.0, "visibility": 1.0},
+        "right_wrist": {"x": 80.0, "y": 80.0, "visibility": 1.0},
+    }
+    boxes = [{"confidence": 0.9, "xyxy": [75.0, 70.0, 95.0, 95.0]}]
+
+    paired = benchmark.pair_racket_to_wrist(boxes, landmarks)
+
+    assert paired is not None
+    assert paired["paired_side"] == "right"
+    assert paired["right_distance_shoulder_widths"] == 0.0
+
+
 def test_local_guardrails_normalize_types_and_use_safe_fallback(tmp_path):
     guardrails = _load("apply_local_llm_guardrails")
     normalized, changes = guardrails._normalize_response(

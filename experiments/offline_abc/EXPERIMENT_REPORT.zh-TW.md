@@ -10,9 +10,9 @@
 
 - **A 像中央廚房**：影片送到雲端，由同一套 MediaPipe、評分規則與雲端 LLM 統一處理；使用者裝置不用放大模型。
 - **B 像每個人家裡各放一套廚房**：MediaPipe 與 Gemma 4 都在本機，資料不必送給 LLM 供應商，但每台機器都要有足夠硬體、模型與更新流程。
-- **C 像自己培育一位專門的球探**：YOLOv12 要先看大量人工標註的羽球資料，才可能學會找球拍、羽球與落點；只有程式能訓練，不代表球探已經學會。
+- **C 像替骨架分析加一位物件球探**：MediaPipe 繼續看人體，YOLO 補看球拍、羽球與未來球路；兩者合作，不是二選一。
 
-三案不是完全等價的替代品。A、B 沿用既有 MediaPipe 骨架與規則分數；C 是新的感知模型，較適合補足球拍、羽球與球路，而不是直接取代目前分數。
+因此要拆成兩組問題：第一組 A vs B 比較 LLM 放雲端或地端；第二組 MediaPipe vs MediaPipe＋YOLO 比較是否值得增加物件證據。C 可以加在 A 或 B 前面，不是第三種 LLM 部署方案。
 
 ## 2. 這次怎麼判斷
 
@@ -187,11 +187,50 @@ GPU 不是「能不能跑」的必要條件：CPU-only 也有 100% JSON 成功�
 
 B 的功能已被證明可行，而且完整 Schema 已解決欄位型別問題。本輪甚至不需要 LangChain，直接 Ollama Schema + Python 驗證即可。但原始輸出只有 13/28 十項全過，15/28 要用固定模板接手；每個執行端仍要下載 7.2 GB、保留至少約 7 GB 模型常駐空間、管理 Ollama/模型版本、guardrail 與硬體差異。若改租 VM，成本與維運又回到雲端。
 
-## 6. C：自行訓練 YOLOv12
+## 6. 第二組：MediaPipe vs MediaPipe＋YOLO
+
+![MediaPipe 與兩個官方建議 YOLO 模型比較](assets/mp_yolo11_yolo26_hand_comparison.png)
+
+### 為什麼改測 YOLO11n 與 YOLO26n
+
+先前 YOLOv12 的 16 張合成圖、1 epoch 實驗只證明訓練管線可執行。Ultralytics 的 YOLO12 文件將它列為社群模型，並建議穩定工作負載使用 YOLO11 或 YOLO26；所以這一輪改用兩個官方建議的 nano 模型，測真正相關的「球拍＋手腕」流程。
+
+### 方法
+
+- 6 段去重後的真實發球影片，全部有人工右手持拍答案。
+- 每段在人工作用時間窗內均勻取 12 張，共 72 張。
+- MediaPipe 提供肩膀與左右手腕；YOLO 使用 COCO 預訓練 `tennis racket` 當羽球拍 proxy。
+- 兩個模型都用 1280 px、confidence 0.15、相同手腕 visibility 與距離規則。
+- 至少 2 張成功配對且同側票數達 60% 才判定，否則回傳 `unknown`。
+
+| 指標 | MediaPipe | MP＋YOLO11n | MP＋YOLO26n |
+|---|---:|---:|---:|
+| 可判定案例 | 5/6（83.3%） | 4/6（66.7%） | 6/6（100%） |
+| 全部案例的右手一致 | 2/6（33.3%） | 3/6（50.0%） | 5/6（83.3%） |
+| 球拍候選影格 | 不適用 | 40/72（55.6%） | 49/72（68.1%） |
+| 可配對手腕影格 | 不適用 | 35/72（48.6%） | 38/72（52.8%） |
+| YOLO p50 / p95 | 不適用 | 11.4 / 19.6 ms | 11.2 / 15.6 ms |
+
+這批資料全部是右手，所以「一致率」不是左右手平衡準確率。又因為沒有人工球拍框，候選影格率也不是 precision、recall 或 mAP。
+
+### 失敗案例與真正瓶頸
+
+R-SV-02 中，YOLO11n 與 YOLO26n 都找到球拍，卻都配到 MediaPipe 的左手腕，而人工答案是右手。這顯示問題可能是影片鏡像或左右語意沒有正規化；只微調 YOLO 不一定能修好，還要記錄前/後鏡頭與鏡像狀態。
+
+### 決策
+
+- MediaPipe 保留，繼續負責人體骨架、規則與固定分數。
+- YOLO26n 在這個小型基準的覆蓋、一致率與 p95 延遲都較好，作為下一輪人工標註與微調主模型。
+- YOLO11n 留作控制組，避免只看單一模型。
+- 微調前先補左手影片、鏡像 metadata 與人工球拍框；否則不能誠實報完整準確率。
+
+完整逐案結果與模型雜湊見 [MediaPipe vs MediaPipe＋YOLO 比較報告](C_MP_YOLO_COMPARISON.zh-TW.md)。
+
+### 歷史 YOLOv12 流程驗證（不能當模型選型結果）
 
 ![C 的流程證據與研究方向](assets/c_feasibility_research.png)
 
-### 本輪真的做了什麼
+先前做過以下最小流程：
 
 - 來源：YOLOv12 作者官方 `https://github.com/sunsmarterjie/yolov12.git`。
 - 固定提交：`2abab7153a065fb2925e8088e9ca2b19016ab7d6`。
@@ -209,11 +248,11 @@ B 的功能已被證明可行，而且完整 Schema 已解決欄位型別問題�
 | precision / recall | 0 / 0 |
 | 五次預測數量 | 0 / 0 / 0 / 0 / 0 |
 
-原始證據在 [`results/yolov12_tiny_feasibility.json`](results/yolov12_tiny_feasibility.json)。這只能證明官方程式在此 Mac 可完成「資料 → 訓練 → 驗證 → 推論」；零指標代表模型尚未學會，不能宣稱準確。
+原始證據在 [`results/yolov12_tiny_feasibility.json`](results/yolov12_tiny_feasibility.json)。這只能證明 YOLOv12 作者程式在此 Mac 可完成「資料 → 訓練 → 驗證 → 推論」；零指標來自刻意極小的合成資料與 1 epoch，不能用來說 YOLO 不適合，也不能拿來否定 YOLO11/26。
 
 ![YOLOv12 訓練結果畫面](assets/c_training_result_screen.png)
 
-### C 真正適合研究什麼
+### 後續仍適合研究什麼
 
 1. **持拍手判定**：YOLO 找球拍，再把球拍位置與 MediaPipe 左/右手腕配對。
 2. **羽球路徑**：YOLO 找每一幀的羽球，再用 tracker/Kalman/時間規則連成軌跡。
@@ -221,9 +260,9 @@ B 的功能已被證明可行，而且完整 Schema 已解決欄位型別問題�
 
 詳細資料量、標註欄位、切分方式與驗證指標見 [C 的羽球訓練研究計畫](C_RESEARCH_PLAN.zh-TW.md)。
 
-### C 為何不是目前首選
+### 為何不把 C 拿來取代 A
 
-C 還沒有真實羽球標註資料與可用精度，而且即使成功，它解決的是「看見球拍/羽球/落點」，不會自然產生既有的骨架角度、動作規則與教學分數。它是值得做的後續增強研究，不是這一版 A/B 文字解說方案的直接替代品。
+C 解決的是「看見球拍/羽球/落點」，A/B 解決的是「在哪裡用 LLM 解說」。即使 YOLO26n 下一輪微調成功，它也不會自然產生既有骨架角度、動作規則或教學分數，因此不能拿 C 的結果改寫 A/B 的部署結論。
 
 ## 7. 最後為什麼選 A
 
@@ -234,12 +273,12 @@ C 還沒有真實羽球標註資料與可用精度，而且即使成功，它解
 3. 同條件 28 例中，B1 p50/p95 甚至略低；選 A 不是因為速度，也不是因為 Gemma 不能輸出格式，而是 A 原始輸出十項全過 28/28，B1 為 13/28，B2 需要 15/28 fallback。
 4. B 已證明能做，但每台機器需要約 7 GB 常駐模型與至少 16 GB RAM；這不適合一般終端部署。
 5. B 若租 24/7 VM，CPU 參考情境約 US$141.79/月，L4 參考情境約 US$515.99/月，且還要自己維運模型。
-6. C 的工程流程已通，但品質指標為 0；要進入羽球功能仍需真實標註、訓練與場地/時間邏輯。
+6. 第二組實驗顯示，MediaPipe＋YOLO26n 在 6 個右手案例達到 5/6 一致、6/6 可判定，優於 MediaPipe 單獨與 YOLO11n；但仍缺左手案例與人工球拍框。
 7. A 把重運算、版本、提示詞與回滾集中在服務端，一般終端只需上傳和看報告；依目前產品條件最合理。
 
 所以正式說法應是：
 
-> 本輪選擇 A，因為它能沿用已驗證的 MediaPipe 固定評分，原始輸出 grounding 較穩定，又不把 7 GB 模型、至少 16 GB RAM 與 guardrail 維護轉嫁給使用者。Gemma 4 加 Schema 與 fallback 已證明可用，保留作離線方案；C 則仍處於資料與模型研究階段。
+> 本輪選擇 A 作為 LLM 解說層預設，因為它能沿用已驗證的 MediaPipe 固定評分，原始輸出 grounding 較穩定，又不把 7 GB 模型、至少 16 GB RAM 與 guardrail 維護轉嫁給使用者。Gemma 4 加 Schema 與 fallback 已證明可用，保留作離線方案；視覺層則保留 MediaPipe，並以 YOLO26n 作為下一輪球拍標註與微調候選。
 
 ## 8. 證據可信度與限制
 
@@ -247,13 +286,16 @@ C 還沒有真實羽球標註資料與可用精度，而且即使成功，它解
 - B 的 GPU 與 CPU 輸出 token 數不同，因此延遲與 tokens/s應一起看。
 - A/B 的 28 案例已完成同條件自動 contract/grounding 檢查；56 份人工教練品質盲評仍待填寫。
 - A 的 LLM API 已在隔離 Free tier 專案實測；完整雲端 MediaPipe、儲存與服務帳單尚未實測。US$0.0121284 是 paid-tier 單價等值，不是帳單。
-- C 只有 16 張合成圖片與 1 epoch，特意只驗流程，不驗準確度。
+- 舊 YOLOv12 實驗只有 16 張合成圖片與 1 epoch，只驗流程；新比較有 6 段真實右手影片，但左手與人工球拍框仍為 0，因此不可宣稱平衡準確率或 mAP。
 - 沒有建立雲端 VM、Cloud Run、Cloud SQL、bucket、queue、secret 或自訂 IAM，也沒有接觸羽球＋1正式資源；只有隔離專案的 Gemini API 呼叫。AI Studio 自動綁定同名服務帳戶；API key 已於收尾刪除，服務帳戶留待另行確認是否移除。
 
 ## 9. 公開來源
 
 - [YOLOv12 作者官方實作](https://github.com/sunsmarterjie/yolov12)
 - [YOLOv12 論文與官方程式連結（NeurIPS 2025）](https://proceedings.neurips.cc/paper_files/paper/2025/hash/7103444259031cc58051f8c9a4868533-Abstract-Conference.html)
+- [Ultralytics YOLO12 文件：社群模型與穩定工作負載建議](https://docs.ultralytics.com/models/yolo12/)
+- [Ultralytics 模型總覽：YOLO11 與 YOLO26](https://docs.ultralytics.com/models/)
+- [MediaPipe Pose Landmarker 官方文件](https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker)
 - [Gemini Developer API pricing](https://ai.google.dev/gemini-api/docs/pricing)
 - [Google Cloud Run pricing](https://cloud.google.com/run/pricing)
 - [Google Cloud general-purpose VM pricing](https://cloud.google.com/products/compute/pricing/general-purpose)

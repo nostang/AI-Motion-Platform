@@ -519,7 +519,7 @@ def option_c() -> None:
     box_width, box_height = width * iw, height * ih
 
     fig, axes = plt.subplots(1, 3, figsize=(16, 6), facecolor="white")
-    fig.suptitle("方案 C｜官方 YOLOv12：已跑通流程，但尚未得到可用羽球模型", fontproperties=FONT, fontsize=21, color=NAVY)
+    fig.suptitle("歷史流程驗證｜YOLOv12 作者實作：已跑通，但尚未得到可用羽球模型", fontproperties=FONT, fontsize=20, color=NAVY)
     axes[0].imshow(image)
     axes[0].add_patch(Rectangle((left, top), box_width, box_height, fill=False, ec=RED, lw=3))
     axes[0].text(left, max(2, top - 4), "synthetic_target", color="white", backgroundcolor=RED, fontsize=10)
@@ -577,17 +577,97 @@ result: pipeline completed; model accuracy NOT established"""
     plt.close(fig)
 
 
+def option_c_mp_yolo_comparison() -> None:
+    result = _json("mp_yolo11_yolo26_hand_comparison.json")
+    mp = result["mediapipe_only"]
+    y11, y26 = result["models"]
+
+    fig, axes = plt.subplots(1, 3, figsize=(17, 6.8), facecolor="white")
+    fig.suptitle(
+        "第二組實驗｜MediaPipe vs MediaPipe + YOLO11n / YOLO26n",
+        fontproperties=FONT,
+        fontsize=22,
+        color=NAVY,
+    )
+
+    names = ["MediaPipe", "MP +\nYOLO11n", "MP +\nYOLO26n"]
+    coverage = [mp["coverage_rate"], y11["coverage_rate"], y26["coverage_rate"]]
+    agreement = [
+        mp["right_hand_case_agreement_rate_all_cases"],
+        y11["right_hand_case_agreement_rate_all_cases"],
+        y26["right_hand_case_agreement_rate_all_cases"],
+    ]
+    x = list(range(3))
+    axes[0].bar([i - 0.18 for i in x], [v * 100 for v in coverage], 0.36, color=BLUE, label="可判定率")
+    axes[0].bar([i + 0.18 for i in x], [v * 100 for v in agreement], 0.36, color=TEAL, label="右手案例一致率")
+    axes[0].set_xticks(x, names, fontproperties=FONT)
+    axes[0].set_ylim(0, 112)
+    axes[0].set_ylabel("案例比例（%）", fontproperties=FONT)
+    axes[0].set_title("6 段真實影片的案例結果", fontproperties=FONT, fontsize=14)
+    axes[0].legend(prop=FONT, loc="upper left")
+    axes[0].grid(axis="y", alpha=0.2)
+    for pos, value in zip([i - 0.18 for i in x], coverage):
+        axes[0].text(pos, value * 100 + 2, f"{value * 100:.0f}%", ha="center", fontsize=10)
+    for pos, value in zip([i + 0.18 for i in x], agreement):
+        axes[0].text(pos, value * 100 + 2, f"{value * 100:.0f}%", ha="center", fontsize=10)
+
+    model_names = ["YOLO11n", "YOLO26n"]
+    raw_rates = [y11["raw_detection_frame_rate"], y26["raw_detection_frame_rate"]]
+    paired_rates = [y11["paired_frame_rate"], y26["paired_frame_rate"]]
+    mx = list(range(2))
+    axes[1].bar([i - 0.18 for i in mx], [v * 100 for v in raw_rates], 0.36, color=ORANGE, label="有球拍候選框")
+    axes[1].bar([i + 0.18 for i in mx], [v * 100 for v in paired_rates], 0.36, color=TEAL, label="可配對手腕")
+    axes[1].set_xticks(mx, model_names, fontproperties=FONT)
+    axes[1].set_ylim(0, 82)
+    axes[1].set_ylabel("72 個抽樣影格的比例（%）", fontproperties=FONT)
+    axes[1].set_title("預訓練球拍 proxy 覆蓋", fontproperties=FONT, fontsize=14)
+    axes[1].legend(prop=FONT, loc="upper left")
+    axes[1].grid(axis="y", alpha=0.2)
+    for pos, value in zip([i - 0.18 for i in mx], raw_rates):
+        axes[1].text(pos, value * 100 + 1.5, f"{value * 100:.0f}%", ha="center", fontsize=10)
+    for pos, value in zip([i + 0.18 for i in mx], paired_rates):
+        axes[1].text(pos, value * 100 + 1.5, f"{value * 100:.0f}%", ha="center", fontsize=10)
+
+    p50 = [y11["latency"]["p50_wall_seconds_per_frame"] * 1000, y26["latency"]["p50_wall_seconds_per_frame"] * 1000]
+    p95 = [y11["latency"]["p95_wall_seconds_per_frame"] * 1000, y26["latency"]["p95_wall_seconds_per_frame"] * 1000]
+    axes[2].bar([i - 0.18 for i in mx], p50, 0.36, color=BLUE, label="p50")
+    axes[2].bar([i + 0.18 for i in mx], p95, 0.36, color=ORANGE, label="p95")
+    axes[2].set_xticks(mx, model_names, fontproperties=FONT)
+    axes[2].set_ylim(0, max(p95) * 1.32)
+    axes[2].set_ylabel("YOLO 推論時間（ms / frame）", fontproperties=FONT)
+    axes[2].set_title("Apple M5 Pro / MPS", fontproperties=FONT, fontsize=14)
+    axes[2].legend(prop=FONT, loc="upper left")
+    axes[2].grid(axis="y", alpha=0.2)
+    for pos, value in zip([i - 0.18 for i in mx], p50):
+        axes[2].text(pos, value + 0.5, f"{value:.1f}", ha="center", fontsize=10)
+    for pos, value in zip([i + 0.18 for i in mx], p95):
+        axes[2].text(pos, value + 0.5, f"{value:.1f}", ha="center", fontsize=10)
+
+    fig.text(
+        0.5,
+        0.025,
+        "限制：6 段皆為右手、沒有人工球拍框；一致率不是平衡準確率，候選框率也不是 precision / recall / mAP。",
+        ha="center",
+        fontproperties=FONT,
+        fontsize=11.5,
+        color=RED,
+    )
+    fig.tight_layout(rect=[0, 0.07, 1, 0.91])
+    fig.savefig(ASSETS / "mp_yolo11_yolo26_hand_comparison.png", dpi=170, bbox_inches="tight")
+    plt.close(fig)
+
+
 def decision() -> None:
     rows = ["沿用既有固定評分", "低規格終端可使用", "集中更新/回滾", "目前已有品質證據", "需要自行標註訓練"]
-    cols = ["A 雲端 MP+LLM", "B 地端 MP+Gemma", "C 自訓 YOLOv12"]
+    cols = ["A 雲端 MP+LLM", "B 地端 MP+Gemma", "C：MP+YOLO 視覺增強"]
     matrix = [
-        ["通過", "通過", "未通過"],
+        ["通過", "通過", "通過"],
         ["通過", "未通過", "尚未證明"],
         ["通過", "較困難", "可行但未建立"],
-        ["28例原始輸出通過", "Schema可用；需fallback", "僅流程；mAP=0"],
+        ["28例原始輸出通過", "Schema可用；需fallback", "右手6例；缺左手/框標註"],
         ["不需要", "不需要", "需要"],
     ]
-    colors = {"通過": "#D1FAE5", "不需要": "#D1FAE5", "未通過": "#FEE2E2", "較困難": "#FEF3C7", "尚未證明": "#FEF3C7", "28例原始輸出通過": "#D1FAE5", "Schema可用；需fallback": "#FEF3C7", "僅流程；mAP=0": "#FEE2E2", "可行但未建立": "#FEF3C7", "需要": "#FEE2E2"}
+    colors = {"通過": "#D1FAE5", "不需要": "#D1FAE5", "未通過": "#FEE2E2", "較困難": "#FEF3C7", "尚未證明": "#FEF3C7", "28例原始輸出通過": "#D1FAE5", "Schema可用；需fallback": "#FEF3C7", "右手6例；缺左手/框標註": "#FEF3C7", "可行但未建立": "#FEF3C7", "需要": "#FEE2E2"}
     fig, ax = plt.subplots(figsize=(15, 7), facecolor="white")
     ax.axis("off")
     table = ax.table(cellText=matrix, rowLabels=rows, colLabels=cols, cellLoc="center", loc="center", colWidths=[0.24, 0.24, 0.24])
@@ -601,8 +681,8 @@ def decision() -> None:
             cell.get_text().set_color("white")
         elif col >= 0:
             cell.set_facecolor(colors.get(cell.get_text().get_text(), "white"))
-    fig.suptitle("選擇 A 的證據閘門（不是把估算偽裝成實測）", fontproperties=FONT, fontsize=22, color=NAVY)
-    fig.text(0.5, 0.06, "結論：A 的雲端 LLM 已完成同條件 28 例；完整上傳、Cloud Run、帳單與人工盲評仍需補驗。", ha="center", fontproperties=FONT, fontsize=14, color=RED)
+    fig.suptitle("兩層決策：A/B 選部署；C 是可加掛的視覺能力", fontproperties=FONT, fontsize=22, color=NAVY)
+    fig.text(0.5, 0.06, "結論：A 仍是解說層預設；YOLO26n 是下一輪標註/微調候選，不是取代 A 或 MediaPipe。", ha="center", fontproperties=FONT, fontsize=14, color=RED)
     fig.savefig(ASSETS / "abc_decision_evidence.png", dpi=170, bbox_inches="tight")
     plt.close(fig)
 
@@ -617,6 +697,7 @@ def main() -> None:
     option_b()
     option_b_corpus()
     option_c()
+    option_c_mp_yolo_comparison()
     decision()
 
 
