@@ -1086,3 +1086,21 @@ YOLO26n 在第一輪看起來很好，是否真的能用在單人 MVP；改用�
 - [`build_yolo_racket_pilot_dataset.py`](build_yolo_racket_pilot_dataset.py)
 - [`train_yolo26n_racket_pilot.py`](train_yolo26n_racket_pilot.py)
 - [`render_yolo_racket_pilot_evidence.py`](render_yolo_racket_pilot_evidence.py)
+
+## 40. A／B／C階段性定案文件
+
+### 目的
+
+將已完成的A／B部署比較、C視覺比較、小型監督式微調、可說與不可說的數字集中成單一入口，讓後續工作不必重新翻閱所有對話或誤用80%、90%等未被本輪資料支持的說法。
+
+### 決定
+
+- 建立 [`STAGE_CONCLUSION.zh-TW.md`](STAGE_CONCLUSION.zh-TW.md) 作為後續工作的第一閱讀文件。
+- A定為目前LLM解說層預設；B為離線／隱私備案。
+- C短期維持MediaPipe，持拍手用規則＋使用者確認；官方YOLO26n可作選配證據。
+- 19張train、40 epochs的小型微調流程完成但test退步，因此不採用自訓權重。
+- 未來較有自訓理由的是羽球、球路與落點分析，但落點仍需追蹤、事件判定與球場座標校正，不是YOLO單獨完成。
+
+### 心得
+
+階段報告最重要的不是把所有指標寫得很高，而是讓每個結論都能回到實驗範圍。這次已有足夠證據完成PoC選型；未完成項目明確放入未來研究，不再混入本階段定案。

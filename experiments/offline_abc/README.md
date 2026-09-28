@@ -10,6 +10,7 @@
 
 ## 先看這些
 
+- [階段性結論：其他工作先讀這份](STAGE_CONCLUSION.zh-TW.md)
 - [完整實驗報告](EXPERIMENT_REPORT.zh-TW.md)
 - [A 的雲端 LLM 隔離實驗](A_CLOUD_LLM_BENCHMARK.zh-TW.md)
 - [A vs B 同條件 28 案例結論](AB_CLOUD_LOCAL_COMPARISON.zh-TW.md)
