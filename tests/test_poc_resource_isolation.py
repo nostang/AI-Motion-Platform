@@ -47,3 +47,15 @@ def test_isolation_cannot_be_disabled():
                 "DATABASE_URL": "postgresql://localhost/ai_motion_poc",
             }
         )
+
+
+@pytest.mark.parametrize("billing_mode", ["goo", "points", "paid", ""])
+def test_poc_billing_must_remain_free(billing_mode):
+    with pytest.raises(RuntimeError, match="不可使用羽球＋1 Goo 點數"):
+        validate_poc_resource_isolation(
+            {
+                "POC_RESOURCE_ISOLATION": "true",
+                "AI_MOTION_BILLING_MODE": billing_mode,
+                "DATABASE_URL": "postgresql://localhost/ai_motion_poc",
+            }
+        )

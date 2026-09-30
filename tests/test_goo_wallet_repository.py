@@ -44,7 +44,11 @@ def test_first_free_points_reservation_refund_and_idempotent_credit(tmp_path):
                 (user_id, "Goo wallet test user"),
             )
 
-    repository = PostgresVideoAnalysisRepository(TEST_DATABASE_URL, tmp_path)
+    repository = PostgresVideoAnalysisRepository(
+        TEST_DATABASE_URL,
+        tmp_path,
+        billing_mode="goo",
+    )
 
     failed_free_id, failed_free = _create(repository, user_id, "footwork")
     assert failed_free == {"charge_kind": "first_free", "points": 0, "entitlement_id": None}
@@ -193,7 +197,11 @@ def test_event_rewards_are_idempotent_and_capped_per_taipei_week(tmp_path):
                 (user_id, "Event reward test user"),
             )
 
-    repository = PostgresVideoAnalysisRepository(TEST_DATABASE_URL, tmp_path)
+    repository = PostgresVideoAnalysisRepository(
+        TEST_DATABASE_URL,
+        tmp_path,
+        billing_mode="goo",
+    )
     first = repository.grant_event_reward(
         user_id=user_id,
         registration_id=910001,

@@ -40,10 +40,7 @@ from src.api.footwork_reach_grid import (
     load_footwork_reach_grid,
     sanitize_footwork_reach_grid,
 )
-from src.api.postgres_repository import (
-    InsufficientGooPointsError,
-    PostgresVideoAnalysisRepository,
-)
+from src.api.postgres_repository import PostgresVideoAnalysisRepository
 from src.api.service import MotionAssessmentService
 from src.api.storage_upload import StorageUploadService
 from src.api.task_queue import (
@@ -99,6 +96,7 @@ validate_poc_resource_isolation(os.environ)
 repository = PostgresVideoAnalysisRepository(
     DATABASE_URL,
     PROJECT_ROOT / "api_data" / "motion_assessments",
+    billing_mode=os.environ.get("AI_MOTION_BILLING_MODE", "free"),
 )
 service = MotionAssessmentService(repository)
 task_queue = MotionTaskQueue.from_environment()
@@ -1002,30 +1000,20 @@ def create_motion_assessment_from_storage(
     # Keep the existing DB schema and service contract unchanged.
     # The pipeline still receives a local path after the Storage object
     # is materialized by the background worker.
-    try:
-        charge = repository.create_analysis(
-            user_id=request.user_id,
-            analysis_id=assessment_id,
-            video_url=str(local_video_path),
-            analysis_type=normalized_type,
-            # Keep the production CHECK constraint unchanged.  The existing
-            # "uploaded" status represents a durable job waiting for dispatch;
-            # current_stage carries the more specific queue state for the UI.
-            processing_status="uploaded",
-            progress=1,
-            current_stage="queued",
-            created_at=now,
-            updated_at=now,
-        ) or {}
-    except InsufficientGooPointsError as exc:
-        shutil.rmtree(directory, ignore_errors=True)
-        return failure(
-            402,
-            "INSUFFICIENT_GOO_POINTS",
-            "Goo 點不足，請先儲值後再繼續。",
-            {"balance": exc.balance, "required_points": exc.required},
-        )
-
+    charge = repository.create_analysis(
+        user_id=request.user_id,
+        analysis_id=assessment_id,
+        video_url=str(local_video_path),
+        analysis_type=normalized_type,
+        # Keep the production CHECK constraint unchanged.  The existing
+        # "uploaded" status represents a durable job waiting for dispatch;
+        # current_stage carries the more specific queue state for the UI.
+        processing_status="uploaded",
+        progress=1,
+        current_stage="queued",
+        created_at=now,
+        updated_at=now,
+    ) or {}
     try:
         _queue_or_run_locally(
             background_tasks=background_tasks,
@@ -1267,27 +1255,17 @@ async def create_motion_assessment(
 
     now = utc_now()
 
-    try:
-        charge = repository.create_analysis(
-            user_id=user_id,
-            analysis_id=assessment_id,
-            video_url=str(analysis_video_path),
-            analysis_type=normalized_type,
-            processing_status="uploaded",
-            progress=0,
-            current_stage="uploaded",
-            created_at=now,
-            updated_at=now,
-        ) or {}
-    except InsufficientGooPointsError as exc:
-        shutil.rmtree(directory, ignore_errors=True)
-        return failure(
-            402,
-            "INSUFFICIENT_GOO_POINTS",
-            "Goo 點不足，請先儲值後再繼續。",
-            {"balance": exc.balance, "required_points": exc.required},
-        )
-
+    charge = repository.create_analysis(
+        user_id=user_id,
+        analysis_id=assessment_id,
+        video_url=str(analysis_video_path),
+        analysis_type=normalized_type,
+        processing_status="uploaded",
+        progress=0,
+        current_stage="uploaded",
+        created_at=now,
+        updated_at=now,
+    ) or {}
     if not defer_analysis:
         background_tasks.add_task(
             service.process,

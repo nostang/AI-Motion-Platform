@@ -29,10 +29,18 @@ class PostgresVideoAnalysisRepository:
         self,
         database_url: str,
         storage_root: Path,
+        *,
+        billing_mode: str | None = None,
     ) -> None:
         self.database_url = database_url
         self.storage_root = Path(storage_root)
         self.storage_root.mkdir(parents=True, exist_ok=True)
+        self.billing_mode = (
+            billing_mode
+            or os.environ.get("AI_MOTION_BILLING_MODE", "free")
+        ).strip().lower()
+        if self.billing_mode not in {"free", "goo"}:
+            raise ValueError("Unsupported AI Motion billing mode")
         self.analysis_price = max(
             1,
             int(os.environ.get("GOO_ANALYSIS_PRICE", "10")),
@@ -86,6 +94,20 @@ class PostgresVideoAnalysisRepository:
             )
 
     def get_wallet(self, user_id: int) -> dict[str, Any]:
+        if self.billing_mode == "free":
+            return {
+                "user_id": user_id,
+                "balance": 0,
+                "reserved_balance": 0,
+                "analysis_price": 0,
+                "first_free_available": {
+                    analysis_type: True
+                    for analysis_type in ("footwork", "serve", "clear")
+                },
+                "billing_mode": "free",
+                "updated_at": datetime.now(tz=ZoneInfo("UTC")).isoformat(),
+            }
+
         with self._connect() as conn, conn.cursor() as cur:
             cur.execute(
                 """
@@ -173,6 +195,16 @@ class PostgresVideoAnalysisRepository:
             ]
 
     def quote_analysis(self, user_id: int, analysis_type: str) -> dict[str, Any]:
+        if self.billing_mode == "free":
+            return {
+                **self.get_wallet(user_id),
+                "assessment_type": analysis_type,
+                "charge_kind": "poc_free",
+                "required_points": 0,
+                "purchase_price_twd": 0,
+                "can_start": True,
+            }
+
         wallet = self.get_wallet(user_id)
         is_free = bool(
             wallet["first_free_available"].get(analysis_type, False)
@@ -715,12 +747,19 @@ class PostgresVideoAnalysisRepository:
                     "updated_at": updated_at,
                 },
             )
-            charge = self._reserve_analysis_charge(
-                cur,
-                user_id=user_id,
-                analysis_id=analysis_id,
-                analysis_type=analysis_type,
-            )
+            if self.billing_mode == "free":
+                charge = {
+                    "charge_kind": "poc_free",
+                    "points": 0,
+                    "entitlement_id": None,
+                }
+            else:
+                charge = self._reserve_analysis_charge(
+                    cur,
+                    user_id=user_id,
+                    analysis_id=analysis_id,
+                    analysis_type=analysis_type,
+                )
         return charge
 
     def get_active_analysis(

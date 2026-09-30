@@ -22,6 +22,16 @@ def validate_poc_resource_isolation(environ: Mapping[str, str]) -> None:
             "POC_RESOURCE_ISOLATION 不可停用；AI_Motion_PoC 必須保持獨立。"
         )
 
+    billing_mode = environ.get(
+        "AI_MOTION_BILLING_MODE",
+        "free",
+    ).strip().lower()
+    if billing_mode != "free":
+        raise RuntimeError(
+            "AI_MOTION_BILLING_MODE 必須為 free；"
+            "獨立 AI_Motion_PoC 不可使用羽球＋1 Goo 點數。"
+        )
+
     collisions: list[str] = []
     guarded_values = {
         "DATABASE_URL": environ.get("DATABASE_URL", ""),
