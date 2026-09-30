@@ -166,8 +166,7 @@ def sync_internal_user(
     payload: InternalUserSyncRequest,
     x_internal_api_key: str | None = Header(default=None, alias="X-Internal-Api-Key"),
 ):
-    expected = os.environ.get("INTERNAL_API_KEY", "")
-    if not expected or not x_internal_api_key or not secrets.compare_digest(expected, x_internal_api_key):
+    if not _internal_key_is_valid(x_internal_api_key):
         raise HTTPException(status_code=401, detail="Invalid internal API key")
     repository.upsert_user(payload.user_id, payload.line_user_id, payload.display_name)
     return {"status": "ok", "user_id": payload.user_id}
@@ -752,11 +751,12 @@ def _process_storage_assessment(
 
 
 def _internal_key_is_valid(value: str | None) -> bool:
-    expected = os.environ.get("INTERNAL_API_KEY", "")
+    expected = os.environ.get("INTERNAL_API_KEY", "").strip()
+    candidate = (value or "").strip()
     return bool(
         expected
-        and value
-        and secrets.compare_digest(expected, value)
+        and candidate
+        and secrets.compare_digest(expected, candidate)
     )
 
 

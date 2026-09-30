@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from google.cloud import tasks_v2
 
+from src.api import app as app_module
 from src.api.task_queue import MotionTaskQueue
 
 
@@ -71,3 +72,10 @@ def test_queue_keeps_local_compatibility_without_oidc_identity(monkeypatch):
     queue.enqueue(assessment_id=7, job_type="annotation")
 
     assert "oidc_token" not in fake.request["task"]["http_request"]
+
+
+def test_internal_key_accepts_secret_manager_trailing_newline(monkeypatch):
+    monkeypatch.setenv("INTERNAL_API_KEY", "test-internal-key\n")
+
+    assert app_module._internal_key_is_valid("test-internal-key") is True
+    assert app_module._internal_key_is_valid("wrong-key") is False
