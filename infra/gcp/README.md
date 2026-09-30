@@ -37,12 +37,12 @@ Release rules:
 - Public URL: `https://ai-motion-poc-987230868182.asia-east1.run.app/`
 - Cloud Run canonical URL:
   `https://ai-motion-poc-dsqjlyd2ba-de.a.run.app/`
-- Current revision: `ai-motion-poc-00005-buz` (`100%`, tag `current`)
+- Current revision: `ai-motion-poc-00008-wip` (`100%`, tag `current`)
 - Current image digest:
-  `sha256:3d980f2cf3b06fc3c8c4bee85193f2f4e600098e3827710e0ef9509f77cc0b02`
-- Deployed product commit: `70ade83`
-- Product release tag: `ai-motion-poc-release-20260930-1`
-- Rollback revision: `ai-motion-poc-00001-jal` (`0%`, tag `rollback`)
+  `sha256:d7200a18e3010c6031d67d8091aca34e79e2ef1bea65a4293c6c3badf70bdf28`
+- Deployed product commit: `98218ca`
+- Product release tag: `ai-motion-poc-release-20260930-2`
+- Rollback revision: `ai-motion-poc-00005-buz` (`0%`, tag `rollback`)
 - Runtime limits: min instances `0`, max instances `1`, concurrency `1`,
   queue dispatch rate `1/s`, queue concurrency `1`.
 
@@ -53,6 +53,11 @@ approval. The demo user and its assessment/report endpoints are therefore
 publicly reachable. Do not store personal or sensitive videos or user data in
 this environment.
 
+Standalone analysis billing is locked to `AI_MOTION_BILLING_MODE=free`.
+Creating or quoting an assessment does not read or write Goo wallets,
+entitlements or analysis charges. The old wallet tables remain only as unused
+schema history; they are not part of the standalone user flow.
+
 The worker URL uses the stable service URL rather than a preview tag. Its
 Cloud Tasks request still carries a service-account OIDC token and the
 dedicated internal API key. The public web/API boundary and the internal
@@ -60,8 +65,8 @@ worker authorization are separate controls.
 
 Release verification:
 
-- Python tests: `258 passed, 2 skipped`.
-- Cloud Build upload: `137` production files, approximately `6.5 MiB`.
+- Python tests: `264 passed, 2 skipped`.
+- Cloud Build upload: `138` production files, approximately `6.5 MiB`.
 - Upload excludes experiments, tests, documentation, datasets, model weights,
   local videos, virtual environments, caches and `.env` files.
 - Anonymous smoke checks returned HTTP `200` for health, home, user summary,
@@ -70,11 +75,15 @@ Release verification:
   `693/693` detected frames, `8/8` footwork events, score `85.039`.
 - The worker request returned HTTP `200`; the earlier repeated `401` condition
   was removed by normalizing the Secret Manager value before comparison.
+- A second-use assessment for the same demo user returned HTTP `202` with
+  `charge_kind=poc_free`, `points=0`, then completed as assessment `4` with
+  `8/8` footwork events and score `84.762`.
 
-The rollback revision predates the internal-secret normalization fix. It is a
-web/database emergency fallback only; queued analysis on that revision can
-return `401`. If rollback is ever required, restore web access first and then
-redeploy product commit `70ade83` before accepting new analysis jobs.
+The rollback revision is the previously verified standalone release and still
+contains the inherited Goo billing rule. It is suitable for emergency web and
+analysis recovery, but a demo user's later assessment can return `402` after
+its first-free allowance. Redeploy product commit `98218ca` to restore free
+standalone analysis after any rollback.
 
 Cloud SQL is the primary continuing fixed cost even while Cloud Run scales to
 zero. This PoC uses PostgreSQL 16 on `db-f1-micro`, a 10 GB HDD, no automated
