@@ -63,16 +63,10 @@ docs/calibration/serve_window_review_v0_4/
 .mobile-preprocess-backup-*/
 .mobile-preprocess-debug-backup-*/
 
-# Offline A/B/C experiment outputs and local training environments
-# Small JSON summaries are evidence and stay versioned; generated datasets,
-# checkpoints, plots, and other bulky artifacts stay local.
-experiments/offline_abc/results/*
-!experiments/offline_abc/results/*.json
-!experiments/offline_abc/results/*.csv
-experiments/offline_abc/results/*_initial.json
-experiments/offline_abc/results/yolo_workspace/
-experiments/offline_abc/.venv/
-experiments/offline_abc/.venv-yolo/
-experiments/offline_abc/yolov12/
-experiments/offline_abc/**/*.pt
-experiments/offline_abc/**/*.onnx
+# Offline experiments remain local. They are excluded from GitHub and every
+# deployment source bundle so training data, weights and evidence do not
+# consume repository or build storage.
+experiments/
+
+# Local helper owned by the workstation; never publish or deploy it.
+scripts/offline_demo_server.py

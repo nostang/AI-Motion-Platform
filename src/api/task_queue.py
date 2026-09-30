@@ -24,12 +24,16 @@ class MotionTaskQueue:
         queue_name: str | None = None,
         worker_url: str | None = None,
         internal_api_key: str | None = None,
+        service_account_email: str | None = None,
+        oidc_audience: str | None = None,
     ) -> None:
         self.project_id = (project_id or "").strip()
         self.location = (location or "").strip()
         self.queue_name = (queue_name or "").strip()
         self.worker_url = (worker_url or "").strip()
         self.internal_api_key = (internal_api_key or "").strip()
+        self.service_account_email = (service_account_email or "").strip()
+        self.oidc_audience = (oidc_audience or "").strip()
 
     @classmethod
     def from_environment(cls) -> "MotionTaskQueue":
@@ -45,6 +49,8 @@ class MotionTaskQueue:
             queue_name=os.environ.get("AI_MOTION_TASK_QUEUE"),
             worker_url=os.environ.get("AI_MOTION_WORKER_URL"),
             internal_api_key=os.environ.get("INTERNAL_API_KEY"),
+            service_account_email=os.environ.get("AI_MOTION_SERVICE_ACCOUNT"),
+            oidc_audience=os.environ.get("AI_MOTION_TASK_AUDIENCE"),
         )
 
     @property
@@ -97,17 +103,24 @@ class MotionTaskQueue:
             "job_type": job_type,
             "object_name": object_name,
         }
+        http_request = {
+            "http_method": tasks_v2.HttpMethod.POST,
+            "url": self.worker_url,
+            "headers": {
+                "Content-Type": "application/json",
+                "X-Internal-Api-Key": self.internal_api_key,
+            },
+            "body": json.dumps(payload).encode("utf-8"),
+        }
+        if self.service_account_email:
+            http_request["oidc_token"] = {
+                "service_account_email": self.service_account_email,
+                "audience": self.oidc_audience or self.worker_url,
+            }
+
         task = {
             "name": task_name,
-            "http_request": {
-                "http_method": tasks_v2.HttpMethod.POST,
-                "url": self.worker_url,
-                "headers": {
-                    "Content-Type": "application/json",
-                    "X-Internal-Api-Key": self.internal_api_key,
-                },
-                "body": json.dumps(payload).encode("utf-8"),
-            },
+            "http_request": http_request,
             "dispatch_deadline": duration_pb2.Duration(seconds=1800),
         }
 

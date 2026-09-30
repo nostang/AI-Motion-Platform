@@ -41,6 +41,10 @@ class KeyframeStorageService:
             or os.environ.get(VIDEO_UPLOAD_BUCKET_ENV)
             or DEFAULT_BUCKET
         )
+        if not self.bucket_name:
+            raise RuntimeError(
+                "KEYFRAME_ASSET_BUCKET 未設定；AI_Motion_PoC 必須使用專用 bucket。"
+            )
         self._storage_client = client
 
     @staticmethod

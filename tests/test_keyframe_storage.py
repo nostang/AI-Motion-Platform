@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from src.api.keyframe_storage import (
     KEYFRAME_ASSET_BUCKET_ENV,
     KEYFRAME_OBJECT_PREFIX,
@@ -125,6 +127,16 @@ def test_keyframe_bucket_can_share_configured_video_bucket(monkeypatch):
 
     assert StorageUploadService().bucket_name == "video-temp"
     assert KeyframeStorageService().bucket_name == "video-temp"
+
+
+def test_missing_poc_bucket_configuration_fails_closed(monkeypatch):
+    monkeypatch.delenv(VIDEO_UPLOAD_BUCKET_ENV, raising=False)
+    monkeypatch.delenv(KEYFRAME_ASSET_BUCKET_ENV, raising=False)
+
+    with pytest.raises(RuntimeError, match="專用 bucket"):
+        StorageUploadService()
+    with pytest.raises(RuntimeError, match="專用 bucket"):
+        KeyframeStorageService()
 
 
 def test_same_bucket_lifecycle_only_matches_video_upload_prefix():

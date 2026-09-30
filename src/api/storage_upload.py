@@ -14,7 +14,10 @@ from google.auth import impersonated_credentials
 from google.cloud import storage
 
 
-DEFAULT_BUCKET = "ai-motion-platform-ivesmi-video-temp"
+# Standalone deployments must always name their own bucket explicitly.  The
+# former default belonged to Badminton Plus One and is intentionally removed
+# so a missing environment variable fails closed instead of crossing projects.
+DEFAULT_BUCKET = ""
 VIDEO_UPLOAD_BUCKET_ENV = "VIDEO_UPLOAD_BUCKET"
 UPLOAD_OBJECT_PREFIX = "uploads"
 ALLOWED_CONTENT_TYPES = frozenset({
@@ -56,6 +59,10 @@ class StorageUploadService:
             or os.environ.get(VIDEO_UPLOAD_BUCKET_ENV)
             or DEFAULT_BUCKET
         )
+        if not self.bucket_name:
+            raise RuntimeError(
+                "VIDEO_UPLOAD_BUCKET 未設定；AI_Motion_PoC 必須使用專用 bucket。"
+            )
         self.service_account_email = (
             service_account_email
             or os.environ.get("AI_MOTION_SERVICE_ACCOUNT")

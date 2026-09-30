@@ -1,5 +1,6 @@
 .git
 .gitignore
+.gcloudignore
 
 .venv
 venv
@@ -15,6 +16,14 @@ api_data
 output
 videos
 dataset
+db
+docs
+experiments
+infra
+migrations
+scripts
+tests
+tools
 
 *.zip
 *.log
@@ -26,3 +35,15 @@ dataset
 
 ai_motion_current_schema.sql
 requirements.lock.txt
+
+.pytest_cache
+.mobile-preprocess-backup-*
+.mobile-preprocess-debug-backup-*
+BODY_STABILITY*_README.md
+MIGRATION_NOTES.md
+LICENSE
+README.md
+pytest.ini
+.env.example
+main.py
+src/*.md

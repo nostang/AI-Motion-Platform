@@ -42,8 +42,11 @@ The [`calibration/`](calibration/) directory contains calibration contracts,
 review rubrics, validation matrices, retained system results, and isolated
 experiments. Body Stability V2 exploratory notes are grouped under
 [`calibration/experiments/body-stability-v2/`](calibration/experiments/body-stability-v2/README.md).
-Local MediaPipe, Gemma 4, and YOLOv12 comparison work is isolated under
-[`../experiments/offline_abc/`](../experiments/offline_abc/README.md).
+Local MediaPipe, Gemma 4, and YOLO comparison work is isolated under the local
+`experiments/` directory and intentionally kept outside Git tracking and all
+deployment bundles. Its generated
+datasets, model weights, evidence images, and benchmark logs are not part of
+the standalone web service release.
 
 ## Releases and archive
 
